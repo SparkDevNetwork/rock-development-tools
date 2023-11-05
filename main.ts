@@ -1,10 +1,9 @@
 import simpleGit, { CleanOptions, SimpleGitProgressEvent } from "simple-git";
 import { IndeterminateBar, ProgressBar, logSuccess } from "./progress";
-import { exec } from "child_process";
 import prompts from "prompts";
 import path from "path";
 import fs from "fs";
-import { resolveProjectReferencePath } from "typescript";
+import { glob } from "glob";
 import { execute } from "./process";
 
 type RockVersionBranch = {
@@ -112,6 +111,8 @@ async function selectRockVersion(): Promise<RockVersionBranch> {
         process.exit(1);
     }
 
+    process.stdout.write("\n");
+
     versions.sort(rockVersionBranchSorter);
 
     const answers = await prompts([
@@ -149,6 +150,11 @@ async function resetRockBranch(): Promise<void> {
     await simpleGit(rockPath)
         .clean(CleanOptions.FORCE)
         .checkout(".");
+
+    await fs.promises.rm(path.join(rockPath, "Rock.JavaScript.Obsidian", "dist"), {
+        recursive: true,
+        force: true
+    });
 }
 
 async function buildObsidian(version: RockVersionBranch): Promise<void> {
@@ -173,13 +179,89 @@ async function buildObsidian(version: RockVersionBranch): Promise<void> {
     indeterminateBar.success();
 }
 
+async function prepareObsidianPackage(version: RockVersionBranch): Promise<void> {
+    const frameworkBuildPath = path.join(process.cwd(),
+        "build",
+        "Rock",
+        "Rock.JavaScript.Obsidian",
+        "dist",
+        "Framework");
+
+    const stagingPath = path.join(process.cwd(),
+        "build",
+        "obsidian-framework");
+
+    await fs.promises.rm(stagingPath, {
+        recursive: true,
+        force: true
+    });
+    await fs.promises.mkdir(stagingPath, { recursive: true });
+
+    const bar = new ProgressBar(1, "Preparing to build obsidian-framework");
+
+    const files = await glob("**/*.d.ts", {
+        cwd: frameworkBuildPath
+    });
+
+    if (files.length === 0) {
+        bar.stop();
+        process.stderr?.write("No files were found, perhaps the build failed.\n");
+        process.exit(1);
+    }
+
+    bar.setTotal(files.length);
+
+    for (const file of files) {
+        const src = path.join(frameworkBuildPath, file);
+        const dest = path.join(stagingPath, "types", file);
+
+        if (!fs.existsSync(path.dirname(dest))) {
+            await fs.promises.mkdir(path.dirname(dest), { recursive: true });
+        }
+
+        await fs.promises.copyFile(src, dest);
+
+        bar.increment();
+    }
+
+    const templateSrc = path.join(process.cwd(), "templates", "obsidian-framework.json");
+    const templateDest = path.join(stagingPath, "package.json");
+
+    const template = await fs.promises.readFile(templateSrc, {
+        encoding: "utf-8"
+    });
+
+    const versionNumber = `${version.major}.${version.minor}.${version.patch}`;
+    const packageContent = template.replace(/##VERSION##/g, versionNumber);
+
+    await fs.promises.writeFile(templateDest, packageContent);
+
+    bar.stop();
+}
+
+async function createObsidianPackage(): Promise<void> {
+    const stagingPath = path.join(process.cwd(),
+        "build",
+        "obsidian-framework");
+
+    const bar = new IndeterminateBar("Packing obsidian-framework");
+    const statusCode = await execute("npm pack", stagingPath);
+
+    if (statusCode !== 0) {
+        bar.fail();
+        process.exit(1);
+    }
+
+    bar.success();
+}
+
 async function main(): Promise<void> {
     const rockVersion = await selectRockVersion();
     const rockPath = path.resolve(path.join(process.cwd(), "build", "Rock"));
 
     if (await checkRockVersion(rockVersion)) {
         await resetRockBranch();
-        logSuccess("Existing Rock version");
+        logSuccess("Existing Rock download OK");
     }
     else {
         if (fs.existsSync(rockPath)) {
@@ -193,6 +275,8 @@ async function main(): Promise<void> {
     }
 
     await buildObsidian(rockVersion);
+    await prepareObsidianPackage(rockVersion);
+    await createObsidianPackage();
 }
 
 main();

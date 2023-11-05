@@ -7,7 +7,7 @@ export class ProgressBar {
 
     constructor(totalNumber: number, message: string) {
         this.singleBar = new SingleBar({
-            format: `{title} [\u001b[38;5;208m{bar}\u001b[0m] {percentage}% || {value}/{total}`
+            format: `{title} [\u001b[38;5;208m{bar}\u001b[0m] {percentage}% | {value}/{total}`
         }, Presets.shades_classic);
 
         this.message = message;
@@ -20,6 +20,10 @@ export class ProgressBar {
         this.singleBar.update(value, {
             title: this.message
         });
+    }
+
+    public increment(): void {
+        this.singleBar.increment();
     }
 
     public setTotal(totalNumber: number): void {
