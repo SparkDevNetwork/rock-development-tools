@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs";
 import { glob } from "glob";
 import { execute } from "./process";
+import { PackageJson } from "type-fest";
 
 type RockVersionBranch = {
     prefix: string;
@@ -63,9 +64,8 @@ async function downloadRock(version: RockVersionBranch): Promise<void> {
 
     function progress(ev: SimpleGitProgressEvent): void {
         if (ev.stage !== lastStage) {
-            bar.message = `Downloading Rock [${ev.stage === "remote:" ? "remote" : ev.stage}]`;
             lastStage = ev.stage;
-            bar.setTotal(ev.total);
+            bar.setTotal(ev.total, ev.stage === "remote:" ? "remote" : ev.stage);
         }
 
         bar.update(ev.processed);
@@ -78,7 +78,7 @@ async function downloadRock(version: RockVersionBranch): Promise<void> {
         `${version.prefix}-${version.major}.${version.minor}.${version.patch}`
     ]);
 
-    bar.stop();
+    bar.success();
 }
 
 async function selectRockVersion(): Promise<RockVersionBranch> {
@@ -111,9 +111,7 @@ async function selectRockVersion(): Promise<RockVersionBranch> {
         process.exit(1);
     }
 
-    process.stdout.write("\n");
-
-    versions.sort(rockVersionBranchSorter);
+    versions.sort(rockVersionBranchSorter).reverse();
 
     const answers = await prompts([
         {
@@ -126,6 +124,8 @@ async function selectRockVersion(): Promise<RockVersionBranch> {
             }))
         }
     ]);
+
+    process.stdout.write("\n");
 
     return answers.version;
 }
@@ -186,25 +186,54 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
         "Rock.JavaScript.Obsidian",
         "dist",
         "Framework");
+    const frameworkPath = path.join(process.cwd(),
+        "build",
+        "Rock",
+        "Rock.JavaScript.Obsidian",
+        "Framework");
 
     const stagingPath = path.join(process.cwd(),
         "build",
-        "obsidian-framework");
+        "rock-obsidian-framework");
 
+    // Remove the old staging path and create it as empty.
     await fs.promises.rm(stagingPath, {
         recursive: true,
         force: true
     });
     await fs.promises.mkdir(stagingPath, { recursive: true });
 
-    const bar = new ProgressBar(1, "Preparing to build obsidian-framework");
+    const bar = new ProgressBar(1, "Preparing to package rock-obsidian-framework");
 
-    const files = await glob("**/*.d.ts", {
-        cwd: frameworkBuildPath
-    });
+    let files: { src: string, target: string }[] = [];
+
+    // Get the built files, except the Libs files since those are internal
+    // to Rock and should not be used.
+    files = files.concat(
+        (await glob("**/*.d.ts", { cwd: frameworkBuildPath }))
+        .filter(f => !f.startsWith(`Libs${path.sep}`))
+        .map(f => {
+            return {
+                src: path.join(frameworkBuildPath, f),
+                target: f
+            };
+        })
+    );
+
+    // Get the ViewModels files that aren't copied into the distribution
+    // folder but should be part of the package.
+    files = files.concat(
+        (await glob("ViewModels/**/*.d.ts", { cwd: frameworkPath }))
+        .map(f => {
+            return {
+                src: path.join(frameworkPath, f),
+                target: f
+            };
+        })
+    );
 
     if (files.length === 0) {
-        bar.stop();
+        bar.fail();
         process.stderr?.write("No files were found, perhaps the build failed.\n");
         process.exit(1);
     }
@@ -212,8 +241,8 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
     bar.setTotal(files.length);
 
     for (const file of files) {
-        const src = path.join(frameworkBuildPath, file);
-        const dest = path.join(stagingPath, "types", file);
+        const src = file.src;
+        const dest = path.join(stagingPath, "types", file.target);
 
         if (!fs.existsSync(path.dirname(dest))) {
             await fs.promises.mkdir(path.dirname(dest), { recursive: true });
@@ -224,27 +253,32 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
         bar.increment();
     }
 
-    const templateSrc = path.join(process.cwd(), "templates", "obsidian-framework.json");
-    const templateDest = path.join(stagingPath, "package.json");
+    const obsidianPackagePath = path.join(process.cwd(), "build", "Rock", "Rock.JavaScript.Obsidian", "package.json");
+    const obsidianPackage = JSON.parse(await fs.promises.readFile(obsidianPackagePath, { encoding: "utf-8" })) as PackageJson;
+    const vueVersion = obsidianPackage.dependencies!["vue"]
 
-    const template = await fs.promises.readFile(templateSrc, {
+    const templateSrc = path.join(process.cwd(), "templates", "rock-obsidian-framework.json");
+    const templateDest = path.join(stagingPath, "package.json");
+    const templateJson = await fs.promises.readFile(templateSrc, {
         encoding: "utf-8"
     });
+    const template = JSON.parse(templateJson) as PackageJson;
 
-    const versionNumber = `${version.major}.${version.minor}.${version.patch}`;
-    const packageContent = template.replace(/##VERSION##/g, versionNumber);
+    template.version = `${version.minor}.${version.patch}.0`;
+    template.peerDependencies ??= {};
+    template.peerDependencies["vue"] = vueVersion;
 
-    await fs.promises.writeFile(templateDest, packageContent);
+    await fs.promises.writeFile(templateDest, JSON.stringify(template, undefined, 4));
 
-    bar.stop();
+    bar.success();
 }
 
 async function createObsidianPackage(): Promise<void> {
     const stagingPath = path.join(process.cwd(),
         "build",
-        "obsidian-framework");
+        "rock-obsidian-framework");
 
-    const bar = new IndeterminateBar("Packing obsidian-framework");
+    const bar = new IndeterminateBar("Packing rock-obsidian-framework");
     const statusCode = await execute("npm pack", stagingPath);
 
     if (statusCode !== 0) {
@@ -261,7 +295,7 @@ async function main(): Promise<void> {
 
     if (await checkRockVersion(rockVersion)) {
         await resetRockBranch();
-        logSuccess("Existing Rock download OK");
+        logSuccess("Existing Rock download check");
     }
     else {
         if (fs.existsSync(rockPath)) {

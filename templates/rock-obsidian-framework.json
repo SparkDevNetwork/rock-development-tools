@@ -1,6 +1,5 @@
 {
     "name": "@blueboxmoon/obsidian-framework",
-    "version": "##VERSION##",
     "description": "Type definitions to allow building a plugin against the Obsidian framework.",
     "scripts": {},
     "repository": {
