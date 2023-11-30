@@ -220,10 +220,10 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
         })
     );
 
-    // Get the ViewModels files that aren't copied into the distribution
-    // folder but should be part of the package.
+    // Get the Types and ViewModels files that aren't copied into the
+    // distribution folder but should be part of the package.
     files = files.concat(
-        (await glob("ViewModels/**/*.d.ts", { cwd: frameworkPath }))
+        (await glob(["ViewModels/**/*.d.ts", "Types/**/*.d.ts"], { cwd: frameworkPath }))
         .map(f => {
             return {
                 src: path.join(frameworkPath, f),
@@ -253,13 +253,14 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
         bar.increment();
     }
 
+    // Read the Vue version from the rock project.
     const obsidianPackagePath = path.join(process.cwd(), "build", "Rock", "Rock.JavaScript.Obsidian", "package.json");
     const obsidianPackage = JSON.parse(await fs.promises.readFile(obsidianPackagePath, { encoding: "utf-8" })) as PackageJson;
     const vueVersion = obsidianPackage.dependencies!["vue"]
 
-    const templateSrc = path.join(process.cwd(), "templates", "rock-obsidian-framework.json");
-    const templateDest = path.join(stagingPath, "package.json");
-    const templateJson = await fs.promises.readFile(templateSrc, {
+    // Create the package.json file.
+    const templatePath = path.join(process.cwd(), "templates");
+    const templateJson = await fs.promises.readFile(path.join(templatePath, "rock-obsidian-framework.json"), {
         encoding: "utf-8"
     });
     const template = JSON.parse(templateJson) as PackageJson;
@@ -268,7 +269,10 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
     template.peerDependencies ??= {};
     template.peerDependencies["vue"] = vueVersion;
 
-    await fs.promises.writeFile(templateDest, JSON.stringify(template, undefined, 4));
+    await fs.promises.writeFile(path.join(stagingPath, "package.json"), JSON.stringify(template, undefined, 4));
+
+    // Copy additional template files that don't need translation.
+    await fs.promises.copyFile(path.join(templatePath, "tsconfig.base.json"), path.join(stagingPath, "tsconfig.base.json"));
 
     bar.success();
 }
