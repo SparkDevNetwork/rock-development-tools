@@ -1,0 +1,42 @@
+{
+  "name": "create-rock-plugin",
+  "version": "1.0.0",
+  "description": "An easy way to start a Rock plugin.",
+  "type": "module",
+  "bin": {
+    "create-rock-plugin": "dist/outfile.cjs"
+  },
+  "files": [
+    "dist/outfile.cjs",
+    "templates"
+  ],
+  "engines": {
+    "node": ">=v18.0.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "execute": "ts-node-esm src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blueboxmoon/obsidian-dev-builder.git"
+  },
+  "keywords": [
+    "rockrms",
+    "obsidian"
+  ],
+  "author": "Daniel Hazelbaker",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/blueboxmoon/obsidian-dev-builder/issues"
+  },
+  "homepage": "https://github.com/blueboxmoon/obsidian-dev-builder#readme",
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@types/prompts": "^2.4.9",
+    "esbuild": "^0.19.8",
+    "prompts": "^2.4.2",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  }
+}
