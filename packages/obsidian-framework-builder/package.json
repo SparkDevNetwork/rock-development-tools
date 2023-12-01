@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-dev-builder",
+  "name": "obsidian-framework-builder",
   "version": "1.0.0",
   "description": "Builds npm packages from specific versions of Rock for Obsidian.",
   "scripts": {
