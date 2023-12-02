@@ -7,8 +7,8 @@ import { glob } from "glob";
 import { execute } from "./process";
 import { PackageJson } from "type-fest";
 
-const repoPath = path.resolve(__dirname, "..", "..");
-const templatesPath = path.resolve(repoPath, "packages", "obsidian-framework-builder", "templates");
+const buildPath = path.resolve(__dirname, "build");
+const templatesPath = path.resolve(__dirname, "templates");
 
 type RockVersionBranch = {
     prefix: string;
@@ -49,13 +49,10 @@ function rockVersionBranchSorter(a: RockVersionBranch, b: RockVersionBranch): nu
 }
 
 async function cleanBuild(): Promise<void> {
-    const buildPath = path.resolve(path.join(repoPath, "build"));
-
     await fs.promises.rm(buildPath, { recursive: true, force: true });
 }
 
 async function downloadRock(version: RockVersionBranch): Promise<void> {
-    const buildPath = path.resolve(path.join(repoPath, "build"));
     const rockPath = path.resolve(path.join(buildPath, "Rock"));
 
     if (!fs.existsSync(buildPath)) {
@@ -134,7 +131,6 @@ async function selectRockVersion(): Promise<RockVersionBranch> {
 }
 
 async function checkRockVersion(version: RockVersionBranch): Promise<boolean> {
-    const buildPath = path.resolve(path.join(repoPath, "build"));
     const rockPath = path.resolve(path.join(buildPath, "Rock"));
 
     if (!fs.existsSync(rockPath)) {
@@ -147,7 +143,6 @@ async function checkRockVersion(version: RockVersionBranch): Promise<boolean> {
 }
 
 async function resetRockBranch(): Promise<void> {
-    const buildPath = path.resolve(path.join(repoPath, "build"));
     const rockPath = path.resolve(path.join(buildPath, "Rock"));
 
     await simpleGit(rockPath)
@@ -161,7 +156,7 @@ async function resetRockBranch(): Promise<void> {
 }
 
 async function buildObsidian(version: RockVersionBranch): Promise<void> {
-    const rockPath = path.resolve(path.join(repoPath, "build", "Rock"));
+    const rockPath = path.resolve(path.join(buildPath, "Rock"));
     const obsidianPath = path.join(rockPath, "Rock.JavaScript.Obsidian");
 
     let indeterminateBar = new IndeterminateBar("Building Rock.JavaScript.Obsidian");
@@ -183,20 +178,17 @@ async function buildObsidian(version: RockVersionBranch): Promise<void> {
 }
 
 async function prepareObsidianPackage(version: RockVersionBranch): Promise<void> {
-    const frameworkBuildPath = path.join(repoPath,
-        "build",
+    const frameworkBuildPath = path.join(buildPath,
         "Rock",
         "Rock.JavaScript.Obsidian",
         "dist",
         "Framework");
-    const frameworkPath = path.join(repoPath,
-        "build",
+    const frameworkPath = path.join(buildPath,
         "Rock",
         "Rock.JavaScript.Obsidian",
         "Framework");
 
-    const stagingPath = path.join(repoPath,
-        "build",
+    const stagingPath = path.join(buildPath,
         "rock-obsidian-framework");
 
     // Remove the old staging path and create it as empty.
@@ -257,7 +249,7 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
     }
 
     // Read the Vue version from the rock project.
-    const obsidianPackagePath = path.join(repoPath, "build", "Rock", "Rock.JavaScript.Obsidian", "package.json");
+    const obsidianPackagePath = path.join(buildPath, "Rock", "Rock.JavaScript.Obsidian", "package.json");
     const obsidianPackage = JSON.parse(await fs.promises.readFile(obsidianPackagePath, { encoding: "utf-8" })) as PackageJson;
     const vueVersion = obsidianPackage.dependencies!["vue"]
 
@@ -280,12 +272,11 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
 }
 
 async function createObsidianPackage(): Promise<void> {
-    const stagingPath = path.join(repoPath,
-        "build",
+    const stagingPath = path.join(buildPath,
         "rock-obsidian-framework");
 
     const bar = new IndeterminateBar("Packing rock-obsidian-framework");
-    const statusCode = await execute("npm pack", stagingPath);
+    const statusCode = await execute("npm pack --pack-destination ../", stagingPath);
 
     if (statusCode !== 0) {
         bar.fail();
@@ -297,7 +288,7 @@ async function createObsidianPackage(): Promise<void> {
 
 async function main(): Promise<void> {
     const rockVersion = await selectRockVersion();
-    const rockPath = path.resolve(path.join(repoPath, "build", "Rock"));
+    const rockPath = path.resolve(path.join(buildPath, "Rock"));
 
     if (await checkRockVersion(rockVersion)) {
         await resetRockBranch();
