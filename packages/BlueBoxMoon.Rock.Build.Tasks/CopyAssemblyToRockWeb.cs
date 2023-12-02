@@ -10,7 +10,11 @@ using Microsoft.Build.Utilities;
 
 namespace BlueBoxMoon.Rock.Build.Tasks
 {
-    public class CopyToRockWeb : Task
+    /// <summary>
+    /// Copies the specified assembly to the RockWeb bin folder. This will
+    /// also copy any dependencies unless they are Rock dependencies assemblies.
+    /// </summary>
+    public class CopyAssemblyToRockWeb : Task
     {
         /// <summary>
         /// The primary DLL to be copied. All references not also referenced
@@ -69,7 +73,7 @@ namespace BlueBoxMoon.Rock.Build.Tasks
         {
             var destFile = Path.Combine( Path.GetFullPath( Destination ), Path.GetFileName( sourceFile ) );
 
-            File.Copy( sourceFile, destFile );
+            File.Copy( sourceFile, destFile, true );
 
             Log.LogMessage( MessageImportance.High, $"  {sourceFile} => {destFile}" );
         }
