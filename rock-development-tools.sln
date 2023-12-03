@@ -1,0 +1,29 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "packages", "packages", "{A699A3A2-C641-4565-92F7-04151BC2D24E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlueBoxMoon.Rock.Build.Tasks", "packages\BlueBoxMoon.Rock.Build.Tasks\BlueBoxMoon.Rock.Build.Tasks.csproj", "{C343A25A-36DC-4515-ABAB-A55945E95912}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5BB5EF42-2B43-44EF-99CC-69829849161C}
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C343A25A-36DC-4515-ABAB-A55945E95912}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C343A25A-36DC-4515-ABAB-A55945E95912}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C343A25A-36DC-4515-ABAB-A55945E95912}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C343A25A-36DC-4515-ABAB-A55945E95912}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C343A25A-36DC-4515-ABAB-A55945E95912} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
+	EndGlobalSection
+EndGlobal
