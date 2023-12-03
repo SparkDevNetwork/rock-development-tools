@@ -6,9 +6,11 @@ import fs from "fs";
 import { glob } from "glob";
 import { execute } from "./process";
 import { PackageJson } from "type-fest";
+import { msbuild, nuget } from "./vs";
 
-const buildPath = path.resolve(__dirname, "build");
+const buildPath = path.resolve(__dirname, ".staging");
 const templatesPath = path.resolve(__dirname, "templates");
+const distPath = path.resolve(__dirname, "dist");
 
 type RockVersionBranch = {
     prefix: string;
@@ -19,6 +21,12 @@ type RockVersionBranch = {
 
     patch: number;
 };
+
+function ensureDirectory(directoryPath: string): void {
+    if (!fs.existsSync(directoryPath)) {
+        fs.mkdirSync(directoryPath, { recursive: true });
+    }
+}
 
 function rockVersionBranchSorter(a: RockVersionBranch, b: RockVersionBranch): number {
     if (a.major < b.major) {
@@ -55,9 +63,7 @@ async function cleanBuild(): Promise<void> {
 async function downloadRock(version: RockVersionBranch): Promise<void> {
     const rockPath = path.resolve(path.join(buildPath, "Rock"));
 
-    if (!fs.existsSync(buildPath)) {
-        fs.mkdirSync(buildPath);
-    }
+    ensureDirectory(buildPath);
 
     let bar: ProgressBar = new ProgressBar(1, "Downloading Rock");
     let lastStage = "";
@@ -155,21 +161,58 @@ async function resetRockBranch(): Promise<void> {
     });
 }
 
-async function buildObsidian(version: RockVersionBranch): Promise<void> {
+async function buildProject(project: string): Promise<void> {
     const rockPath = path.resolve(path.join(buildPath, "Rock"));
-    const obsidianPath = path.join(rockPath, "Rock.JavaScript.Obsidian");
+    const projectPath = path.join(rockPath, project);
 
-    let indeterminateBar = new IndeterminateBar("Building Rock.JavaScript.Obsidian");
+    const indeterminateBar = new IndeterminateBar(`Building ${project}`);
     indeterminateBar.start();
 
-    let statusCode = await execute("npm ci", obsidianPath);
-    if (statusCode !== 0) {
+    const result = await msbuild([`${project}.csproj`, "/p:Configuration=Release", "/nr:false"], { cwd: projectPath });
+
+    if (!result) {
         indeterminateBar.fail();
         process.exit(1);
     }
 
-    statusCode = await execute("npm run build-framework", obsidianPath);
-    if (statusCode !== 0) {
+    indeterminateBar.success();
+}
+
+async function buildProjects(projects: string[]): Promise<void> {
+    const rockPath = path.resolve(path.join(buildPath, "Rock"));
+
+    const indeterminateBar = new IndeterminateBar("Restoring NuGet packages");
+    indeterminateBar.start();
+
+    const status = await nuget(["restore", "Rock.sln"], { cwd: rockPath });
+
+    if (!status) {
+        indeterminateBar.fail();
+        process.exit(1);
+    }
+
+    indeterminateBar.success();
+
+    for (const project of projects) {
+        await buildProject(project);
+    }
+}
+
+async function buildObsidian(): Promise<void> {
+    const rockPath = path.resolve(path.join(buildPath, "Rock"));
+    const obsidianPath = path.join(rockPath, "Rock.JavaScript.Obsidian");
+
+    const indeterminateBar = new IndeterminateBar("Building Rock.JavaScript.Obsidian");
+    indeterminateBar.start();
+
+    let result = await execute("npm ci", obsidianPath);
+    if (result.exitCode !== 0) {
+        indeterminateBar.fail();
+        process.exit(1);
+    }
+
+    result = await execute("npm run build-framework", obsidianPath);
+    if (result.exitCode !== 0) {
         indeterminateBar.fail();
         process.exit(1);
     }
@@ -206,25 +249,25 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
     // to Rock and should not be used.
     files = files.concat(
         (await glob("**/*.d.ts", { cwd: frameworkBuildPath }))
-        .filter(f => !f.startsWith(`Libs${path.sep}`))
-        .map(f => {
-            return {
-                src: path.join(frameworkBuildPath, f),
-                target: f
-            };
-        })
+            .filter(f => !f.startsWith(`Libs${path.sep}`))
+            .map(f => {
+                return {
+                    src: path.join(frameworkBuildPath, f),
+                    target: f
+                };
+            })
     );
 
     // Get the Types and ViewModels files that aren't copied into the
     // distribution folder but should be part of the package.
     files = files.concat(
         (await glob(["ViewModels/**/*.d.ts", "Types/**/*.d.ts"], { cwd: frameworkPath }))
-        .map(f => {
-            return {
-                src: path.join(frameworkPath, f),
-                target: f
-            };
-        })
+            .map(f => {
+                return {
+                    src: path.join(frameworkPath, f),
+                    target: f
+                };
+            })
     );
 
     if (files.length === 0) {
@@ -239,9 +282,7 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
         const src = file.src;
         const dest = path.join(stagingPath, "types", file.target);
 
-        if (!fs.existsSync(path.dirname(dest))) {
-            await fs.promises.mkdir(path.dirname(dest), { recursive: true });
-        }
+        ensureDirectory(path.dirname(dest));
 
         await fs.promises.copyFile(src, dest);
 
@@ -275,10 +316,13 @@ async function createObsidianPackage(): Promise<void> {
     const stagingPath = path.join(buildPath,
         "rock-obsidian-framework");
 
-    const bar = new IndeterminateBar("Packing rock-obsidian-framework");
-    const statusCode = await execute("npm pack --pack-destination ../", stagingPath);
+    ensureDirectory(distPath);
 
-    if (statusCode !== 0) {
+    const bar = new IndeterminateBar("Packing rock-obsidian-framework");
+    const distRelPath = path.relative(stagingPath, distPath);
+    const result = await execute(`npm pack --pack-destination "${distRelPath}"`, stagingPath);
+
+    if (result.exitCode !== 0) {
         bar.fail();
         process.exit(1);
     }
@@ -305,7 +349,8 @@ async function main(): Promise<void> {
         await downloadRock(rockVersion);
     }
 
-    await buildObsidian(rockVersion);
+    await buildProjects(["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock"]);
+    await buildObsidian();
     await prepareObsidianPackage(rockVersion);
     await createObsidianPackage();
 }

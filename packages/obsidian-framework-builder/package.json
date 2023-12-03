@@ -26,5 +26,9 @@
     "ts-node": "^10.9.1",
     "type-fest": "^4.6.0",
     "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/follow-redirects": "^1.14.4",
+    "follow-redirects": "^1.15.3"
   }
 }

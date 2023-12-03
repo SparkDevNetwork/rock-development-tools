@@ -1,9 +1,21 @@
 import { exec } from "child_process";
 
-export function execute(command: string, cwd: string): Promise<number> {
-    return new Promise<number>((resolve, reject) => {
+export type ProcessStatus = {
+    exitCode: number;
+
+    stdout: string;
+};
+
+export function execute(command: string, cwd: string): Promise<ProcessStatus> {
+    return new Promise<ProcessStatus>((resolve, reject) => {
+        const buffers: string[] = [];
+
         const child = exec(command, {
             cwd
+        });
+
+        child.stdout?.on("data", chunk => {
+            buffers.push(chunk);
         });
 
         child.on("error", (err) => {
@@ -12,12 +24,14 @@ export function execute(command: string, cwd: string): Promise<number> {
 
         child.on("exit", code => {
             if (code !== null) {
-                resolve(code);
+                resolve({
+                    exitCode: code,
+                    stdout: buffers.join("")
+                });
             }
             else {
                 reject(new Error("Unknown exit code from child process."));
             }
         });
     });
-
 }

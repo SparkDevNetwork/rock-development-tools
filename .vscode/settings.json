@@ -1,7 +1,7 @@
 {
+    "dotnet.defaultSolution": "rock-development-tools.sln",
     "xml.format.maxLineWidth": 0,
     "files.exclude": {
-        "packages/obsidian-framework-builder/build": true,
         "**/.git": true,
         "**/.DS_Store": true,
         "**/Thumbs.db": true,

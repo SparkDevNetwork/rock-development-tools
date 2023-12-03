@@ -1,1 +1,3 @@
-/build
+/.staging
+/.cache
+/dist
