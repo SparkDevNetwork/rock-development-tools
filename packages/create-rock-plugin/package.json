@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/blueboxmoon/obsidian-dev-builder.git"
+    "url": "git+https://github.com/blueboxmoon/rock-development-tools.git"
   },
   "keywords": [
     "rockrms",
@@ -28,9 +28,9 @@
   "author": "Daniel Hazelbaker",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/blueboxmoon/obsidian-dev-builder/issues"
+    "url": "https://github.com/blueboxmoon/rock-development-tools/issues"
   },
-  "homepage": "https://github.com/blueboxmoon/obsidian-dev-builder#readme",
+  "homepage": "https://github.com/blueboxmoon/rock-development-tools#readme",
   "devDependencies": {
     "@types/node": "^18.19.0",
     "@types/prompts": "^2.4.9",
