@@ -2,6 +2,7 @@ import prompts from "prompts";
 import fs from "fs";
 import path from "path";
 import { Options } from "./types";
+import { generateProjects } from "./generator";
 
 const supportedRockVersions = [
     "1.16.0"
@@ -49,7 +50,7 @@ async function getOptions(): Promise<Options> {
         },
         {
             type: "select",
-            name: "version",
+            name: "rockVersion",
             message: "Target Rock version",
             choices: supportedRockVersions.map(v => {
                 return {
@@ -115,12 +116,15 @@ async function getOptions(): Promise<Options> {
 
     return {
         ...answers,
+        rockWebPath: answers.rockWebPath.replace(/[\\/]/g, path.sep),
         pluginCode: answers.pluginName.replace(/ /g, "")
     };
 }
 
 async function main(): Promise<void> {
     const options = await getOptions();
+
+    generateProjects(options);
 
     console.log(options);
 }

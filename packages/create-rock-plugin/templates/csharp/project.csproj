@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <RockWebPath>$RockWebPath$</RockWebPath>
+    <CopyToRockWeb>$CopyCSharpToRockWeb$</CopyToRockWeb>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BlueBoxMoon.Rock.Build.Tasks" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>

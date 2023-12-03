@@ -4,10 +4,10 @@
   "description": "An easy way to start a Rock plugin.",
   "type": "module",
   "bin": {
-    "create-rock-plugin": "dist/outfile.cjs"
+    "create-rock-plugin": "index.cjs"
   },
   "files": [
-    "dist/outfile.cjs",
+    "index.cjs",
     "templates"
   ],
   "engines": {

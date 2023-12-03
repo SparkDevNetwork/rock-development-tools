@@ -7,7 +7,7 @@ export type Options = {
 
     pluginCode: string;
 
-    version: string;
+    rockVersion: string;
 
     rockWebPath: string;
 
