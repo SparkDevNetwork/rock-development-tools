@@ -1,6 +1,9 @@
 import { Options } from "./types";
 import fs from "fs";
 import path from "path";
+import { Liquid } from "liquidjs";
+
+const engine = new Liquid();
 
 /**
  * Copies a template file to a destination after replacing any tokens.
@@ -21,16 +24,7 @@ function copyTemplate(source: string[], destination: string[], options: Options)
         rockWebPathPrefix.push("..");
     }
 
-    const content = rawContent
-        .replaceAll("$Organization$", options.organization)
-        .replaceAll("$OrgCode$", options.orgCode)
-        .replaceAll("$PluginName$", options.pluginName)
-        .replaceAll("$PluginCode$", options.pluginCode)
-        .replaceAll("$RockVersion$", options.rockVersion)
-        .replaceAll("$RockWebPath$", path.join(...rockWebPathPrefix, options.rockWebPath).replace(/[\\/]/g, "\\"))
-        .replaceAll("$CopyCSharpToRockWeb$", options.copyCSharpToRockWeb === true ? "True" : "False")
-        .replaceAll("$CreateObsidianProject$", options.createObsidianProject === true ? "True" : "False")
-        .replaceAll("$CopyObsidianToRockWeb$", options.copyObsidianToRockWeb === true ? "True" : "False");
+    const content = engine.parseAndRenderSync(rawContent, options);
     
     fs.writeFileSync(path.join(...destination), content);
 }

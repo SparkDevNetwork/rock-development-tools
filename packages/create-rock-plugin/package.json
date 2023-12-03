@@ -13,7 +13,7 @@
     "node": ">=v18.0.0"
   },
   "scripts": {
-    "build": "node scripts/build.js",
+    "build": "node scripts/build.mjs",
     "execute": "ts-node src/index.ts"
   },
   "repository": {
@@ -34,6 +34,7 @@
     "@types/node": "^18.19.0",
     "@types/prompts": "^2.4.9",
     "esbuild": "^0.19.8",
+    "liquidjs": "^10.9.4",
     "prompts": "^2.4.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"

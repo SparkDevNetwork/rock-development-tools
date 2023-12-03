@@ -1,4 +1,4 @@
-namespace $OrgCode$.$PluginCode$
+namespace {{ orgCode }}.{{ pluginCode }}
 {
     public class Class1
     {

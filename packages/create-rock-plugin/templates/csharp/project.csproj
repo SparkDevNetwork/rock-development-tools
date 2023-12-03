@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <RockWebPath>$RockWebPath$</RockWebPath>
-    <CopyToRockWeb>$CopyCSharpToRockWeb$</CopyToRockWeb>
+    <RockWebPath>{{ rockWebPath }}</RockWebPath>
+    <CopyToRockWeb>{% if copyCSharpToRockWeb %}True{% else %}False{% endif %}</CopyToRockWeb>
   </PropertyGroup>
 
   <ItemGroup>
