@@ -10,7 +10,7 @@ import path from "path";
  * @param options The options provided by the user.
  */
 function copyTemplate(source: string[], destination: string[], options: Options): void {
-    const templatePath = path.join(__dirname, "templates", ...source);
+    const templatePath = path.join(...source);
     const rawContent = fs.readFileSync(templatePath, { encoding: "utf8" });
     const rockWebPathPrefix: string[] = [];
 
@@ -28,7 +28,6 @@ function copyTemplate(source: string[], destination: string[], options: Options)
         .replaceAll("$PluginCode$", options.pluginCode)
         .replaceAll("$RockVersion$", options.rockVersion)
         .replaceAll("$RockWebPath$", path.join(...rockWebPathPrefix, options.rockWebPath).replace(/[\\/]/g, "\\"))
-        .replaceAll("$CreateCSharpProject$", options.createCSharpProject === true ? "True" : "False")
         .replaceAll("$CopyCSharpToRockWeb$", options.copyCSharpToRockWeb === true ? "True" : "False")
         .replaceAll("$CreateObsidianProject$", options.createObsidianProject === true ? "True" : "False")
         .replaceAll("$CopyObsidianToRockWeb$", options.copyObsidianToRockWeb === true ? "True" : "False");
@@ -39,39 +38,46 @@ function copyTemplate(source: string[], destination: string[], options: Options)
 /**
  * Creates the C# project and all related files.
  * 
+ * @param templatesDir The directory that contains all the templates.
  * @param directory The directory to use for the CSharp project.
  * @param options The options entered by the user.
  */
-function createCSharpProject(directory: string, options: Options): void {
+function createCSharpProject(templatesDir: string, directory: string, options: Options): void {
     const projectFilename = `${options.orgCode}.${options.pluginCode}.csproj`;
 
     fs.mkdirSync(directory);
 
-    copyTemplate(["csharp", "project.csproj"], [directory, projectFilename], options);
-    copyTemplate(["csharp", "class1.cs"], [directory, "Class1.cs"], options);
+    copyTemplate([templatesDir, "csharp", "project.csproj"], [directory, projectFilename], options);
+    copyTemplate([templatesDir, "csharp", "class1.cs"], [directory, "Class1.cs"], options);
 }
 
 /**
  * Creates the Obsidian project and all related files.
  * 
+ * @param templatesDir The directory that contains all the templates.
  * @param directory The directory to use for the Obsidian project.
  * @param options The options entered by the user.
  */
-function createObsidianProject(obsidianDirectory: string, options: Options): void {
+function createObsidianProject(templatesDir: string, directory: string, options: Options): void {
     const projectFilename = `${options.orgCode}.${options.pluginCode}.Obsidian.esproj`;
 
+    fs.mkdirSync(directory);
+
+    copyTemplate([templatesDir, "obsidian", "project.esproj"], [directory, projectFilename], options);
+    copyTemplate([templatesDir, "obsidian", "package.json"], [directory, "package.json"], options);
 }
 
 /**
  * Generates all projects specified by the options.
  * 
+ * @param templatesDir The directory that contains all the templates.
  * @param options The options entered by the user.
  */
-export function generateProjects(options: Options): void {
+export function generateProjects(templatesDir: string, options: Options): void {
     const csharpDirectory = `${options.orgCode}.${options.pluginCode}`;
     const obsidianDirectory = `${options.orgCode}.${options.pluginCode}.Obsidian`;
 
-    if (options.createCSharpProject && fs.existsSync(csharpDirectory)) {
+    if (fs.existsSync(csharpDirectory)) {
         process.stdout.write(`Directory ${csharpDirectory} already exists, aborting.\n`);
         process.exit(1);
     }
@@ -81,11 +87,9 @@ export function generateProjects(options: Options): void {
         process.exit(1);
     }
 
-    if (options.createCSharpProject) {
-        createCSharpProject(csharpDirectory, options);
-    }
+    createCSharpProject(templatesDir, csharpDirectory, options);
     
     if (options.createObsidianProject) {
-        createObsidianProject(obsidianDirectory, options);
+        createObsidianProject(templatesDir, obsidianDirectory, options);
     }
 }

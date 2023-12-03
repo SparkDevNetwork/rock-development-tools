@@ -86,20 +86,14 @@ async function getOptions(): Promise<Options> {
         },
         {
             type: "confirm",
-            name: "createCSharpProject",
-            message: "Create C# Project",
+            name: "createObsidianProject",
+            message: "Create Obsidian Project",
             initial: true
         },
         {
             type: (prev, ans) => ans.rockWebPath ? "confirm" : null,
             name: "copyCSharpToRockWeb",
             message: "Copy C# artifacts to RockWeb",
-            initial: true
-        },
-        {
-            type: "confirm",
-            name: "createObsidianProject",
-            message: "Create Obsidian Project",
             initial: true
         },
         {
@@ -121,12 +115,22 @@ async function getOptions(): Promise<Options> {
     };
 }
 
+function getTemplatesDir(): string {
+    if (fs.existsSync(path.resolve(__dirname, "templates"))) {
+        return path.resolve(__dirname, "templates");
+    }
+    else if (fs.existsSync(path.resolve(__dirname, "..", "templates"))) {
+        return path.resolve(__dirname, "..", "templates");
+    }
+    else {
+        throw new Error("Unable to find templates.");
+    }
+}
+
 async function main(): Promise<void> {
     const options = await getOptions();
 
-    generateProjects(options);
-
-    console.log(options);
+    generateProjects(getTemplatesDir(), options);
 }
 
 main();

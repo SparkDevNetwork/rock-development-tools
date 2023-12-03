@@ -11,11 +11,9 @@ export type Options = {
 
     rockWebPath: string;
 
-    createCSharpProject: boolean;
+    createObsidianProject: boolean;
 
     copyCSharpToRockWeb?: boolean;
-
-    createObsidianProject: boolean;
 
     copyObsidianToRockWeb?: boolean;
 };

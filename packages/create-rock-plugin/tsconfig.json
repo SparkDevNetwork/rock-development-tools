@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "target": "ESNext",
-        "module": "ESNext",
+        "module": "CommonJS",
         "esModuleInterop": true,
         "moduleResolution": "Node",
         "forceConsistentCasingInFileNames": true,
@@ -12,9 +12,5 @@
         "node_modules",
         "dist",
         "**/*.test.ts"
-    ],
-    "ts-node": {
-      "esm": true,
-      "experimentalSpecifierResolution": "node"
-    }
+    ]
 }
