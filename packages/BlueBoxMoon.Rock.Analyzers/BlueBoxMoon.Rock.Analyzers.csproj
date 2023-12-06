@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Author>Daniel Hazelbaker</Author>
+    <Description>CSharp Analyzers for Rock Plugin development.</Description>
+    <MinClientVersion>3.6</MinClientVersion>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NuspecFile>$(MSBuildProjectName).nuspec</NuspecFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.5.0" PrivateAssets="all" />
+    <PackageReference Update="NETStandard.Library" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <Target Name="SetNuspecProperties" BeforeTargets="GenerateNuspec">
+    <PropertyGroup>
+      <NuspecProperties>$(NuspecProperties);id=$(AssemblyName)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);targetFramework=$(TargetFramework)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);version=$(PackageVersion)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);description=$(Description)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);authors=$(Authors)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);OutputBinary=$(OutputPath)$(AssemblyName).dll</NuspecProperties>
+    </PropertyGroup>
+  </Target>
+
+</Project>

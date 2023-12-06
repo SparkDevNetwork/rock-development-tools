@@ -6,6 +6,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "packages", "packages", "{A6
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlueBoxMoon.Rock.Build.Tasks", "packages\BlueBoxMoon.Rock.Build.Tasks\BlueBoxMoon.Rock.Build.Tasks.csproj", "{C343A25A-36DC-4515-ABAB-A55945E95912}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlueBoxMoon.Rock.Analyzers", "packages\BlueBoxMoon.Rock.Analyzers\BlueBoxMoon.Rock.Analyzers.csproj", "{604475F8-E37E-484D-B5A7-B8C6C49A7ED0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,8 +24,13 @@ Global
 		{C343A25A-36DC-4515-ABAB-A55945E95912}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C343A25A-36DC-4515-ABAB-A55945E95912}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C343A25A-36DC-4515-ABAB-A55945E95912}.Release|Any CPU.Build.0 = Release|Any CPU
+		{604475F8-E37E-484D-B5A7-B8C6C49A7ED0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{604475F8-E37E-484D-B5A7-B8C6C49A7ED0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{604475F8-E37E-484D-B5A7-B8C6C49A7ED0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{604475F8-E37E-484D-B5A7-B8C6C49A7ED0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C343A25A-36DC-4515-ABAB-A55945E95912} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
+		{604475F8-E37E-484D-B5A7-B8C6C49A7ED0} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
 	EndGlobalSection
 EndGlobal
