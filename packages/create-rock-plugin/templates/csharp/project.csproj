@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="BlueBoxMoon.Rock.Build.Tasks" Version="1.0.0" />
+    <PackageReference Include="BlueBoxMoon.Rock.Analyzers" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
