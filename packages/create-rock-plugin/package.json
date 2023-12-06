@@ -1,6 +1,6 @@
 {
   "name": "@blueboxmoon/create-rock-plugin",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "An easy way to start a Rock plugin.",
   "bin": {
     "create-rock-plugin": "index.cjs"
