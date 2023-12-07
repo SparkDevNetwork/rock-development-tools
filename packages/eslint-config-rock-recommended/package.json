@@ -1,0 +1,25 @@
+{
+  "name": "@blueboxmoon/eslint-config-rock-recommended",
+  "version": "1.0.0",
+  "description": "Recommended ESLint rules for Rock plugins.",
+  "main": "index.js",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blueboxmoon/rock-development-tools.git"
+  },
+  "keywords": [
+    "rockrms",
+    "eslint"
+  ],
+  "author": "Daniel Hazelbaker",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/blueboxmoon/rock-development-tools/issues"
+  },
+  "homepage": "https://github.com/blueboxmoon/rock-development-tools#readme",
+  "peerDependencies": {
+    "eslint": ">= 3"
+  }
+}
