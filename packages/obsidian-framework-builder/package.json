@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@types/follow-redirects": "^1.14.4",
-    "follow-redirects": "^1.15.3"
+    "follow-redirects": "^1.15.3",
+    "liquidjs": "^10.9.4"
   }
 }

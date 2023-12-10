@@ -7,10 +7,12 @@ import { glob } from "glob";
 import { execute } from "./process";
 import { PackageJson } from "type-fest";
 import { msbuild, nuget } from "./vs";
+import { Liquid } from "liquidjs";
 
 const buildPath = path.resolve(__dirname, ".staging");
 const templatesPath = path.resolve(__dirname, "templates");
 const distPath = path.resolve(__dirname, "dist");
+const engine = new Liquid();
 
 type RockVersionBranch = {
     prefix: string;
@@ -312,6 +314,23 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
     bar.success();
 }
 
+async function copyTextTemplate(source: string, destination: string, version: RockVersionBranch): Promise<void> {
+    const rawText = await fs.promises.readFile(source, "utf8");
+
+    const text = await engine.parseAndRender(rawText, { rockVersion: `${version.major}.${version.minor}.${version.patch}`});
+
+    await fs.promises.writeFile(destination, text);
+}
+
+async function prepareNugetPackages(version: RockVersionBranch, projects: string[]): Promise<void> {
+    await fs.promises.copyFile(path.join(templatesPath, "Icon.png"), path.join(buildPath, "Icon.png"));
+    await fs.promises.copyFile(path.join(templatesPath, "LICENSE.md"), path.join(buildPath, "LICENSE.md"));
+
+    for (const project of projects) {
+        await copyTextTemplate(path.join(templatesPath, `${project}.nuspec`), path.join(buildPath, `${project}.nuspec`), version);
+    }
+}
+
 async function createObsidianPackage(): Promise<void> {
     const stagingPath = path.join(buildPath,
         "rock-obsidian-framework");
@@ -319,6 +338,8 @@ async function createObsidianPackage(): Promise<void> {
     ensureDirectory(distPath);
 
     const bar = new IndeterminateBar("Packing rock-obsidian-framework");
+    bar.start();
+
     const distRelPath = path.relative(stagingPath, distPath);
     const result = await execute(`npm pack --pack-destination "${distRelPath}"`, stagingPath);
 
@@ -328,6 +349,30 @@ async function createObsidianPackage(): Promise<void> {
     }
 
     bar.success();
+}
+
+async function createNugetPackage(project: string): Promise<void> {
+    const bar = new IndeterminateBar(`Packing ${project}`);
+
+    bar.start();
+
+    const result = await nuget([
+        "pack",
+        `${project}.nuspec`
+    ], { cwd: buildPath });
+
+    if (!result) {
+        bar.fail();
+        process.exit(1);
+    }
+
+    bar.success();
+}
+
+async function createNugetPackages(projects: string[]): Promise<void> {
+    for (const project of projects) {
+        await createNugetPackage(project);
+    }
 }
 
 async function main(): Promise<void> {
@@ -349,9 +394,13 @@ async function main(): Promise<void> {
         await downloadRock(rockVersion);
     }
 
-    await buildProjects(["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock"]);
+    await buildProjects(["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock.Lava.Shared", "Rock"]);
     await buildObsidian();
+
+    await prepareNugetPackages(rockVersion, ["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock.Lava.Shared", "Rock"]);
     await prepareObsidianPackage(rockVersion);
+
+    await createNugetPackages(["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock.Lava.Shared", "Rock"]);
     await createObsidianPackage();
 }
 

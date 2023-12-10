@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+    <id>RockRMS.Rock.Lava.Shared</id>
+    <version>{{ rockVersion }}</version>
+    <authors>Spark Development Network</authors>
+    <license type="file">LICENSE.md</license>
+    <icon>Icon.png</icon>
+    <projectUrl>https://www.rockrms.com/</projectUrl>
+    <description>The shared lava types for plugin development.</description>
+    <repository type="git" url="https://github.com/SparkDevNetwork/Rock" />
+    <dependencies>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="LICENSE.md" target="" />
+    <file src="Icon.png" target="" />
+    <file src="Rock\Rock.Lava.Shared\bin\Release\Rock.Lava.Shared.dll" target="lib\net472" />
+  </files>
+</package>
