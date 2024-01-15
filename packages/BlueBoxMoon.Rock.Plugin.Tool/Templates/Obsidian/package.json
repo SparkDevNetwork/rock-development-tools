@@ -1,0 +1,11 @@
+{
+  "name": "{{ OrganizationCode }}.{{ PluginCode | downcase }}.obsidian",
+  "private": true,
+  "scripts": {
+    "build": "tsc --build && rollup --config rollup.config.cjs",
+    "clean": "tsc --build --clean"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2"
+  }
+}
