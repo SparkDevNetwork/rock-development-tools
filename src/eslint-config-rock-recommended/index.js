@@ -39,6 +39,12 @@ module.exports = {
                 format: ["camelCase"]
             },
 
+            // Imports can use either camelCase or PascalCase.
+            {
+                selector: ["import"],
+                format: ["camelCase", "PascalCase"]
+            },
+
             // Variables and parameters that are unused may also be prefixed with an underscore.
             {
                 selector: ["variable", "parameter"],
