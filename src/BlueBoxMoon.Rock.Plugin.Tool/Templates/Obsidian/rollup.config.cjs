@@ -8,7 +8,7 @@ const pluginsPath = path.join(workspacePath, "{{ RockWebPath | replace:'\\','/' 
 
 const configs = [
     ...defineConfigs(srcPath, outPath, {
-{% if Copy == true %}        copy: pluginsPath{% endif %}
+        {% if Copy != true %}// {% endif %}copy: pluginsPath
     })
 ];
 

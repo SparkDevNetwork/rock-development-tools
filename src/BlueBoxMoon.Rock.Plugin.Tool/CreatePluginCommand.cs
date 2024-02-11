@@ -94,10 +94,18 @@ class CreatePluginCommand
 
         Directory.CreateDirectory( directory );
 
-        await CopyTemplateAsync( "Obsidian.project.esproj", [directory, projectFilename] );
-        await CopyTemplateAsync( "Obsidian.package.json", [directory, "package.json"] );
-        await CopyTemplateAsync( "Obsidian.rollup.config.cjs", [directory, "rollup.config.cjs"]);
+        await CopyTemplateAsync( "Obsidian.eslingrc.json", [directory, ".eslintrc.json"] );
         await CopyTemplateAsync( "Obsidian.gitignore", [directory, ".gitignore"]);
+        await CopyTemplateAsync( "Obsidian.package.json", [directory, "package.json"] );
+        await CopyTemplateAsync( "Obsidian.project.esproj", [directory, projectFilename] );
+        await CopyTemplateAsync( "Obsidian.rollup.config.cjs", [directory, "rollup.config.cjs"]);
+        await CopyTemplateAsync( "Obsidian.tsconfig.base.json", [directory, "tsconfig.base.json"] );
+
+        await CopyTemplateAsync( "Obsidian.src.shims-obs.d.ts", [directory, "src", "shims-obs.d.ts"] );
+        await CopyTemplateAsync( "Obsidian.src.tsconfig.json", [directory, "src", "tsconfig.json"] );
+
+        await CopyTemplateAsync( "Obsidian.tests.sample.spec.ts", [directory, "tests", "sample.spec.ts"] );
+        await CopyTemplateAsync( "Obsidian.tests.tsconfig.json", [directory, "tests", "tsconfig.json"] );
 
         return null;
     }
