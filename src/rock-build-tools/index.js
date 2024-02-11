@@ -147,7 +147,7 @@ function createVirtualNestedIndex(indexes, sourcePath) {
 function defineConfigs(sourcePath, outputPath, options) {
     options = options || {};
 
-    const files = glob.sync(sourcePath + "/**/*.@(ts|obs)")
+    const files = glob.sync(sourcePath.replace(/\\/g, "/") + "/**/*.@(ts|obs)")
         .map(f => path.normalize(f).substring(sourcePath.length + 1))
         .filter(f => !f.endsWith(".d.ts") && !f.endsWith(".partial.ts") && !f.endsWith(".partial.obs"));
 

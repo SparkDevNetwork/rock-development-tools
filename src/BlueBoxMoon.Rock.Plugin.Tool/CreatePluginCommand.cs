@@ -79,7 +79,7 @@ class CreatePluginCommand
 
         await CopyTemplateAsync( "CSharp.project.csproj", [directory, projectFilename] );
         await CopyTemplateAsync( "CSharp.Class1.cs", [directory, "Class1.cs"] );
-        await CopyTemplateAsync( "CSharp.gitignore", [directory, ".gitignore.cs"]);
+        await CopyTemplateAsync( "CSharp.gitignore", [directory, ".gitignore"]);
 
         return null;
     }
