@@ -22,6 +22,8 @@ type RockVersionBranch = {
     minor: number;
 
     patch: number;
+
+    suffix?: string;
 };
 
 function ensureDirectory(directoryPath: string): void {
@@ -125,17 +127,28 @@ async function selectRockVersion(): Promise<RockVersionBranch> {
         {
             type: "select",
             name: "version",
-            message: "Build which version of Rock?",
+            message: "Build which version of Rock",
             choices: versions.map(v => ({
                 title: `${v.major}.${v.minor}.${v.patch}`,
                 value: v
             }))
+        },
+        {
+            type: "text",
+            name: "suffix",
+            message: "Optional pre-release suffix",
+            validate(value) {
+                return value && value.startsWith("-") ? "Do not include leading -" : true;
+            }
         }
     ]);
 
     process.stdout.write("\n");
 
-    return answers.version;
+    return {
+        ...answers.version,
+        suffix: answers.suffix
+    };
 }
 
 async function checkRockVersion(version: RockVersionBranch): Promise<boolean> {
@@ -316,8 +329,13 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
 
 async function copyTextTemplate(source: string, destination: string, version: RockVersionBranch): Promise<void> {
     const rawText = await fs.promises.readFile(source, "utf8");
+    let rockVersion = `${version.major}.${version.minor}.${version.patch}`;
 
-    const text = await engine.parseAndRender(rawText, { rockVersion: `${version.major}.${version.minor}.${version.patch}`});
+    if (version.suffix) {
+        rockVersion = `${rockVersion}-${version.suffix}`;
+    }
+
+    const text = await engine.parseAndRender(rawText, { rockVersion });
 
     await fs.promises.writeFile(destination, text);
 }
