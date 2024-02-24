@@ -26,7 +26,7 @@
         "ES2020.Symbol.WellKnown"
       ],
       "paths": {
-        "@Obsidian/*": [ "./node_modules/@blueboxmoon/obsidian-framework/types/*" ]
+        "@Obsidian/*": [ "./node_modules/@rockrms/obsidian-framework/types/*" ]
       }
     },
     "vueCompilerOptions": {

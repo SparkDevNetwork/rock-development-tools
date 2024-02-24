@@ -7,7 +7,7 @@
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
-        "@blueboxmoon/eslint-config-rock-recommended"
+        "@rockrms/eslint-config-rock-recommended"
     ],
     "env": {
         "browser": true,

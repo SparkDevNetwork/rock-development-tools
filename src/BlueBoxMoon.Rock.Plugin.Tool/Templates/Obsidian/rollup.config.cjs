@@ -1,5 +1,5 @@
 const path = require("path");
-const { defineConfigs } = require("@blueboxmoon/obsidian-build-tools");
+const { defineConfigs } = require("@rockrms/obsidian-build-tools");
 
 const workspacePath = path.resolve(__dirname);
 const srcPath = path.join(workspacePath, "src");
