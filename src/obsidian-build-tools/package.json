@@ -1,0 +1,36 @@
+{
+    "name": "@rockrms/obsidian-build-tools",
+    "version": "1.0.0",
+    "description": "Tools to help with building Obsidian plugins for Rock.",
+    "scripts": {
+        "main": "ts-node main.ts"
+    },
+    "bin": {
+        "obs-tsc": "./obs-tsc.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/SparkDevNetwork/rock-development-tools.git"
+    },
+    "author": "Daniel Hazelbaker",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/SparkDevNetwork/rock-development-tools/issues"
+    },
+    "homepage": "https://github.com/SparkDevNetwork/rock-development-tools#readme",
+    "dependencies": {
+        "@rollup/plugin-babel": "^6.0.4",
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "cssnano": "^6.0.1",
+        "glob": "^10.3.10",
+        "rollup": "^2.79.1",
+        "rollup-plugin-copy": "^3.5.0",
+        "rollup-plugin-postcss": "^4.0.2",
+        "rollup-plugin-terser": "^7.0.2",
+        "rollup-plugin-vue": "^6.0.0",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.2.2",
+        "vue-tsc": "^1.8.27"
+    }
+}
