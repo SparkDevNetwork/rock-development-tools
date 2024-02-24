@@ -358,7 +358,9 @@ async function createNugetPackage(project: string): Promise<void> {
 
     const result = await nuget([
         "pack",
-        `${project}.nuspec`
+        `${project}.nuspec`,
+        "-OutputDirectory",
+        distPath
     ], { cwd: buildPath });
 
     if (!result) {

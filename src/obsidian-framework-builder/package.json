@@ -7,14 +7,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/blueboxmoon/obsidian-dev-builder.git"
+    "url": "git+https://github.com/SparkDevNetwork/rock-development-tools.git"
   },
-  "author": "Daniel Hazelbaker",
+  "author": "Spark Development Network",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/blueboxmoon/obsidian-dev-builder/issues"
+    "url": "https://github.com/SparkDevNetwork/rock-development-tools/issues"
   },
-  "homepage": "https://github.com/blueboxmoon/obsidian-dev-builder#readme",
+  "homepage": "https://github.com/SparkDevNetwork/rock-development-tools#readme",
   "dependencies": {
     "@types/cli-progress": "^3.11.4",
     "@types/prompts": "^2.4.7",

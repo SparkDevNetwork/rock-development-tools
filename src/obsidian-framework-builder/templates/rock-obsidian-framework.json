@@ -1,9 +1,9 @@
 {
-    "name": "@blueboxmoon/obsidian-framework",
+    "name": "@rockrms/obsidian-framework",
     "description": "Type definitions to allow building a plugin against the Obsidian framework.",
     "scripts": {},
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/BlueBoxMoon/obsidian-dev-builder.git"
+        "url": "git+https://github.com/SparkDevNetwork/Rock.git"
     }
 }

@@ -1,5 +1,5 @@
 {
-    "name": "@blueboxmoon/obsidian-build-tools",
+    "name": "@rockrms/obsidian-build-tools",
     "version": "1.0.0",
     "description": "Tools to help with building Obsidian plugins for Rock.",
     "scripts": {
@@ -10,14 +10,14 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/blueboxmoon/obsidian-dev-builder.git"
+        "url": "git+https://github.com/SparkDevNetwork/rock-development-tools.git"
     },
     "author": "Daniel Hazelbaker",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/blueboxmoon/obsidian-dev-builder/issues"
+        "url": "https://github.com/SparkDevNetwork/rock-development-tools/issues"
     },
-    "homepage": "https://github.com/blueboxmoon/obsidian-dev-builder#readme",
+    "homepage": "https://github.com/SparkDevNetwork/rock-development-tools#readme",
     "dependencies": {
         "@rollup/plugin-babel": "^6.0.4",
         "@rollup/plugin-commonjs": "^25.0.7",

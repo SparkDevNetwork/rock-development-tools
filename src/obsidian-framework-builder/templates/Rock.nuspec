@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
   <metadata>
-    <id>RockRMS.Rock.ViewModels</id>
+    <id>SparkDevelopmentNetwork.Rock.ViewModels</id>
     <version>{{ rockVersion }}</version>
     <authors>Spark Development Network</authors>
     <license type="file">LICENSE.md</license>
@@ -11,10 +11,10 @@
     <repository type="git" url="https://github.com/SparkDevNetwork/Rock" />
     <dependencies>
       <dependency id="EntityFramework" version="6.4.4" />
-      <dependency id="RockRMS.Rock.Common" version="{{ rockVersion }}" />
-      <dependency id="RockRMS.Rock.Enums" version="{{ rockVersion }}" />
-      <dependency id="RockRMS.Rock.Lava.Shared" version="{{ rockVersion }}" />
-      <dependency id="RockRMS.Rock.ViewModels" version="{{ rockVersion }}" />
+      <dependency id="SparkDevelopmentNetwork.Rock.Common" version="{{ rockVersion }}" />
+      <dependency id="SparkDevelopmentNetwork.Rock.Enums" version="{{ rockVersion }}" />
+      <dependency id="SparkDevelopmentNetwork.Rock.Lava.Shared" version="{{ rockVersion }}" />
+      <dependency id="SparkDevelopmentNetwork.Rock.ViewModels" version="{{ rockVersion }}" />
     </dependencies>
   </metadata>
   <files>
