@@ -8,6 +8,7 @@ import { execute } from "./process";
 import { PackageJson } from "type-fest";
 import { msbuild, nuget } from "./vs";
 import { Liquid } from "liquidjs";
+import semver, { SemVer } from "semver";
 
 const buildPath = path.resolve(__dirname, ".staging");
 const templatesPath = path.resolve(__dirname, "templates");
@@ -15,48 +16,16 @@ const distPath = path.resolve(__dirname, "dist");
 const engine = new Liquid();
 
 type RockVersionBranch = {
-    prefix: string;
+    commit: string;
 
-    major: number;
+    tag: string;
 
-    minor: number;
-
-    patch: number;
-
-    suffix?: string;
+    semver: SemVer;
 };
 
 function ensureDirectory(directoryPath: string): void {
     if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
-    }
-}
-
-function rockVersionBranchSorter(a: RockVersionBranch, b: RockVersionBranch): number {
-    if (a.major < b.major) {
-        return -1;
-    }
-    else if (a.major > b.major) {
-        return 1;
-    }
-    else {
-        if (a.minor < b.minor) {
-            return -1;
-        }
-        else if (a.minor > b.minor) {
-            return 1;
-        }
-        else {
-            if (a.patch < b.patch) {
-                return -1;
-            }
-            else if (a.patch > b.patch) {
-                return 1;
-            }
-            else {
-                return 0;
-            }
-        }
     }
 }
 
@@ -85,33 +54,81 @@ async function downloadRock(version: RockVersionBranch): Promise<void> {
         "--depth",
         "1",
         "--branch",
-        `${version.prefix}-${version.major}.${version.minor}.${version.patch}`
+        version.tag
     ]);
 
     bar.success();
 }
 
+function splitVersionSuffix(suffix: string): string {
+    const components: string[] = [];
+    let component = "";
+
+    for (let i = 0; i < suffix.length; i++) {
+        const chunk = suffix.substring(i, i + 1);
+
+        if (chunk === "." || chunk === "-") {
+            if (component.length > 0) {
+                components.push(component);
+            }
+            component = "";
+        }
+        else if (component.length === 0) {
+            component = chunk;
+        }
+        else {
+            if (/^[0-9]/.test(component) === /^[0-9]/.test(chunk)) {
+                component = `${component}${chunk}`;
+            }
+            else {
+                components.push(component);
+                component = chunk;
+            }
+        }
+    }
+
+    if (component.length > 0) {
+        components.push(component);
+    }
+
+    return components.join(".");
+}
+
 async function selectRockVersion(): Promise<RockVersionBranch> {
     const remoteData = await simpleGit().listRemote([
         "https://github.com/SparkDevNetwork/Rock",
-        "refs/heads/release-*",
-        "refs/heads/hotfix-*"
+        "refs/tags/[0-9]*.*"
     ]);
 
     const versions: RockVersionBranch[] = [];
-    const regex = /refs\/heads\/(hotfix|release)\-(\d+)\.(\d+)\.(\d+)/gmi;
+    const regex = /([a-f0-9]+)\s+refs\/tags\/((\d+)\.(\d+)\.(\d+)([\.-].*)?)/gmi;
     let match = regex.exec(remoteData);
     while (match) {
+        // Skip older versions that are not supported.
+        if (parseInt(match[3]) < 1 || (parseInt(match[3]) === 1 && parseInt(match[4]) < 16)) {
+            match = regex.exec(remoteData);
+            continue;
+        }
+
+        const versionString = match[6] === undefined
+            ? `${match[3]}.${match[4]}.${match[5]}`
+            : `${match[3]}.${match[4]}.${match[5]}-rc.${splitVersionSuffix(match[6])}`;
+
+        const ver = semver.parse(versionString);
+
+        if (!ver) {
+            match = regex.exec(remoteData);
+            continue;
+        }
+
         const version: RockVersionBranch = {
-            prefix: match[1],
-            major: parseInt(match[2]),
-            minor: parseInt(match[3]),
-            patch: parseInt(match[4])
+            commit: match[1],
+            tag: match[2],
+            semver: ver
         };
 
-        if (version.major > 1 || (version.major === 1 && version.minor >= 16)) {
-            versions.push(version);
-        }
+        console.log(version);
+        versions.push(version);
 
         match = regex.exec(remoteData);
     }
@@ -121,7 +138,7 @@ async function selectRockVersion(): Promise<RockVersionBranch> {
         process.exit(1);
     }
 
-    versions.sort(rockVersionBranchSorter).reverse();
+    versions.sort((a, b) => semver.compareBuild(a.semver, b.semver)).reverse();
 
     const answers = await prompts([
         {
@@ -129,26 +146,46 @@ async function selectRockVersion(): Promise<RockVersionBranch> {
             name: "version",
             message: "Build which version of Rock",
             choices: versions.map(v => ({
-                title: `${v.major}.${v.minor}.${v.patch}`,
+                title: v.semver.version,
                 value: v
             }))
         },
         {
             type: "text",
-            name: "suffix",
-            message: "Optional pre-release suffix",
-            validate(value) {
-                return value && value.startsWith("-") ? "Do not include leading -" : true;
-            }
+            name: "prerelease",
+            message: "Pre-release suffix",
+            initial(prev, values) { return values.version.semver.prerelease.join("."); }
         }
     ]);
 
     process.stdout.write("\n");
 
-    return {
-        ...answers.version,
-        suffix: answers.suffix
+    if (!answers.version) {
+        process.exit(1);
+    }
+
+    const selectedVersion: RockVersionBranch = answers.version;
+    let finalVersionString = `${selectedVersion.semver.major}.${selectedVersion.semver.minor}.${selectedVersion.semver.patch}`;
+
+    if (answers.prerelease !== "") {
+        const tmpVersion = `0.0.0-${answers.prerelease}`;
+        finalVersionString = `${finalVersionString}-${semver.prerelease(tmpVersion)?.join(".")}`;
+    }
+
+    const finalSemVer = semver.parse(finalVersionString);
+
+    if (!finalSemVer) {
+        process.stderr.write(`Unable to parse final version number '${finalVersionString}'.\n`);
+        process.exit(1);
+    }
+
+    const finalVersion: RockVersionBranch = {
+        commit: answers.version.commit,
+        tag: answers.version.tag,
+        semver: finalSemVer
     };
+
+    return finalVersion;
 }
 
 async function checkRockVersion(version: RockVersionBranch): Promise<boolean> {
@@ -158,9 +195,9 @@ async function checkRockVersion(version: RockVersionBranch): Promise<boolean> {
         return false;
     }
 
-    const localBranchResponse = await simpleGit(rockPath).branchLocal();
+    const currentCommit = await simpleGit(rockPath).revparse("HEAD");
 
-    return localBranchResponse.current === `${version.prefix}-${version.major}.${version.minor}.${version.patch}`;
+    return currentCommit === version.commit;
 }
 
 async function resetRockBranch(): Promise<void> {
@@ -309,13 +346,16 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
     const obsidianPackage = JSON.parse(await fs.promises.readFile(obsidianPackagePath, { encoding: "utf-8" })) as PackageJson;
     const vueVersion = obsidianPackage.dependencies!["vue"]
 
+    // Get the version number to write.
+    const packageVersion = version.semver.version;
+
     // Create the package.json file.
     const templateJson = await fs.promises.readFile(path.join(templatesPath, "rock-obsidian-framework.json"), {
         encoding: "utf-8"
     });
     const template = JSON.parse(templateJson) as PackageJson;
 
-    template.version = `${version.minor}.${version.patch}.0`;
+    template.version = packageVersion;
     template.peerDependencies ??= {};
     template.peerDependencies["vue"] = vueVersion;
 
@@ -329,11 +369,7 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
 
 async function copyTextTemplate(source: string, destination: string, version: RockVersionBranch): Promise<void> {
     const rawText = await fs.promises.readFile(source, "utf8");
-    let rockVersion = `${version.major}.${version.minor}.${version.patch}`;
-
-    if (version.suffix) {
-        rockVersion = `${rockVersion}-${version.suffix}`;
-    }
+    let rockVersion = version.semver.version;
 
     const text = await engine.parseAndRender(rawText, { rockVersion });
 
