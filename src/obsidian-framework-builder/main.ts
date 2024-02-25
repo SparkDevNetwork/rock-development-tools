@@ -127,7 +127,6 @@ async function selectRockVersion(): Promise<RockVersionBranch> {
             semver: ver
         };
 
-        console.log(version);
         versions.push(version);
 
         match = regex.exec(remoteData);
