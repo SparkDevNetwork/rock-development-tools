@@ -3,7 +3,7 @@
         Name="CopyAssemblyToRockWeb"
         AfterTargets="CopyFilesToOutputDirectory"
         Condition="'$(CopyToRockWeb)' == 'True' and '$(RockWebPath)' != '' and '$(TargetFramework)' == 'net472'">
-        <SparkDevelopmentNetwork.Rock.Build.Tasks.CopyAssemblyToRockWeb
+        <RockRMS.Rock.Build.Tasks.CopyAssemblyToRockWeb
             Source="$(TargetDir)$(TargetFileName)"
             Destination="$(RockWebPath)\Bin" />
     </Target>

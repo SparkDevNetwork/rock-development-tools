@@ -6,7 +6,7 @@ using Semver;
 
 using Sharprompt;
 
-namespace SparkDevelopmentNetwork.Rock.Plugin.Tool;
+namespace RockRMS.Rock.Plugin.Tool;
 
 /// <summary>
 /// Handler for the Create command.
@@ -120,7 +120,7 @@ class CreatePluginCommand
     /// <param name="destination">The array of destination path components.</param>
     private async Task CopyTemplateAsync( string sourceName, string[] destination )
     {
-        using var stream = GetType().Assembly.GetManifestResourceStream( $"SparkDevelopmentNetwork.Rock.Plugin.Tool.Templates.{sourceName}" )
+        using var stream = GetType().Assembly.GetManifestResourceStream( $"RockRMS.Rock.Plugin.Tool.Templates.{sourceName}" )
             ?? throw new ArgumentOutOfRangeException( nameof( sourceName ), $"Template {sourceName} not found" );
         using var textStream = new StreamReader( stream );
         var rawContent = await textStream.ReadToEndAsync();

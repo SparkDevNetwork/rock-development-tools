@@ -4,7 +4,7 @@ using System.CommandLine.Parsing;
 
 using Semver;
 
-namespace SparkDevelopmentNetwork.Rock.Plugin.Tool;
+namespace RockRMS.Rock.Plugin.Tool;
 
 /// <summary>
 /// The root command handler to process the command line arguments.

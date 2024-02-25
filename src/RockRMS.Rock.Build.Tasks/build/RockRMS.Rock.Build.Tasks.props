@@ -1,15 +1,15 @@
 <Project>
     <PropertyGroup Condition="'$(MSBuildRuntimeType)' != 'Core'">
-        <RockBuildTasksAssemblyFile>$(MSBuildThisFileDirectory)..\tasks\net472\SparkDevelopmentNetwork.Rock.Build.Tasks.dll</RockBuildTasksAssemblyFile>
+        <RockBuildTasksAssemblyFile>$(MSBuildThisFileDirectory)..\tasks\net472\RockRMS.Rock.Build.Tasks.dll</RockBuildTasksAssemblyFile>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(MSBuildRuntimeType)' == 'Core'">
-        <RockBuildTasksAssemblyFile Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net6.0\SparkDevelopmentNetwork.Rock.Build.Tasks.dll</RockBuildTasksAssemblyFile>
+        <RockBuildTasksAssemblyFile Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net6.0\RockRMS.Rock.Build.Tasks.dll</RockBuildTasksAssemblyFile>
     </PropertyGroup>
 
     <!-- Tasks -->
     <UsingTask
-        TaskName="SparkDevelopmentNetwork.Rock.Build.Tasks.CopyAssemblyToRockWeb"
+        TaskName="RockRMS.Rock.Build.Tasks.CopyAssemblyToRockWeb"
         AssemblyFile="$(RockBuildTasksAssemblyFile)" />
 
     <!-- Defined default property values. -->

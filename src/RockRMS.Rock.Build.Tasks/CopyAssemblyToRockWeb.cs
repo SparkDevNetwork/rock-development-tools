@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-namespace SparkDevelopmentNetwork.Rock.Build.Tasks
+namespace RockRMS.Rock.Build.Tasks
 {
     /// <summary>
     /// Copies the specified assembly to the RockWeb bin folder. This will

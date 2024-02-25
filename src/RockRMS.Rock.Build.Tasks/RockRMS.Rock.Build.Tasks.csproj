@@ -5,7 +5,7 @@
 
     <IsPackable>true</IsPackable>
     <Version>1.0.0</Version>
-    <Title>SparkDevelopmentNetwork.Rock.Build.Tasks</Title>
+    <Title>RockRMS.Rock.Build.Tasks</Title>
     <Authors>Spark Development Network</Authors>
     <Description>MSBuild tasks for Rock RMS projects.</Description>
     <Copyright>Copyright © Spark Development Network 2023</Copyright>
@@ -16,8 +16,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="build\SparkDevelopmentNetwork.Rock.Build.Tasks.props" PackagePath="build\" />
-    <Content Include="build\SparkDevelopmentNetwork.Rock.Build.Tasks.targets" PackagePath="build\" />
+    <Content Include="build\RockRMS.Rock.Build.Tasks.props" PackagePath="build\" />
+    <Content Include="build\RockRMS.Rock.Build.Tasks.targets" PackagePath="build\" />
   </ItemGroup>
 
   <ItemGroup>
