@@ -363,6 +363,7 @@ async function prepareObsidianPackage(version: RockVersionBranch): Promise<void>
 
     // Copy additional template files that don't need translation.
     await fs.promises.copyFile(path.join(templatesPath, "tsconfig.base.json"), path.join(stagingPath, "tsconfig.base.json"));
+    await fs.promises.copyFile(path.join(templatesPath, "LICENSE.md"), path.join(stagingPath, "LICENSE.md"));
 
     bar.success();
 }
