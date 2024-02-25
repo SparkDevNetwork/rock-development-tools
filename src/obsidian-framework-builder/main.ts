@@ -153,13 +153,14 @@ async function selectRockVersion(): Promise<RockVersionBranch> {
             type: "text",
             name: "prerelease",
             message: "Pre-release suffix",
-            initial(prev, values) { return values.version.semver.prerelease.join("."); }
+            initial(prev, values) { return values.version.semver.prerelease.join("."); },
+            validate(value) { return value === "" || !value.startsWith("-") ? true : "Do not start with dash."; }
         }
     ]);
 
     process.stdout.write("\n");
 
-    if (!answers.version) {
+    if (!answers.version || answers.prerelease === undefined) {
         process.exit(1);
     }
 
