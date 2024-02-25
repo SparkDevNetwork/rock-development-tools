@@ -9,5 +9,5 @@ class Support
     /// A list of the supported Rock versions that can be used when generating
     /// a new plugin.
     /// </summary>
-    public static readonly string[] SupportedRockVersions = ["1.16.0"];
+    public static readonly string[] SupportedRockVersions = ["1.16.3-alpha.1"];
 }

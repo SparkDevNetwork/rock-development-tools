@@ -2,6 +2,8 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 
+using Semver;
+
 namespace SparkDevelopmentNetwork.Rock.Plugin.Tool;
 
 /// <summary>
@@ -69,7 +71,7 @@ class CommandHandler
                 Copy = context.ParseResult.GetValueForOption( copyOption )
             };
 
-            if ( Version.TryParse( context.ParseResult.GetValueForOption( rockVersionOption ), out var version ) )
+            if ( SemVersion.TryParse( context.ParseResult.GetValueForOption( rockVersionOption ), SemVersionStyles.Strict, out var version ) )
             {
                 commandOptions.RockVersion = version;
             }

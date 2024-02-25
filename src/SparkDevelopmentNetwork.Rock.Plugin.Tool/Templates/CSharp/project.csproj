@@ -9,6 +9,7 @@
     <ItemGroup>
       <PackageReference Include="SparkDevelopmentNetwork.Rock.Build.Tasks" Version="1.0.0" />
       <PackageReference Include="SparkDevelopmentNetwork.Rock.Analyzers" Version="1.0.0" />
+      <PackageReference Include="SparkDevelopmentNetwork.Rock" Version="{{ RockVersion }}" />
     </ItemGroup>
   
   </Project>

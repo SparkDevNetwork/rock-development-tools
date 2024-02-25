@@ -28,7 +28,7 @@ class CreateCommandOptions
     /// <summary>
     /// The version number of Rock the plugin will target such as <c>1.16.0</c>.
     /// </summary>
-    public Version? RockVersion { get; set; }
+    public Semver.SemVersion? RockVersion { get; set; }
 
     /// <summary>
     /// The relative path to the RockWeb folder such as <c>../RockWeb</c>.

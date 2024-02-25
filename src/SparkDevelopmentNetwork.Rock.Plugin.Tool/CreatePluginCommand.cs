@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 using Fluid;
 
+using Semver;
+
 using Sharprompt;
 
 namespace SparkDevelopmentNetwork.Rock.Plugin.Tool;
@@ -79,7 +81,7 @@ class CreatePluginCommand
 
         await CopyTemplateAsync( "CSharp.project.csproj", [directory, projectFilename] );
         await CopyTemplateAsync( "CSharp.Class1.cs", [directory, "Class1.cs"] );
-        await CopyTemplateAsync( "CSharp.gitignore", [directory, ".gitignore"]);
+        await CopyTemplateAsync( "CSharp.gitignore", [directory, ".gitignore"] );
 
         return null;
     }
@@ -94,11 +96,11 @@ class CreatePluginCommand
 
         Directory.CreateDirectory( directory );
 
-        await CopyTemplateAsync( "Obsidian.eslingrc.json", [directory, ".eslintrc.json"] );
-        await CopyTemplateAsync( "Obsidian.gitignore", [directory, ".gitignore"]);
+        await CopyTemplateAsync( "Obsidian.eslintrc.json", [directory, ".eslintrc.json"] );
+        await CopyTemplateAsync( "Obsidian.gitignore", [directory, ".gitignore"] );
         await CopyTemplateAsync( "Obsidian.package.json", [directory, "package.json"] );
         await CopyTemplateAsync( "Obsidian.project.esproj", [directory, projectFilename] );
-        await CopyTemplateAsync( "Obsidian.rollup.config.cjs", [directory, "rollup.config.cjs"]);
+        await CopyTemplateAsync( "Obsidian.rollup.config.cjs", [directory, "rollup.config.cjs"] );
         await CopyTemplateAsync( "Obsidian.tsconfig.base.json", [directory, "tsconfig.base.json"] );
 
         await CopyTemplateAsync( "Obsidian.src.shims-obs.d.ts", [directory, "src", "shims-obs.d.ts"] );
@@ -151,6 +153,12 @@ class CreatePluginCommand
         }
 
         var content = await template.RenderAsync( new TemplateContext( options ) );
+        var destinationDirectory = Path.GetDirectoryName( Path.Combine( destination ) );
+
+        if ( destinationDirectory != null )
+        {
+            Directory.CreateDirectory( destinationDirectory );
+        }
 
         await File.WriteAllTextAsync( Path.Combine( destination ), content );
     }
@@ -184,7 +192,7 @@ class CreatePluginCommand
         {
             var versionText = Prompt.Select( "Rock Version", Support.SupportedRockVersions );
 
-            _options.RockVersion = new Version( versionText );
+            _options.RockVersion = SemVersion.Parse( versionText, SemVersionStyles.Strict );
         }
 
         if ( _options.RockWebPath is null )
