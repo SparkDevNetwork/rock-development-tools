@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+      <TargetFramework>net472</TargetFramework>
+      <RockWebPath>{{ RockWebPath }}</RockWebPath>
+      <CopyToRockWeb>{% if Copy == true %}True{% else %}False{% endif %}</CopyToRockWeb>
+    </PropertyGroup>
+  
+    <ItemGroup>
+      <PackageReference Include="SparkDevelopmentNetwork.Rock.Build.Tasks" Version="1.0.0" />
+      <PackageReference Include="SparkDevelopmentNetwork.Rock.Analyzers" Version="1.0.0" />
+    </ItemGroup>
+  
+  </Project>
+  
