@@ -1,6 +1,6 @@
 {
     "name": "@rockrms/obsidian-build-tools",
-    "version": "1.0.0",
+    "version": "1.0.0-rc.1",
     "description": "Tools to help with building Obsidian plugins for Rock.",
     "scripts": {
         "main": "ts-node main.ts"

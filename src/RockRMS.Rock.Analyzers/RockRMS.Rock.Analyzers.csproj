@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.0.0</Version>
+    <Version>1.0.0-rc.1</Version>
     <Author>Spark Development Network</Author>
     <Description>CSharp Analyzers for Rock development.</Description>
     <MinClientVersion>3.6</MinClientVersion>
