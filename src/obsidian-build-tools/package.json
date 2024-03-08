@@ -6,7 +6,8 @@
         "main": "ts-node main.ts"
     },
     "bin": {
-        "obs-tsc": "./obs-tsc.js"
+        "obs-tsc": "./obs-tsc.js",
+        "obsidian-build": "./build.js"
     },
     "repository": {
         "type": "git",
