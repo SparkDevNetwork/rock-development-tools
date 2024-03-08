@@ -5,23 +5,6 @@ const process = require("process");
 const rollup = require("rollup");
 const { defineConfigs } = require("./index");
 
-function setupSignalHandler() {
-    if (process.platform === "win32") {
-        var rl = require("readline").createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
-
-        rl.on("SIGINT", function () {
-            process.emit("SIGINT");
-        });
-    }
-
-    process.on("SIGINT", function () {
-        process.kill(process.pid, "SIGINT");
-    });
-}
-
 function clearScreen() {
     process.stdout.write("\u001bc");
 }
@@ -88,43 +71,40 @@ function configureWatcher(watcher) {
     });
 }
 
-async function main() {
-    const config = require(path.resolve(process.cwd(), "obsidian.config.json"));
-    const options = defineConfigs(path.resolve(process.cwd(), config.source), path.resolve(process.cwd(), "dist"), {
-        copy: config.copyToPlugins ? config.pluginsPath : undefined
-    });
+async function build(options) {
+    process.stdout.write(`Compiling source files [0/${options.length}]`);
 
-    useWatch = process.argv.includes("--watch");
+    for (let i = 0; i < options.length; i++) {
+        const optionsObj = options[i];
 
-    if (!useWatch) {
-        process.stdout.write(`Compiling source files [0/${options.length}]`);
+        try {
+            const bundle = await rollup.rollup(optionsObj);
+            await bundle.write(optionsObj.output);
+            await bundle.close();
+        }
+        catch (error) {
+            process.stdout.write("\n");
+            displayError(error);
 
-        for (let i = 0; i < options.length; i++) {
-            const optionsObj = options[i];
-
-            try {
-                const bundle = await rollup.rollup(optionsObj);
-                await bundle.write(optionsObj.output);
-                await bundle.close();
-            }
-            catch (error) {
-                process.stdout.write("\n");
-                displayError(error);
-
-                process.exit(1);
-            }
-
-            process.stdout.write(`\rCompiling source files [${i + 1}/${options.length}]`);
+            process.exit(1);
         }
 
-        process.stdout.write("\n");
-        process.exit(0);
+        process.stdout.write(`\rCompiling source files [${i + 1}/${options.length}]`);
     }
-    else {
-        configureWatcher(rollup.watch(options));
-    }
+
+    process.stdout.write("\n");
 }
 
-setupSignalHandler();
+const config = require(path.resolve(process.cwd(), "obsidian.config.json"));
+const options = defineConfigs(path.resolve(process.cwd(), config.source), path.resolve(process.cwd(), "dist"), {
+    copy: config.copyToPlugins ? config.pluginsPath : undefined
+});
 
-main();
+useWatch = process.argv.includes("--watch");
+
+if (useWatch) {
+    configureWatcher(rollup.watch(options));
+}
+else {
+    build(options);
+}
