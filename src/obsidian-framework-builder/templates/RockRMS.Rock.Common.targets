@@ -1,8 +1,0 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <Reference Include="Rock.Common">
-      <HintPath>$(MSBuildThisFileDirectory)\net472\Rock.Common.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-</Project>

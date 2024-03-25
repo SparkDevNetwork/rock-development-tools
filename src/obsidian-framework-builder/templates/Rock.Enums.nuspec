@@ -15,8 +15,7 @@
   <files>
     <file src="LICENSE.md" target="" />
     <file src="Icon.png" target="" />
-    <file src="RockRMS.Rock.Enums.targets" target="build\" />
-    <file src="Rock\Rock.Enums\bin\Release\Rock.Enums.dll" target="build\net472" />
-    <file src="Rock\Rock.Enums\bin\Release\Rock.Enums.xml" target="build\net472" />
+    <file src="Rock\Rock.Enums\bin\Release\Rock.Enums.dll" target="lib\net472" />
+    <file src="Rock\Rock.Enums\bin\Release\Rock.Enums.xml" target="lib\net472" />
   </files>
 </package>
