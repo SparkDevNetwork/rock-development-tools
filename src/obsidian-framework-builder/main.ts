@@ -383,6 +383,7 @@ async function prepareNugetPackages(version: RockVersionBranch, projects: string
 
     for (const project of projects) {
         await copyTextTemplate(path.join(templatesPath, `${project}.nuspec`), path.join(buildPath, `${project}.nuspec`), version);
+        await copyTextTemplate(path.join(templatesPath, `RockRMS.${project}.targets`), path.join(buildPath, `RockRMS.${project}.targets`), version);
     }
 }
 

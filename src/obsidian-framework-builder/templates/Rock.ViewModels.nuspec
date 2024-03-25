@@ -10,13 +10,14 @@
     <description>The view model types for plugin development.</description>
     <repository type="git" url="https://github.com/SparkDevNetwork/Rock" />
     <dependencies>
-      <dependency id="RockRMS.Rock.Enums" version="{{ rockVersion }}" />
+      <dependency id="RockRMS.Rock.Enums" version="{{ rockVersion }}" exclude="runtime" />
     </dependencies>
   </metadata>
   <files>
     <file src="LICENSE.md" target="" />
     <file src="Icon.png" target="" />
-    <file src="Rock\Rock.ViewModels\bin\Release\Rock.ViewModels.dll" target="lib\net472" />
-    <file src="Rock\Rock.ViewModels\bin\Release\Rock.ViewModels.xml" target="lib\net472" />
+    <file src="RockRMS.Rock.ViewModels.targets" target="build\" />
+    <file src="Rock\Rock.ViewModels\bin\Release\Rock.ViewModels.dll" target="build\net472" />
+    <file src="Rock\Rock.ViewModels\bin\Release\Rock.ViewModels.xml" target="build\net472" />
   </files>
 </package>

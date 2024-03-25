@@ -10,17 +10,18 @@
     <description>The core Rock assembly for plugin development.</description>
     <repository type="git" url="https://github.com/SparkDevNetwork/Rock" />
     <dependencies>
-      <dependency id="EntityFramework" version="6.4.4" />
-      <dependency id="RockRMS.Rock.Common" version="{{ rockVersion }}" />
-      <dependency id="RockRMS.Rock.Enums" version="{{ rockVersion }}" />
-      <dependency id="RockRMS.Rock.Lava.Shared" version="{{ rockVersion }}" />
-      <dependency id="RockRMS.Rock.ViewModels" version="{{ rockVersion }}" />
+      <dependency id="EntityFramework" version="6.4.4" exclude="runtime" />
+      <dependency id="RockRMS.Rock.Common" version="{{ rockVersion }}" exclude="runtime" />
+      <dependency id="RockRMS.Rock.Enums" version="{{ rockVersion }}" exclude="runtime" />
+      <dependency id="RockRMS.Rock.Lava.Shared" version="{{ rockVersion }}" exclude="runtime" />
+      <dependency id="RockRMS.Rock.ViewModels" version="{{ rockVersion }}" exclude="runtime" />
     </dependencies>
   </metadata>
   <files>
     <file src="LICENSE.md" target="" />
     <file src="Icon.png" target="" />
-    <file src="Rock\Rock\bin\Release\Rock.dll" target="lib\net472" />
-    <file src="Rock\Rock\bin\Release\Rock.xml" target="lib\net472" />
+    <file src="RockRMS.Rock.targets" target="build\" />
+    <file src="Rock\Rock\bin\Release\Rock.dll" target="build\net472" />
+    <file src="Rock\Rock\bin\Release\Rock.xml" target="build\net472" />
   </files>
 </package>

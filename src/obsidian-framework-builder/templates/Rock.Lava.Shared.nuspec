@@ -15,6 +15,7 @@
   <files>
     <file src="LICENSE.md" target="" />
     <file src="Icon.png" target="" />
-    <file src="Rock\Rock.Lava.Shared\bin\Release\Rock.Lava.Shared.dll" target="lib\net472" />
+    <file src="RockRMS.Rock.Lava.Shared.targets" target="build\" />
+    <file src="Rock\Rock.Lava.Shared\bin\Release\Rock.Lava.Shared.dll" target="build\net472" />
   </files>
 </package>
