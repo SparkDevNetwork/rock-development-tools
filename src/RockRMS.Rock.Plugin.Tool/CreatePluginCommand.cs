@@ -99,8 +99,8 @@ class CreatePluginCommand
         await CopyTemplateAsync( "Obsidian.eslintrc.json", [directory, ".eslintrc.json"] );
         await CopyTemplateAsync( "Obsidian.gitignore", [directory, ".gitignore"] );
         await CopyTemplateAsync( "Obsidian.package.json", [directory, "package.json"] );
+        await CopyTemplateAsync( "Obsidian.obsidian.config.json", [directory, "obsidian.config.json"] );
         await CopyTemplateAsync( "Obsidian.project.esproj", [directory, projectFilename] );
-        await CopyTemplateAsync( "Obsidian.rollup.config.cjs", [directory, "rollup.config.cjs"] );
         await CopyTemplateAsync( "Obsidian.tsconfig.base.json", [directory, "tsconfig.base.json"] );
 
         await CopyTemplateAsync( "Obsidian.src.shims-obs.d.ts", [directory, "src", "shims-obs.d.ts"] );

@@ -11,6 +11,8 @@ const { terser } = require("rollup-plugin-terser");
 const copy = require("rollup-plugin-copy");
 const cssnano = require("cssnano");
 const { cwd } = require("process");
+const babelPresetEnv = require("@babel/preset-env").default;
+const babelTypescript = require("@babel/preset-typescript").default;
 
 /**
  * @typedef {Object} ConfigOptions
@@ -285,8 +287,13 @@ function defineFileConfig(input, output, options) {
             babel({
                 babelHelpers: "bundled",
                 presets: [
-                    ["@babel/preset-env", { targets: "edge >= 13, chrome >= 50, chromeandroid >= 50, firefox >= 53, safari >= 10, ios >= 10" }],
-                    "@babel/typescript"
+                    [
+                        babelPresetEnv,
+                        {
+                            targets: "edge >= 13, chrome >= 50, chromeandroid >= 50, firefox >= 53, safari >= 10, ios >= 10"
+                        }
+                    ],
+                    babelTypescript
                 ],
                 extensions: [".js", ".jsx", ".ts", ".tsx", ".obs"],
                 comments: false,
