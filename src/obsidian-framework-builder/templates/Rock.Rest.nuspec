@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+    <id>RockRMS.Rock.Rest</id>
+    <version>{{ rockVersion }}</version>
+    <authors>Spark Development Network</authors>
+    <license type="file">LICENSE.md</license>
+    <icon>Icon.png</icon>
+    <projectUrl>https://www.rockrms.com/</projectUrl>
+    <description>The base REST controllers for plugin development.</description>
+    <repository type="git" url="https://github.com/SparkDevNetwork/Rock" />
+    <dependencies>
+      <dependency id="RockRMS.Rock" version="{{ rockVersion }}" />
+      <dependency id="RockRMS.Rock.Common" version="{{ rockVersion }}" />
+      <dependency id="RockRMS.Rock.Enums" version="{{ rockVersion }}" />
+      <dependency id="RockRMS.Rock.Lava.Shared" version="{{ rockVersion }}" />
+      <dependency id="RockRMS.Rock.ViewModels" version="{{ rockVersion }}" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="LICENSE.md" target="" />
+    <file src="Icon.png" target="" />
+    <file src="Rock\Rock.Common\bin\Release\Rock.Rest.dll" target="lib\net472" />
+  </files>
+</package>

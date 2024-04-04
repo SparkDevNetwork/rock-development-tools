@@ -451,13 +451,13 @@ async function main(): Promise<void> {
         await downloadRock(rockVersion);
     }
 
-    await buildProjects(["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock.Lava.Shared", "Rock"]);
+    await buildProjects(["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock.Lava.Shared", "Rock", "Rock.Rest"]);
     await buildObsidian();
 
-    await prepareNugetPackages(rockVersion, ["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock.Lava.Shared", "Rock"]);
+    await prepareNugetPackages(rockVersion, ["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock.Lava.Shared", "Rock", "Rock.Rest"]);
     await prepareObsidianPackage(rockVersion);
 
-    await createNugetPackages(["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock.Lava.Shared", "Rock"]);
+    await createNugetPackages(["Rock.Enums", "Rock.ViewModels", "Rock.Common", "Rock.Lava.Shared", "Rock", "Rock.Rest"]);
     await createObsidianPackage();
 }
 
