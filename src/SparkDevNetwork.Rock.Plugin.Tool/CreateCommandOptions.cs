@@ -1,4 +1,4 @@
-namespace RockRMS.Rock.Plugin.Tool;
+namespace SparkDevNetwork.Rock.Plugin.Tool;
 
 /// <summary>
 /// The options that are used by <see cref="CreatePluginCommand"/>.

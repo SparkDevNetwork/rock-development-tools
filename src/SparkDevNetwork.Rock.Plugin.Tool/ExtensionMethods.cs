@@ -1,4 +1,4 @@
-namespace RockRMS.Rock.Plugin.Tool;
+namespace SparkDevNetwork.Rock.Plugin.Tool;
 
 static class ExtensionMethods
 {

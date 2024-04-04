@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Operations;
 // the Entity Framework Core analyzers since we are trying to do essentially
 // the same thing.
 
-namespace RockRMS.Rock.Analyzers
+namespace SparkDevNetwork.Rock.Analyzers
 {
     /// <summary>
     /// Analyzer that checks for usage of APIs that have been marked as

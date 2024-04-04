@@ -1,5 +1,5 @@
 {
-  "name": "@rockrms/eslint-config-rock-recommended",
+  "name": "@sparkdevnetwork/eslint-config-rock-recommended",
   "version": "1.0.0-rc.1",
   "description": "Recommended ESLint rules for Rock plugins.",
   "main": "index.js",

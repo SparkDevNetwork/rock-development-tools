@@ -4,11 +4,11 @@ VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A699A3A2-C641-4565-92F7-04151BC2D24E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RockRMS.Rock.Build.Tasks", "src\RockRMS.Rock.Build.Tasks\RockRMS.Rock.Build.Tasks.csproj", "{C343A25A-36DC-4515-ABAB-A55945E95912}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.Build.Tasks", "src\SparkDevNetwork.Rock.Build.Tasks\SparkDevNetwork.Rock.Build.Tasks.csproj", "{C343A25A-36DC-4515-ABAB-A55945E95912}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RockRMS.Rock.Analyzers", "src\RockRMS.Rock.Analyzers\RockRMS.Rock.Analyzers.csproj", "{604475F8-E37E-484D-B5A7-B8C6C49A7ED0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.Analyzers", "src\SparkDevNetwork.Rock.Analyzers\SparkDevNetwork.Rock.Analyzers.csproj", "{604475F8-E37E-484D-B5A7-B8C6C49A7ED0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RockRMS.Rock.Plugin.Tool", "src\RockRMS.Rock.Plugin.Tool\RockRMS.Rock.Plugin.Tool.csproj", "{274F2048-D008-4B3A-9BF4-0E8D0E9AB007}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.Plugin.Tool", "src\SparkDevNetwork.Rock.Plugin.Tool\SparkDevNetwork.Rock.Plugin.Tool.csproj", "{274F2048-D008-4B3A-9BF4-0E8D0E9AB007}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
