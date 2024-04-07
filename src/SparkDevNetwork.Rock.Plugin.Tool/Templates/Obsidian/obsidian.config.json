@@ -1,5 +1,5 @@
 {
-    "source": "src",
-    "pluginsPath": "{{ RockWebPath | replace:'\\','/' }}/Plugins/{{ OrganizationCode }}/{{ PluginCode }}",
-    "copyToPlugins": {% if Copy != true %}false{% else %}true{% endif %}
+  "source": "src",
+  "destination": "{{ RockWebPath | replace:'\\','/' }}/Plugins/{{ OrganizationCode }}/{{ PluginCode }}",
+  "copy": {% if Copy != true %}false{% else %}true{% endif %}
 }

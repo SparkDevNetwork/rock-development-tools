@@ -3,12 +3,12 @@
     <PropertyGroup>
       <TargetFramework>net472</TargetFramework>
       <RockWebPath>{{ RockWebPath }}</RockWebPath>
-      <CopyToRockWeb>{% if Copy == true %}True{% else %}False{% endif %}</CopyToRockWeb>
+      <CopyToRockWeb>false</CopyToRockWeb>
     </PropertyGroup>
   
     <ItemGroup>
-      <PackageReference Include="RockRMS.Rock.Build.Tasks" Version="1.0.0" />
-      <PackageReference Include="RockRMS.Rock.Analyzers" Version="1.0.0" />
+      <PackageReference Include="SparkDevNetwork.Rock.Build.Tasks" Version="1.0.0-rc.1" />
+      <PackageReference Include="SparkDevNetwork.Rock.Analyzers" Version="1.0.0-rc.1" />
       <PackageReference Include="RockRMS.Rock" Version="{{ RockVersion }}" />
     </ItemGroup>
   

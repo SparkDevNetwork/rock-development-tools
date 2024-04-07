@@ -35,7 +35,7 @@ import babelTypescript from "@babel/preset-typescript";
  * This is useless to blocks and plugin developers. It is used by the framework
  * to build special directories that are then handled by the loader.
  */
-interface ConfigOptions {
+export interface ConfigOptions {
     /**
      * If enabled the output file will be minified. Set to "auto" to use the
      * environment variable TODO to determine if minification should be used.
