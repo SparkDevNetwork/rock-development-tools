@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.Analyz
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.Plugin.Tool", "src\SparkDevNetwork.Rock.Plugin.Tool\SparkDevNetwork.Rock.Plugin.Tool.csproj", "{274F2048-D008-4B3A-9BF4-0E8D0E9AB007}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Framework.Builder", "src\SparkDevNetwork.Framework.Builder\SparkDevNetwork.Framework.Builder.csproj", "{74C4DEF5-B673-4568-9B3A-68A962C6610C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,10 +36,15 @@ Global
 		{274F2048-D008-4B3A-9BF4-0E8D0E9AB007}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{274F2048-D008-4B3A-9BF4-0E8D0E9AB007}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{274F2048-D008-4B3A-9BF4-0E8D0E9AB007}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74C4DEF5-B673-4568-9B3A-68A962C6610C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74C4DEF5-B673-4568-9B3A-68A962C6610C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74C4DEF5-B673-4568-9B3A-68A962C6610C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74C4DEF5-B673-4568-9B3A-68A962C6610C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C343A25A-36DC-4515-ABAB-A55945E95912} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
 		{604475F8-E37E-484D-B5A7-B8C6C49A7ED0} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
 		{274F2048-D008-4B3A-9BF4-0E8D0E9AB007} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
+		{74C4DEF5-B673-4568-9B3A-68A962C6610C} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
 	EndGlobalSection
 EndGlobal
