@@ -9,9 +9,9 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@rockrms/eslint-config-rock-recommended": "^1.0.0",
+    "@sparkdevnetwork/eslint-config-rock-recommended": "^1.0.0-rc.1",
     "@rockrms/obsidian-framework": "^{{ RockVersion }}",
-    "@rockrms/obsidian-build-tools": "^1.0.0",
+    "@sparkdevnetwork/obsidian-build-tools": "^1.0.0-rc.2",
     "@types/jest": "^29.5.4",
     "@types/node": "^20.5.7",
     "@typescript-eslint/eslint-plugin": "^6.5.0",

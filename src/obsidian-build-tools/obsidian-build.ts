@@ -13,8 +13,14 @@ interface ObsidianOptions {
     /** The folder that contains the source files to build. */
     source?: string;
 
-    /** If set then the bundled files will be copied to this path. */
-    copy: string;
+    /** The base folder to copy all compiled bundles into. */
+    destination?: string;
+
+    /**
+     * If set then the bundled files will be copied to the path specified by
+     * destination.
+     * */
+    copy: boolean;
 };
 
 /**
@@ -142,7 +148,7 @@ if (!config.source) {
 }
 
 const options = defineConfigs(path.resolve(process.cwd(), config.source), path.resolve(process.cwd(), "dist"), {
-    copy: config.copy
+    copy: config.copy === true ? config.destination : undefined
 });
 
 const useWatch = process.argv.includes("--watch");
