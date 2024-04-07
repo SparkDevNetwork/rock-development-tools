@@ -10,6 +10,7 @@
     <Description>MSBuild tasks for Rock RMS projects.</Description>
     <Copyright>Copyright © Spark Development Network 2023</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>Icon.png</PackageIcon>
 
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
     <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
@@ -19,6 +20,7 @@
   <ItemGroup>
     <Content Include="build\SparkDevNetwork.Rock.Build.Tasks.props" PackagePath="build\" />
     <Content Include="build\SparkDevNetwork.Rock.Build.Tasks.targets" PackagePath="build\" />
+    <Content Include="Icon.png" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>

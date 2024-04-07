@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Version>1.0.0-rc.1</Version>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -8,12 +9,14 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>rock-plugin-tool</ToolCommandName>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>Icon.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Remove="Templates\**\*" />
     <Compile Remove="Templates\**\*" />
     <EmbeddedResource Include="Templates\**\*" />
+    <Content Include="Icon.png" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,6 +5,7 @@
     <version>$version$</version>
     <authors>$authors$</authors>
     <description>$description$</description>
+    <icon>$icon$</icon>
     <dependencies>
       <group targetFramework=".NETStandard2.0" />
     </dependencies>
@@ -14,6 +15,7 @@
   <files>
     $CommonFileElements$
     <file src="_._" target="lib\$targetFramework$\" />
+    <file src="Icon.png" />
     <file src="$OutputBinary$" target="analyzers\dotnet\cs\" />
   </files>
 </package>
