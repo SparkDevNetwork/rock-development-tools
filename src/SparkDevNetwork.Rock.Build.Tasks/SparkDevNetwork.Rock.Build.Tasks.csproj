@@ -9,6 +9,7 @@
     <Authors>Spark Development Network</Authors>
     <Description>MSBuild tasks for Rock RMS projects.</Description>
     <Copyright>Copyright © Spark Development Network 2023</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
     <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>

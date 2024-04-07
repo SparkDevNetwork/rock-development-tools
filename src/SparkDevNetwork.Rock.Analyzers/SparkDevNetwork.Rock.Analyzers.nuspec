@@ -8,6 +8,7 @@
     <dependencies>
       <group targetFramework=".NETStandard2.0" />
     </dependencies>
+    <license type="expression">MIT</license>
   </metadata>
 
   <files>
