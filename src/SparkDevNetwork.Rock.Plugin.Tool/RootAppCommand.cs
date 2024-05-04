@@ -9,7 +9,7 @@ namespace SparkDevNetwork.Rock.Plugin.Tool;
 /// <summary>
 /// The root command handler to process the command line arguments.
 /// </summary>
-class CommandHandler
+class RootAppCommand
 {
     /// <summary>
     /// The root command for this handler.
@@ -19,7 +19,7 @@ class CommandHandler
     /// <summary>
     /// Creates a new command handler.
     /// </summary>
-    public CommandHandler()
+    public RootAppCommand()
     {
         var rootCommand = new RootCommand( "Plugin development tool for RockRMS" )
         {
