@@ -1,27 +1,27 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Build BlueBoxMoon.Rock.Build.Tasks",
-            "type": "process",
-            "command": "dotnet",
-            "args": [
-                "build",
-                "packages/BlueBoxMoon.Rock.Build.Tasks/BlueBoxMoon.Rock.Build.Tasks.csproj"
-            ],
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "Watch BlueBoxMoon.Rock.Build.Tasks",
-            "type": "process",
-            "command": "dotnet",
-            "args": [
-                "watch",
-                "build",
-                "--project",
-                "packages/BlueBoxMoon.Rock.Build.Tasks/BlueBoxMoon.Rock.Build.Tasks.csproj"
-            ],
-            "problemMatcher": "$msCompile"
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build BlueBoxMoon.Rock.Build.Tasks",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "packages/BlueBoxMoon.Rock.Build.Tasks/BlueBoxMoon.Rock.Build.Tasks.csproj"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Watch BlueBoxMoon.Rock.Build.Tasks",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "watch",
+        "build",
+        "--project",
+        "packages/BlueBoxMoon.Rock.Build.Tasks/BlueBoxMoon.Rock.Build.Tasks.csproj"
+      ],
+      "problemMatcher": "$msCompile"
+    }
+  ]
 }
