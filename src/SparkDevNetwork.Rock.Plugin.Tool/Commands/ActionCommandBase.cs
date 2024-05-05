@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 
 using SparkDevNetwork.Rock.Plugin.Tool.Enums;
 using SparkDevNetwork.Rock.Plugin.Tool.CommandOptions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
 
@@ -23,10 +24,10 @@ abstract class ActionCommandBase<TOptions> : Command
     /// <summary>
     /// The logger for this command instance.
     /// </summary>
-    protected ILogger Logger { get; private set; } = new NullLogger();
+    protected ILogger Logger { get; private set; } = NullLogger.Instance;
 
     /// <summary>
-    /// Creates a command that will perform some action. 
+    /// Creates a command that will perform some action.
     /// </summary>
     /// <param name="name">The primary name of the action.</param>
     /// <param name="description">The description of what the command will do.</param>
@@ -39,7 +40,7 @@ abstract class ActionCommandBase<TOptions> : Command
 
         AddOption( _verbosityOption );
 
-        this.SetHandler( ctx => ExecuteAsync( GetOptions( ctx ) ) );
+        this.SetHandler( async ctx => ctx.ExitCode = await ExecuteAsync( GetOptions( ctx ) ) );
     }
 
     /// <summary>
@@ -47,7 +48,7 @@ abstract class ActionCommandBase<TOptions> : Command
     /// </summary>
     /// <param name="options">The command line options.</param>
     /// <returns>A task that represents when the command has completed.</returns>
-    protected abstract Task ExecuteAsync( TOptions options );
+    protected abstract Task<int> ExecuteAsync( TOptions options );
 
     /// <summary>
     /// <para>
@@ -119,29 +120,6 @@ abstract class ActionCommandBase<TOptions> : Command
         else
         {
             return LogLevel.Error;
-        }
-    }
-
-    /// <summary>
-    /// An empty logger that doesn't actually do anything.
-    /// </summary>
-    private class NullLogger : ILogger
-    {
-        /// <inheritdoc/>
-        public IDisposable? BeginScope<TState>( TState state ) where TState : notnull
-        {
-            return null;
-        }
-
-        /// <inheritdoc/>
-        public bool IsEnabled( LogLevel logLevel )
-        {
-            return false;
-        }
-
-        /// <inheritdoc/>
-        public void Log<TState>( LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter )
-        {
         }
     }
 }

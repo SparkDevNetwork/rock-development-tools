@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.CommandLine;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool;
 
@@ -17,21 +17,6 @@ public class Program
         //     "Cherry", "Cloudberry", "Cocunut",
         //         } ) );
 
-        // return 0;
-        // var loggerFactory = LoggerFactory.Create( cfg =>
-        // {
-        //     cfg.AddSimpleConsole( options =>
-        //     {
-        //         options.SingleLine = true;
-        //         options.TimestampFormat = "[HH:mm:ss.fff] ";
-        //     } );
-        // } );
-
-        // //var logger = sp.GetRequiredService<ILogger<Program>>();
-        // var logger = loggerFactory.CreateLogger( nameof(Program));
-
-        // logger.LogInformation( "hi3" );
-        // logger.LogDebug( "hi4" );
         // return 0;
 
         return await new RootAppCommand().InvokeAsync( args );

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.CommandOptions;
 
@@ -11,5 +12,5 @@ class ActionCommandBaseOptions
     /// The factory that will be used to create <see cref="ILogger"/> instances
     /// during the execution of the command.
     /// </summary>
-    public required ILoggerFactory LoggerFactory { get; init; }
+    public ILoggerFactory LoggerFactory { get; set; } = NullLoggerFactory.Instance;
 }
