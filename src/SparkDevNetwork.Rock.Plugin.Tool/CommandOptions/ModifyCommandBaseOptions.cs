@@ -2,9 +2,9 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.CommandOptions;
 
 /// <summary>
 /// Describes the options that are available to all commands that create or
-/// modify files.
+/// modify content.
 /// </summary>
-class CreateCommandBaseOptions : ActionCommandBaseOptions
+class ModifyCommandBaseOptions : ActionCommandBaseOptions
 {
     /// <summary>
     /// Will be <c>true</c> if the command should not actually make any
@@ -21,7 +21,7 @@ class CreateCommandBaseOptions : ActionCommandBaseOptions
     /// <summary>
     /// Creates a new options instance with default values.
     /// </summary>
-    public CreateCommandBaseOptions()
+    public ModifyCommandBaseOptions()
     {
     }
 
@@ -29,7 +29,7 @@ class CreateCommandBaseOptions : ActionCommandBaseOptions
     /// Creates a new options instance that is a copy of the specified options.
     /// </summary>
     /// <param name="source">The source options to copy.</param>
-    public CreateCommandBaseOptions( CreateCommandBaseOptions source )
+    public ModifyCommandBaseOptions( ModifyCommandBaseOptions source )
         : base( source )
     {
         DryRun = source.DryRun;

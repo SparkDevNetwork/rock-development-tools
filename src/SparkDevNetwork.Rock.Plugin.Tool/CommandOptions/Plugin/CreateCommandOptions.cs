@@ -3,7 +3,7 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.CommandOptions.Plugin;
 /// <summary>
 /// The options that are used by <see cref="Commands.Plugin.CreateCommand"/>.
 /// </summary>
-class CreateCommandOptions : CreateCommandBaseOptions
+class CreateCommandOptions : ModifyCommandBaseOptions
 {
     /// <summary>
     /// The name of the organization such as <c>Rock Solid Church</c>.
