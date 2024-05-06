@@ -44,4 +44,27 @@ class CreateCommandOptions : CreateCommandBaseOptions
     /// Determines if the build artifacts will be copied to <see cref="RockWebPath" />.
     /// </summary>
     public bool? Copy { get; set; }
+
+    /// <summary>
+    /// Creates a new options instance with default values.
+    /// </summary>
+    public CreateCommandOptions()
+    {
+    }
+
+    /// <summary>
+    /// Creates a new options instance that is a copy of the specified options.
+    /// </summary>
+    /// <param name="source">The source options to copy.</param>
+    public CreateCommandOptions( CreateCommandOptions source )
+        : base( source )
+    {
+        Organization = source.Organization;
+        OrganizationCode = source.OrganizationCode;
+        PluginName = source.PluginName;
+        RockVersion = source.RockVersion;
+        RockWebPath = source.RockWebPath;
+        Obsidian = source.Obsidian;
+        Copy = source.Copy;
+    }
 }

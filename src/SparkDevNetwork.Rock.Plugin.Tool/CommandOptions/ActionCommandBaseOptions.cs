@@ -13,4 +13,20 @@ class ActionCommandBaseOptions
     /// during the execution of the command.
     /// </summary>
     public ILoggerFactory LoggerFactory { get; set; } = NullLoggerFactory.Instance;
+
+    /// <summary>
+    /// Creates a new options instance with default values.
+    /// </summary>
+    public ActionCommandBaseOptions()
+    {
+    }
+
+    /// <summary>
+    /// Creates a new options instance that is a copy of the specified options.
+    /// </summary>
+    /// <param name="source">The source options to copy.</param>
+    public ActionCommandBaseOptions( ActionCommandBaseOptions source )
+    {
+        LoggerFactory = source.LoggerFactory;
+    }
 }

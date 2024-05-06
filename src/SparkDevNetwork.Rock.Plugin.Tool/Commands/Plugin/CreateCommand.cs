@@ -177,14 +177,15 @@ class CreateCommand : CreateCommandBase<CreateCommandOptions>
         using var textStream = new StreamReader( stream );
         var rawContent = await textStream.ReadToEndAsync();
         var parser = new FluidParser();
-        var rockWebPath = _options.RockWebPath;
 
         if ( !parser.TryParse( rawContent, out var template, out var error ) )
         {
             throw new Exception( error );
         }
 
-        if ( _options.RockWebPath is not null )
+        var options = new CreateCommandOptions( _options );
+
+        if ( options.RockWebPath is not null )
         {
             var rockWebPrefix = new List<string>();
 
@@ -195,18 +196,15 @@ class CreateCommand : CreateCommandBase<CreateCommandOptions>
                 rockWebPrefix.Add( ".." );
             }
 
-            var userPath = _options.RockWebPath
+            var userPath = options.RockWebPath
                 .Replace( '/', Path.DirectorySeparatorChar )
                 .Replace( '\\', Path.DirectorySeparatorChar );
             var fullPath = Path.GetFullPath( Path.Combine( [.. rockWebPrefix, userPath] ) );
 
-            rockWebPath = Path.GetRelativePath( Directory.GetCurrentDirectory(), fullPath );
+            options.RockWebPath = Path.GetRelativePath( Directory.GetCurrentDirectory(), fullPath );
         }
 
-        var context = new TemplateContext( _options );
-        context.SetValue( nameof( _options.RockWebPath ), rockWebPath );
-
-        var content = await template.RenderAsync( context );
+        var content = await template.RenderAsync( new TemplateContext( options ) );
         var destinationDirectory = Path.GetDirectoryName( Path.Combine( destination ) );
 
         if ( destinationDirectory != null )

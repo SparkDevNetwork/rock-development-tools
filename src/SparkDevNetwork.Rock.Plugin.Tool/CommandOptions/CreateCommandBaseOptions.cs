@@ -17,4 +17,22 @@ class CreateCommandBaseOptions : ActionCommandBaseOptions
     /// would otherwise cause the command to abort without making changes.
     /// </summary>
     public bool Force { get; set; }
+
+    /// <summary>
+    /// Creates a new options instance with default values.
+    /// </summary>
+    public CreateCommandBaseOptions()
+    {
+    }
+
+    /// <summary>
+    /// Creates a new options instance that is a copy of the specified options.
+    /// </summary>
+    /// <param name="source">The source options to copy.</param>
+    public CreateCommandBaseOptions( CreateCommandBaseOptions source )
+        : base( source )
+    {
+        DryRun = source.DryRun;
+        Force = source.Force;
+    }
 }
