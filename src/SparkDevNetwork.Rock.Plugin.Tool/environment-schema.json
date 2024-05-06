@@ -1,0 +1,42 @@
+{
+  "$schema":"http://json-schema.org/draft-07/schema#",
+  "title": "Environment",
+  "description": "The environment description for a Rock developer environment.",
+  "type": "object",
+  "properties": {
+    "rockVersion": {
+      "description": "The Rock binary version to install in the environment.",
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9\\.]+)*$"
+        },
+        {
+          "type": "string",
+          "const": "custom"
+        }
+      ]
+    },
+    "plugins": {
+      "description": "The plugins to install in the environment.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "description": "The path to install the plugin to, relative to the environment root.",
+            "pattern": "^[a-zA-Z0-9/_]+$"
+          },
+          "url": {
+            "description": "The source URL to install the plugin from",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "url"
+        ]
+      }
+    }
+  }
+}
