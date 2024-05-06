@@ -27,6 +27,11 @@ abstract class ActionCommandBase<TOptions> : Command
     protected ILogger Logger { get; private set; } = NullLogger.Instance;
 
     /// <summary>
+    /// The console to use when writing output.
+    /// </summary>
+    protected Spectre.Console.IAnsiConsole Console { get; } = Spectre.Console.AnsiConsole.Console;
+
+    /// <summary>
     /// Creates a command that will perform some action.
     /// </summary>
     /// <param name="name">The primary name of the action.</param>

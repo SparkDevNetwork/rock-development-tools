@@ -1,5 +1,7 @@
 using System.CommandLine;
 
+using SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
+
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
 
 /// <summary>
@@ -15,5 +17,7 @@ class EnvironmentCommand : Command
         : base( "environment", "Run commands related to working with development environments." )
     {
         AddAlias( "env" );
+
+        AddCommand( new NewCommand() );
     }
 }

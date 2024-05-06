@@ -1,6 +1,5 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.ComponentModel.DataAnnotations;
 
 using Fluid;
 
@@ -9,6 +8,10 @@ using Semver;
 using Sharprompt;
 
 using SparkDevNetwork.Rock.Plugin.Tool.CommandOptions.Plugin;
+
+using Spectre.Console;
+
+using ValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Plugin;
 
@@ -71,7 +74,11 @@ class CreateCommand : ModifyCommandBase<CreateCommandOptions>
 
         if ( result is not null )
         {
-            await Console.Error.WriteLineAsync( result.ErrorMessage );
+            if ( result.ErrorMessage != null )
+            {
+                Console.WriteLine( result.ErrorMessage );
+            }
+
             return 1;
         }
 
