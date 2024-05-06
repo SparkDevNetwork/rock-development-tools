@@ -34,7 +34,7 @@ abstract class ActionCommandBase<TOptions> : Command
     public ActionCommandBase( string name, string description )
         : base( name, description )
     {
-        _verbosityOption = new Option<VerbosityOptions>( "--verbosity", "Sets the verbosity level. Allowed values are q[uiet], m[inimal], n[ormal], and diag[nostic]." );
+        _verbosityOption = new Option<VerbosityOptions>( "--verbosity", "Sets the verbosity level. Allowed values are q[uiet], m[inimal], n[ormal], and d[etail]." );
         _verbosityOption.SetDefaultValue( VerbosityOptions.n );
         _verbosityOption.AddAlias( "-v" );
 
