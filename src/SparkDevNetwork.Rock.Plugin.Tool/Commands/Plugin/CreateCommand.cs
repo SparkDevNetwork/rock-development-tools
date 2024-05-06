@@ -8,7 +8,6 @@ using Semver;
 
 using Sharprompt;
 
-using SparkDevNetwork.Rock.Plugin.Tool.CommandOptions;
 using SparkDevNetwork.Rock.Plugin.Tool.CommandOptions.Plugin;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Plugin;

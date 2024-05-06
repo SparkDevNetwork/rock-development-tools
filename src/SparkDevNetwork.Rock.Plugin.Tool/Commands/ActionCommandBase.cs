@@ -2,10 +2,10 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 
 using Microsoft.Extensions.Logging;
-
-using SparkDevNetwork.Rock.Plugin.Tool.Enums;
-using SparkDevNetwork.Rock.Plugin.Tool.CommandOptions;
 using Microsoft.Extensions.Logging.Abstractions;
+
+using SparkDevNetwork.Rock.Plugin.Tool.CommandOptions;
+using SparkDevNetwork.Rock.Plugin.Tool.Enums;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
 
