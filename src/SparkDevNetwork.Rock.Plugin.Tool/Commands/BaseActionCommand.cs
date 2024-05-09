@@ -2,8 +2,7 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 
 using Microsoft.Extensions.Logging;
-
-using SparkDevNetwork.Rock.Plugin.Tool.Enums;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
 
@@ -16,9 +15,9 @@ abstract class BaseActionCommand<TOptions, THandler> : Command
     where THandler : BaseActionCommandHandler<TOptions>
 {
     /// <summary>
-    /// The option that describes the verbosity level of the command.
+    /// The option that describes if diagnostic details are logged.
     /// </summary>
-    private readonly Option<VerbosityOptions> _verbosityOption;
+    private readonly Option<bool> _diagOption;
 
     /// <summary>
     /// Creates a command that will perform some action.
@@ -28,11 +27,9 @@ abstract class BaseActionCommand<TOptions, THandler> : Command
     public BaseActionCommand( string name, string description )
         : base( name, description )
     {
-        _verbosityOption = new Option<VerbosityOptions>( "--verbosity", "Sets the verbosity level. Allowed values are q[uiet], m[inimal], n[ormal], and d[etail]." );
-        _verbosityOption.SetDefaultValue( VerbosityOptions.n );
-        _verbosityOption.AddAlias( "-v" );
+        _diagOption = new Option<bool>( "--diag", "Include debugging diagnostic information." );
 
-        AddOption( _verbosityOption );
+        AddOption( _diagOption );
 
         this.SetHandler( async ctx =>
         {
@@ -78,6 +75,11 @@ abstract class BaseActionCommand<TOptions, THandler> : Command
     /// <returns>An instance of <see cref="ILoggerFactory"/> for the invocation.</returns>
     private ILoggerFactory CreateLoggerFactory( InvocationContext context )
     {
+        if ( !context.ParseResult.GetValueForOption( _diagOption ) )
+        {
+            return NullLoggerFactory.Instance;
+        }
+
         return LoggerFactory.Create( config =>
         {
             config.AddSimpleConsole( options =>
@@ -86,35 +88,7 @@ abstract class BaseActionCommand<TOptions, THandler> : Command
                 options.TimestampFormat = "[HH:mm:ss.fff] ";
             } );
 
-            config.SetMinimumLevel( GetMinimumLogLevel( context ) );
+            config.SetMinimumLevel( LogLevel.Information );
         } );
-    }
-
-    /// <summary>
-    /// Gets the minimum <see cref="LogLevel"/> to use for the <see cref="ILogger"/>
-    /// when executing the command.
-    /// </summary>
-    /// <param name="context">The context that describes the command line invocation.</param>
-    /// <returns>The minimum log level a message must meet to be displayed.</returns>
-    private LogLevel GetMinimumLogLevel( InvocationContext context )
-    {
-        var value = context.ParseResult.GetValueForOption( _verbosityOption );
-
-        if ( value == VerbosityOptions.d )
-        {
-            return LogLevel.Debug;
-        }
-        else if ( value == VerbosityOptions.n )
-        {
-            return LogLevel.Information;
-        }
-        else if ( value == VerbosityOptions.m )
-        {
-            return LogLevel.Warning;
-        }
-        else
-        {
-            return LogLevel.Error;
-        }
     }
 }
