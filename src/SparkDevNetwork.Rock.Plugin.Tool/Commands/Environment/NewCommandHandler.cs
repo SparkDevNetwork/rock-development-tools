@@ -24,9 +24,9 @@ class NewCommandHandler : BaseModifyCommandHandler<NewCommandOptions>
 
         outputDirectory = Path.GetFullPath( outputDirectory );
 
-        if ( !ValidateOutput( outputDirectory, Options.Force ) )
+        if ( !ValidateOutput( outputDirectory ) )
         {
-            return Task.FromResult( 0 );
+            return Task.FromResult( 1 );
         }
 
         return Task.FromResult( 0 );
@@ -37,9 +37,8 @@ class NewCommandHandler : BaseModifyCommandHandler<NewCommandOptions>
     /// or does not yet exist.
     /// </summary>
     /// <param name="outputDirectory">The directory the environment will be written to.</param>
-    /// <param name="force">If the force command was specified.</param>
     /// <returns><c>true</c> if the output directory is valid; otherwise <c>false</c>.</returns>
-    private bool ValidateOutput( string outputDirectory, bool force )
+    private bool ValidateOutput( string outputDirectory )
     {
         if ( File.Exists( outputDirectory ) )
         {
@@ -50,7 +49,7 @@ class NewCommandHandler : BaseModifyCommandHandler<NewCommandOptions>
             return false;
         }
 
-        if ( force )
+        if ( Options.Force )
         {
             return true;
         }
