@@ -1,16 +1,15 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 
-using SparkDevNetwork.Rock.Plugin.Tool.CommandOptions;
-
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
 
 /// <summary>
 /// Base implementation for commands that create or modify content and files.
 /// </summary>
 /// <typeparam name="TOptions">The type of options used by the command.</typeparam>
-abstract class ModifyCommandBase<TOptions> : ActionCommandBase<TOptions>
-    where TOptions : ModifyCommandBaseOptions, new()
+abstract class BaseModifyCommand<TOptions, THandler> : BaseActionCommand<TOptions, THandler>
+    where TOptions : BaseModifyCommandOptions, new()
+    where THandler : BaseModifyCommandHandler<TOptions>
 {
     /// <summary>
     /// The option that describes if this command should be a dry-run and not
@@ -29,7 +28,7 @@ abstract class ModifyCommandBase<TOptions> : ActionCommandBase<TOptions>
     /// </summary>
     /// <param name="name">The primary name of the action.</param>
     /// <param name="description">The description of what the command will do.</param>
-    public ModifyCommandBase( string name, string description )
+    public BaseModifyCommand( string name, string description )
         : base( name, description )
     {
         _dryRunOption = new Option<bool>( "--dry-run", "Displays a summary of what would happen if the given command line were run." );

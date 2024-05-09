@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.CommandOptions;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
 
 /// <summary>
 /// Describes the options that are available to all action commands.
 /// </summary>
-class ActionCommandBaseOptions
+class BaseActionCommandOptions
 {
     /// <summary>
     /// The factory that will be used to create <see cref="ILogger"/> instances
@@ -17,7 +17,7 @@ class ActionCommandBaseOptions
     /// <summary>
     /// Creates a new options instance with default values.
     /// </summary>
-    public ActionCommandBaseOptions()
+    public BaseActionCommandOptions()
     {
     }
 
@@ -25,7 +25,7 @@ class ActionCommandBaseOptions
     /// Creates a new options instance that is a copy of the specified options.
     /// </summary>
     /// <param name="source">The source options to copy.</param>
-    public ActionCommandBaseOptions( ActionCommandBaseOptions source )
+    public BaseActionCommandOptions( BaseActionCommandOptions source )
     {
         LoggerFactory = source.LoggerFactory;
     }

@@ -1,9 +1,9 @@
-namespace SparkDevNetwork.Rock.Plugin.Tool.CommandOptions.Environment;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
 
 /// <summary>
-/// The options that are used by <see cref="Commands.Environment.NewCommand"/>.
+/// The options that are used by <see cref="NewCommand"/>.
 /// </summary>
-class NewCommandOptions : ModifyCommandBaseOptions
+class NewCommandOptions : BaseModifyCommandOptions
 {
     /// <summary>
     /// The path to create the new environment in.
