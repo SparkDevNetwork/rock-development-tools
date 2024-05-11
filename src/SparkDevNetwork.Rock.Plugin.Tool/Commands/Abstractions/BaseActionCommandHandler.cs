@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Abstractions;
 
 /// <summary>
 /// Base handler for commands perform some action.

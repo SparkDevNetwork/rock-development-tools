@@ -12,7 +12,7 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
 /// Command handler for <see cref="NewCommand"/>.
 /// </summary>
 /// <typeparam name="TOptions">The type of options used by the command.</typeparam>
-class NewCommandHandler : BaseModifyCommandHandler<NewCommandOptions>
+class NewCommandHandler : Abstractions.BaseModifyCommandHandler<NewCommandOptions>
 {
     /// <summary>
     /// Creates the action command handler.

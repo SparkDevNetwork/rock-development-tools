@@ -14,7 +14,7 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Plugin;
 /// Command handler for <see cref="CreateCommand"/>.
 /// </summary>
 /// <typeparam name="TOptions">The type of options used by the command.</typeparam>
-class CreateCommandHandler : BaseModifyCommandHandler<CreateCommandOptions>
+class CreateCommandHandler : Abstractions.BaseModifyCommandHandler<CreateCommandOptions>
 {
     /// <summary>
     /// Creates the action command handler.

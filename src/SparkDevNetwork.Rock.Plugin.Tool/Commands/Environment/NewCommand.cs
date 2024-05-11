@@ -6,7 +6,7 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
 /// <summary>
 /// Container for sub-commands related to working with development environments.
 /// </summary>
-class NewCommand : BaseModifyCommand<NewCommandOptions, NewCommandHandler>
+class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions, NewCommandHandler>
 {
     /// <summary>
     /// The option that defines the output directory of the new environment.

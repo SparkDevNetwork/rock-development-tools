@@ -1,4 +1,4 @@
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Abstractions;
 
 /// <summary>
 /// Describes the options that are available to all commands that create or

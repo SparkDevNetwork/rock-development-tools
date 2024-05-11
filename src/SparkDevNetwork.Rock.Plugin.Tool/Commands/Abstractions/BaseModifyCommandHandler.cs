@@ -2,7 +2,7 @@ using System.Text.Json;
 
 using Spectre.Console;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Abstractions;
 
 /// <summary>
 /// Base handler for commands that modify content.

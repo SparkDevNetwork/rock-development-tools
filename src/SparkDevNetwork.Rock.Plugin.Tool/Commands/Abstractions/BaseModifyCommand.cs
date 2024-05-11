@@ -1,7 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Abstractions;
 
 /// <summary>
 /// Base implementation for commands that create or modify content and files.

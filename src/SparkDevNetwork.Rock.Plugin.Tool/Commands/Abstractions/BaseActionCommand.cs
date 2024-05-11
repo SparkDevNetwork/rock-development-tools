@@ -4,7 +4,7 @@ using System.CommandLine.Invocation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Abstractions;
 
 /// <summary>
 /// The base implementation for all commands that perform some action.

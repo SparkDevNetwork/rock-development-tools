@@ -8,7 +8,7 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Plugin;
 /// <summary>
 /// Container for sub-commands related to working with plugins.
 /// </summary>
-class CreateCommand : BaseModifyCommand<CreateCommandOptions, CreateCommandHandler>
+class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions, CreateCommandHandler>
 {
     /// <summary>
     /// The options that have been resolved for this command.
