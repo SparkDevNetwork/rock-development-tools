@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Spectre.Console;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
@@ -9,6 +11,14 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
 abstract class BaseModifyCommandHandler<TOptions> : BaseActionCommandHandler<TOptions>
     where TOptions : BaseModifyCommandOptions
 {
+    /// <summary>
+    /// The default serializer options that outputs with indentation.
+    /// </summary>
+    protected JsonSerializerOptions SerializerOptions { get; } = new JsonSerializerOptions
+    {
+        WriteIndented = true
+    };
+
     /// <summary>
     /// Creates an action command handler that will modify content.
     /// </summary>
@@ -35,6 +45,13 @@ abstract class BaseModifyCommandHandler<TOptions> : BaseActionCommandHandler<TOp
         }
         else
         {
+            var directory = Path.GetDirectoryName( path );
+
+            if ( !string.IsNullOrEmpty( directory ) && !Directory.Exists( directory ) )
+            {
+                Directory.CreateDirectory( directory );
+            }
+
             File.WriteAllText( path, content );
         }
     }

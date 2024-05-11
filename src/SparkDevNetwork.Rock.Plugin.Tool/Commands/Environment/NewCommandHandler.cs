@@ -1,3 +1,9 @@
+using System.Text.Json;
+
+using Semver;
+
+using SparkDevNetwork.Rock.Plugin.Tool.Data;
+
 using Spectre.Console;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
@@ -12,13 +18,13 @@ class NewCommandHandler : BaseModifyCommandHandler<NewCommandOptions>
     /// Creates the action command handler.
     /// </summary>
     /// <param name="options">The options for this handler.</param>
-    protected NewCommandHandler( NewCommandOptions options )
+    public NewCommandHandler( NewCommandOptions options )
         : base( options )
     {
     }
 
     /// <inheritdoc/>
-    public override Task<int> InvokeAsync()
+    public override async Task<int> InvokeAsync()
     {
         var outputDirectory = Options.Output ?? System.Environment.CurrentDirectory;
 
@@ -26,10 +32,85 @@ class NewCommandHandler : BaseModifyCommandHandler<NewCommandOptions>
 
         if ( !ValidateOutput( outputDirectory ) )
         {
-            return Task.FromResult( 1 );
+            return 1;
         }
 
-        return Task.FromResult( 0 );
+        var orgName = AnsiConsole.Ask<string>( "Organization Name?" );
+        var orgCode = AnsiConsole.Ask<string>( "Organization Code?" );
+        var rockVersionString = AnsiConsole.Prompt( new TextPrompt<string>( "Rock Version?" )
+        {
+            AllowEmpty = true,
+            Validator = ValidateRockVersionPrompt
+        } );
+
+        var rockVersion = !string.IsNullOrEmpty( rockVersionString )
+            ? SemVersion.Parse( rockVersionString, SemVersionStyles.Strict )
+            : null;
+
+        return await CreateEnvironment( outputDirectory, orgName, orgCode, rockVersion );
+    }
+
+    /// <summary>
+    /// Creates the environment with the specified values.
+    /// </summary>
+    /// <param name="outputDirectory">The directory to create the environment in.</param>
+    /// <param name="orgName">The name of the organization.</param>
+    /// <param name="orgCode">The organization code used in namespaces and tables.</param>
+    /// <param name="rockVersion">The version of Rock to install in the environment.</param>
+    /// <returns>A task that indicates when the operation has completed.</returns>
+    private async Task<int> CreateEnvironment( string outputDirectory, string orgName, string orgCode, SemVersion? rockVersion )
+    {
+        if ( !Directory.Exists( outputDirectory ) )
+        {
+            Directory.CreateDirectory( outputDirectory );
+        }
+
+        // Write the "/.gitignore" file.
+        WriteFile( Path.Join( outputDirectory, ".gitignore" ),
+            """
+            # Do not make any changes below this line.
+            /Rock
+            """ );
+
+        // Write the environment JSON file.
+        var environment = new EnvironmentData
+        {
+            Organization = new OrganizationData
+            {
+                Name = orgName,
+                Code = orgCode
+            },
+            Rock = new RockData
+            {
+                Version = rockVersion != null ? rockVersion.ToString() : ""
+            }
+        };
+
+        WriteFile( Path.Join( outputDirectory, EnvironmentData.Filename ),
+            JsonSerializer.Serialize( environment, SerializerOptions ) );
+
+        // Write the solution file.
+        WriteFile( Path.Join( outputDirectory, $"{orgName.Replace( " ", string.Empty )}.sln" ),
+            """
+            Microsoft Visual Studio Solution File, Format Version 12.00
+            # Visual Studio Version 17
+            VisualStudioVersion = 17.0.31903.59
+            MinimumVisualStudioVersion = 10.0.40219.1
+            Global
+                GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                    Debug|Any CPU = Debug|Any CPU
+                    Release|Any CPU = Release|Any CPU
+                EndGlobalSection
+                GlobalSection(SolutionProperties) = preSolution
+                    HideSolutionNode = FALSE
+                EndGlobalSection
+            EndGlobal
+            """ );
+
+        AnsiConsole.MarkupInterpolated( $"Initialized environment in [cyan]{outputDirectory}[/]" );
+        AnsiConsole.WriteLine();
+
+        return 0;
     }
 
     /// <summary>
@@ -66,5 +147,26 @@ class NewCommandHandler : BaseModifyCommandHandler<NewCommandOptions>
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Validates the Rock version text entered on the prompt.
+    /// </summary>
+    /// <param name="value">The value entered on the prompt.</param>
+    /// <returns>A validation result object that indicates if the value is valid.</returns>
+    private ValidationResult ValidateRockVersionPrompt( string value )
+    {
+        if ( value.Length == 0 )
+        {
+            return ValidationResult.Success();
+        }
+        else if ( SemVersion.TryParse( value, SemVersionStyles.Strict, out _ ) )
+        {
+            return ValidationResult.Success();
+        }
+        else
+        {
+            return ValidationResult.Error( "Invalid version number." );
+        }
     }
 }
