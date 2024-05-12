@@ -110,6 +110,11 @@ class NewCommandHandler : Abstractions.BaseModifyCommandHandler<NewCommandOption
         AnsiConsole.MarkupInterpolated( $"Initialized environment in [cyan]{outputDirectory}[/]" );
         AnsiConsole.WriteLine();
 
+        if ( rockVersion != null )
+        {
+            await new EnvironmentHelper().InstallRockVersion( Path.Combine( outputDirectory, "Rock" ), rockVersion );
+        }
+
         return 0;
     }
 
