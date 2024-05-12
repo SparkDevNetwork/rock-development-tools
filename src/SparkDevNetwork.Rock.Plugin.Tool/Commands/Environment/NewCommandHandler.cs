@@ -112,7 +112,17 @@ class NewCommandHandler : Abstractions.BaseModifyCommandHandler<NewCommandOption
 
         if ( rockVersion != null )
         {
-            await new EnvironmentHelper().InstallRockVersion( Path.Combine( outputDirectory, "Rock" ), rockVersion );
+            var helper = new EnvironmentHelper
+            {
+                IsDryRun = Options.DryRun
+            };
+
+            if ( !string.IsNullOrEmpty( Options.Source ) )
+            {
+                helper.RockEnvironmentSourceUrl = Options.Source;
+            }
+
+            await helper.InstallRockVersion( Path.Combine( outputDirectory, "Rock" ), rockVersion );
         }
 
         return 0;

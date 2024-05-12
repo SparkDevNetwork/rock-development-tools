@@ -11,6 +11,11 @@ class NewCommandOptions : Abstractions.BaseModifyCommandOptions
     public string? Output { get; set; }
 
     /// <summary>
+    /// The base URL to use when downloading environment files.
+    /// </summary>
+    public string? Source { get; set; }
+
+    /// <summary>
     /// Creates a new options instance with default values.
     /// </summary>
     public NewCommandOptions()

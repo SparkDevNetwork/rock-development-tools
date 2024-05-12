@@ -14,6 +14,11 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions, NewCommandH
     private readonly Option<string?> _outputOption;
 
     /// <summary>
+    /// The base URL when downloading environment files.
+    /// </summary>
+    private readonly Option<string?> _sourceOption;
+
+    /// <summary>
     /// Creates a command that will handle creating a new development
     /// environment.
     /// </summary>
@@ -23,7 +28,10 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions, NewCommandH
         _outputOption = new Option<string?>( "--output", "Location to place the generated output." );
         _outputOption.AddAlias( "-o" );
 
+        _sourceOption = new Option<string?>( "--source", "The base URL to use when downloading environment files." );
+
         AddOption( _outputOption );
+        AddOption( _sourceOption );
     }
 
     /// <inheritdoc/>
@@ -32,6 +40,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions, NewCommandH
         var options = base.GetOptions( context );
 
         options.Output = context.ParseResult.GetValueForOption( _outputOption );
+        options.Source = context.ParseResult.GetValueForOption( _sourceOption );
 
         return options;
     }
