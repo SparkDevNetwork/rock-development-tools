@@ -25,6 +25,12 @@ class EnvironmentData
     public RockData? Rock { get; set; }
 
     /// <summary>
+    /// The plugins that should be installed in the environment.
+    /// </summary>
+    [JsonPropertyName( "plugins" )]
+    public List<PluginData>? Plugins { get; set; }
+
+    /// <summary>
     /// Additional data in the JSON stream that we don't know about.
     /// </summary>
     [JsonExtensionData]
