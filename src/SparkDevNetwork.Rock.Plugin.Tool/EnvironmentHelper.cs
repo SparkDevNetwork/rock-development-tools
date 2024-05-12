@@ -12,6 +12,16 @@ namespace SparkDevNetwork.Rock.Plugin.Tool;
 class EnvironmentHelper
 {
     /// <summary>
+    /// The files and directories that should be preserved when installing
+    /// new Rock versions.
+    /// </summary>
+    private static readonly string[] PreservedRockFiles = [
+        "RockWeb/web.ConnectionStrings.config",
+        "RockWeb/Plugins",
+        "RockWeb/App_Data",
+    ];
+
+    /// <summary>
     /// The source for the Rock installation archives used when downloading
     /// binary installations.
     /// </summary>
@@ -34,18 +44,17 @@ class EnvironmentHelper
     {
         var url = $"{RockEnvironmentSourceUrl}/Rock-{rockVersion}.zip";
 
-        // This needs to be updated to preserve specific files.
-        if ( !IsDryRun && Directory.Exists( destinationDirectory ) )
-        {
-            Directory.Delete( destinationDirectory, true );
-        }
+        AnsiConsole.MarkupLineInterpolated( $"Installing Rock from [cyan]{url}[/]" );
+
+        // Remove the existing Rock installation, if any.
+        RemoveRock( destinationDirectory );
 
         var progress = AnsiConsole.Progress();
 
         await progress.StartAsync( async ctx =>
         {
             var downloadProgress = ctx.AddTask( "Downloading Rock", true, 1 );
-            var extractProgress = ctx.AddTask( IsDryRun ? "Validation archive" : "Extracting files", false, 1 );
+            var extractProgress = ctx.AddTask( IsDryRun ? "Validating archive" : "Extracting files", false, 1 );
 
             using var client = new HttpClient();
             using var memoryStream = new MemoryStream();
@@ -65,6 +74,9 @@ class EnvironmentHelper
             extractProgress.StopTask();
             ctx.Refresh();
         } );
+
+        AnsiConsole.MarkupLineInterpolated( $"Installed Rock [cyan]{rockVersion}[/] into [cyan]{destinationDirectory}[/]" );
+        AnsiConsole.WriteLine();
     }
 
     /// <summary>
@@ -94,7 +106,7 @@ class EnvironmentHelper
                     Directory.CreateDirectory( fileDirectory );
                 }
 
-                entry.ExtractToFile( Path.Combine( destinationDirectory, entry.FullName ) );
+                entry.ExtractToFile( Path.Combine( destinationDirectory, entry.FullName ), true );
             }
 
             if ( progress != null )
@@ -102,5 +114,83 @@ class EnvironmentHelper
                 progress.Value = ( float ) i / archive.Entries.Count;
             }
         }
+
+        if ( progress != null )
+        {
+            progress.Value = 1;
+        }
+    }
+
+    /// <summary>
+    /// Removes the current installation of Rock from the file system.
+    /// </summary>
+    /// <param name="targetDirectory">The directory that Rock is installed in.</param>
+    public void RemoveRock( string targetDirectory )
+    {
+        if ( !Directory.Exists( targetDirectory ) )
+        {
+            return;
+        }
+
+        if ( IsDryRun )
+        {
+            var relativeTargetDirectory = Path.GetRelativePath( Directory.GetCurrentDirectory(), targetDirectory );
+
+            AnsiConsole.WriteLine( $"Remove {relativeTargetDirectory}" );
+        }
+
+        bool RemoveDirectory( string directory )
+        {
+            bool removeDirectory = true;
+
+            foreach ( var dir in Directory.EnumerateDirectories( directory ) )
+            {
+                var dirpath = Path.Combine( directory, dir );
+                var relativepath = Path.GetRelativePath( targetDirectory, dirpath );
+
+                if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
+                {
+                    if ( IsDryRun )
+                    {
+                        AnsiConsole.WriteLine( $"  Preserve {relativepath}" );
+                    }
+
+                    removeDirectory = false;
+                }
+                else if ( !RemoveDirectory( Path.Combine( directory, dir ) ) )
+                {
+                    removeDirectory = false;
+                }
+            }
+
+            foreach ( var file in Directory.EnumerateFiles( directory ) )
+            {
+                var filepath = Path.Combine( directory, file );
+                var relativepath = Path.GetRelativePath( targetDirectory, filepath );
+
+                if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
+                {
+                    if ( IsDryRun )
+                    {
+                        AnsiConsole.WriteLine( $"  Preserve {relativepath}" );
+                    }
+
+                    removeDirectory = false;
+                }
+                else if ( !IsDryRun )
+                {
+                    File.Delete( filepath );
+                }
+            }
+
+            if ( removeDirectory && !IsDryRun )
+            {
+                Directory.Delete( directory, false );
+            }
+
+            return removeDirectory;
+        }
+
+        RemoveDirectory( targetDirectory );
     }
 }
