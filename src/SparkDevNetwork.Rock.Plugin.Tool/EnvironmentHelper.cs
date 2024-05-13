@@ -42,7 +42,7 @@ class EnvironmentHelper
     /// <returns>A <see cref="Task"/> that indicates when the operation has completed.</returns>
     public async Task InstallRockVersion( string destinationDirectory, SemVersion rockVersion )
     {
-        var url = $"{RockEnvironmentSourceUrl}/Rock-{rockVersion}.zip";
+        var url = $"{RockEnvironmentSourceUrl.TrimEnd( '/' )}/Rock-{rockVersion}.zip";
 
         AnsiConsole.MarkupLineInterpolated( $"Installing Rock from [cyan]{url}[/]" );
 

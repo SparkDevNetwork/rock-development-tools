@@ -9,13 +9,20 @@ static class ExtensionMethods
     /// feedback.
     /// </summary>
     /// <param name="client">The <see cref="HttpClient"/> to execute the operation on.</param>
-    /// <param name="requestUri">The URI to be downloaded</param>
+    /// <param name="requestUri">The URI to be downloaded.</param>
     /// <param name="destination">The <see cref="Stream"/> to store the downloaded data into.</param>
     /// <param name="progress">The callback for progress reporting as a value between <c>0</c> and <c>1</c>.</param>
     /// <param name="cancellationToken">The token monitored for cancellation requests.</param>
     /// <returns>A <see cref="Task"/> that indicates when the operation has completed.</returns>
     public static async Task DownloadAsync( this HttpClient client, string requestUri, Stream destination, Action<float> progress, CancellationToken cancellationToken = default )
     {
+        if ( !requestUri.Contains( "://" ) )
+        {
+            await ReadFileAsync( requestUri, destination, progress, cancellationToken );
+
+            return;
+        }
+
         using var response = await client.GetAsync( requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken ).ConfigureAwait( false );
 
         if ( response.StatusCode == HttpStatusCode.NotFound )
@@ -47,6 +54,34 @@ static class ExtensionMethods
                 totalBytesRead += bytesRead;
                 progress( ( float ) totalBytesRead / contentLength.Value );
             }
+        }
+
+        progress( 1 );
+    }
+
+    /// <summary>
+    /// Reads the file into the specified stream while providing progress
+    /// feedback.
+    /// </summary>
+    /// <param name="path">TThe path to the file to read.</param>
+    /// <param name="destination">The <see cref="Stream"/> to store the downloaded data into.</param>
+    /// <param name="progress">The callback for progress reporting as a value between <c>0</c> and <c>1</c>.</param>
+    /// <param name="cancellationToken">The token monitored for cancellation requests.</param>
+    /// <returns>A <see cref="Task"/> that indicates when the operation has completed.</returns>
+    private static async Task ReadFileAsync( string requestUri, Stream destination, Action<float> progress, CancellationToken cancellationToken = default )
+    {
+        using var readStream = File.OpenRead( requestUri );
+        var totalSize = new FileInfo( requestUri ).Length;
+
+        var buffer = new byte[81920];
+        long totalBytesRead = 0;
+        int bytesRead;
+
+        while ( ( bytesRead = await readStream.ReadAsync( buffer, cancellationToken ).ConfigureAwait( false ) ) != 0 )
+        {
+            await destination.WriteAsync( buffer.AsMemory( 0, bytesRead ), cancellationToken ).ConfigureAwait( false );
+            totalBytesRead += bytesRead;
+            progress( ( float ) totalBytesRead / totalSize );
         }
 
         progress( 1 );
