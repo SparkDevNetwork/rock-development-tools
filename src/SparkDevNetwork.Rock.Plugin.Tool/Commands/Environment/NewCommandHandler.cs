@@ -1,5 +1,7 @@
 using System.Text.Json;
 
+using LibGit2Sharp;
+
 using Semver;
 
 using SparkDevNetwork.Rock.Plugin.Tool.Data;
@@ -123,6 +125,15 @@ class NewCommandHandler : Abstractions.BaseModifyCommandHandler<NewCommandOption
             }
 
             await helper.InstallRockVersion( Path.Combine( outputDirectory, "Rock" ), rockVersion );
+        }
+
+        if ( !Directory.Exists( Path.Combine( outputDirectory, ".git" ) ) )
+        {
+            Repository.Init( Path.Combine( outputDirectory ) );
+            using var repo = new Repository( outputDirectory );
+
+            // Switch the repository to use "main" as the default branch.
+            repo.Refs.Add( "HEAD", "refs/heads/main", null, true );
         }
 
         return 0;
