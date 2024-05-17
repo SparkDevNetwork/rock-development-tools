@@ -30,5 +30,6 @@ class NewCommandOptions : Abstractions.BaseModifyCommandOptions
         : base( source )
     {
         Output = source.Output;
+        Source = source.Source;
     }
 }

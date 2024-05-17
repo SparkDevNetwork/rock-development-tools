@@ -21,6 +21,12 @@ class PluginData
     public string? Url { get; set; }
 
     /// <summary>
+    /// The branch name to checkout in the plugin repository.
+    /// </summary>
+    [JsonPropertyName( "branch" )]
+    public string? Branch { get; set; }
+
+    /// <summary>
     /// Additional data in the JSON stream that we don't know about.
     /// </summary>
     [JsonExtensionData]

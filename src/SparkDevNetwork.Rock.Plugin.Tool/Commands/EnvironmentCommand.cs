@@ -19,5 +19,6 @@ class EnvironmentCommand : Command
         AddAlias( "env" );
 
         AddCommand( new NewCommand() );
+        AddCommand( new UpdateCommand() );
     }
 }
