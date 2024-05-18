@@ -1,4 +1,4 @@
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands;
 
 /// <summary>
 /// The options that are used by <see cref="NewCommand"/>.

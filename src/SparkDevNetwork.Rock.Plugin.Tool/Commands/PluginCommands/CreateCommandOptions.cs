@@ -1,4 +1,4 @@
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Plugin;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 
 /// <summary>
 /// The options that are used by <see cref="CreateCommand"/>.

@@ -11,7 +11,7 @@ using SparkDevNetwork.Rock.Plugin.Tool.Data;
 
 using Spectre.Console;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands;
 
 /// <summary>
 /// Command handler for <see cref="UpdateCommand"/>.

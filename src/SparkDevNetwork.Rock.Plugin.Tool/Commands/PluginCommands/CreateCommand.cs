@@ -3,7 +3,7 @@ using System.CommandLine.Invocation;
 
 using Semver;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Plugin;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 
 /// <summary>
 /// Container for sub-commands related to working with plugins.

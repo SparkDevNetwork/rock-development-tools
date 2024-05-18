@@ -1,6 +1,6 @@
 using System.CommandLine;
 
-using SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
+using SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
 

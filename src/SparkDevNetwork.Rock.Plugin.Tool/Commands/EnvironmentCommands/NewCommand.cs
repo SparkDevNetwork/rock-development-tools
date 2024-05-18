@@ -1,7 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands;
 
 /// <summary>
 /// Container for sub-commands related to working with development environments.

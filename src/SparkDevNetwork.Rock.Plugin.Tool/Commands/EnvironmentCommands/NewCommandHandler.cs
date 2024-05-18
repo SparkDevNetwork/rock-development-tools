@@ -8,7 +8,7 @@ using SparkDevNetwork.Rock.Plugin.Tool.Data;
 
 using Spectre.Console;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Environment;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands;
 
 /// <summary>
 /// Command handler for <see cref="NewCommand"/>.
@@ -114,7 +114,7 @@ class NewCommandHandler : Abstractions.BaseModifyCommandHandler<NewCommandOption
 
         if ( rockVersion != null )
         {
-            var helper = new EnvironmentHelper
+            var helper = new EnvironmentHelper( Logger )
             {
                 IsDryRun = Options.DryRun
             };

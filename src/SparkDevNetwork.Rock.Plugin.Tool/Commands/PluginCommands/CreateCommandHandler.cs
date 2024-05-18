@@ -8,7 +8,7 @@ using Spectre.Console;
 
 using ValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Plugin;
+namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 
 /// <summary>
 /// Command handler for <see cref="CreateCommand"/>.
