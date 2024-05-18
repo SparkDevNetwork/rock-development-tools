@@ -1,14 +1,3 @@
-using System.Reflection;
-using System.Text.Json;
-
-using LibGit2Sharp;
-
-using Microsoft.Extensions.Logging;
-
-using Semver;
-
-using SparkDevNetwork.Rock.Plugin.Tool.Data;
-
 using Spectre.Console;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands;
@@ -32,29 +21,17 @@ class UpdateCommandHandler : Abstractions.BaseModifyCommandHandler<UpdateCommand
     public override async Task<int> InvokeAsync()
     {
         var environmentDirectory = Options.Target ?? Directory.GetCurrentDirectory();
-        var environmentFile = Path.Combine( environmentDirectory, EnvironmentData.Filename );
 
-        if ( !File.Exists( environmentFile ) )
+        var environment = Environment.Open(environmentDirectory, AnsiConsole.Console, Options.LoggerFactory);
+
+        if ( environment is null )
         {
-            AnsiConsole.MarkupLineInterpolated( $"No environment file was found at [cyan]{environmentFile}[/]." );
             return 1;
         }
 
-        var json = File.ReadAllText( environmentFile );
-        var environment = JsonSerializer.Deserialize<EnvironmentData>( json );
+        environment.IsDryRun = Options.DryRun;
 
-        if ( environment == null )
-        {
-            AnsiConsole.MarkupLineInterpolated( $"Invalid environment configuration found in [cyan]{environmentFile}[/]." );
-            return 1;
-        }
-
-        var helper = new EnvironmentHelper( Logger )
-        {
-            IsDryRun = Options.DryRun
-        };
-
-        if ( helper.IsEnvironmentUpToDate( environmentDirectory, environment ) )
+        if ( environment.IsEnvironmentUpToDate() )
         {
             AnsiConsole.WriteLine( "Environment is up to date." );
             return 0;
@@ -62,5 +39,4 @@ class UpdateCommandHandler : Abstractions.BaseModifyCommandHandler<UpdateCommand
 
         return 0;
     }
-
 }

@@ -75,7 +75,7 @@ class NewCommandHandler : Abstractions.BaseModifyCommandHandler<NewCommandOption
             """ );
 
         // Write the environment JSON file.
-        var environment = new EnvironmentData
+        var environmentData = new EnvironmentData
         {
             Organization = new OrganizationData
             {
@@ -89,7 +89,7 @@ class NewCommandHandler : Abstractions.BaseModifyCommandHandler<NewCommandOption
         };
 
         WriteFile( Path.Join( outputDirectory, EnvironmentData.Filename ),
-            JsonSerializer.Serialize( environment, SerializerOptions ) );
+            JsonSerializer.Serialize( environmentData, SerializerOptions ) );
 
         // Write the solution file.
         WriteFile( Path.Join( outputDirectory, $"{orgName.Replace( " ", string.Empty )}.sln" ),
@@ -114,17 +114,21 @@ class NewCommandHandler : Abstractions.BaseModifyCommandHandler<NewCommandOption
 
         if ( rockVersion != null )
         {
-            var helper = new EnvironmentHelper( Logger )
+            var environment = Environment.Open( outputDirectory, AnsiConsole.Console, Options.LoggerFactory );
+
+            if ( environment is null )
             {
-                IsDryRun = Options.DryRun
-            };
+                return 1;
+            }
+
+            environment.IsDryRun = Options.DryRun;
 
             if ( !string.IsNullOrEmpty( Options.Source ) )
             {
-                helper.RockEnvironmentSourceUrl = Options.Source;
+                environment.RockEnvironmentSourceUrl = Options.Source;
             }
 
-            await helper.InstallRockVersion( Path.Combine( outputDirectory, "Rock" ), rockVersion );
+            await environment.InstallRockVersionAsync( rockVersion );
         }
 
         if ( !Directory.Exists( Path.Combine( outputDirectory, ".git" ) ) )

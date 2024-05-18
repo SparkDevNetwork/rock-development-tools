@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Reflection;
+using System.Text.Json;
 
 using LibGit2Sharp;
 
@@ -16,7 +17,7 @@ namespace SparkDevNetwork.Rock.Plugin.Tool;
 /// <summary>
 /// Handles updating and installing environments.
 /// </summary>
-class EnvironmentHelper
+class Environment
 {
     /// <summary>
     /// The files and directories that should be preserved when installing
@@ -27,6 +28,26 @@ class EnvironmentHelper
         "RockWeb/Plugins",
         "RockWeb/App_Data",
     ];
+
+    /// <summary>
+    /// The directory that contains the environment.
+    /// </summary>
+    private readonly string _environmentDirectory;
+
+    /// <summary>
+    /// The data that represents the environment configuration.
+    /// </summary>
+    private readonly EnvironmentData _data;
+
+    /// <summary>
+    /// The console to use when writing messages to standard output.
+    /// </summary>
+    private readonly IAnsiConsole _console;
+
+    /// <summary>
+    /// The logger to use when writing diagnostic messages.
+    /// </summary>
+    private readonly ILogger _logger;
 
     /// <summary>
     /// The source for the Rock installation archives used when downloading
@@ -41,36 +62,64 @@ class EnvironmentHelper
     public bool IsDryRun { get; set; }
 
     /// <summary>
-    /// The logger to use when writing diagnostic information.
-    /// </summary>
-    public ILogger Logger { get; }
-
-    /// <summary>
     /// Creates a new instance of the environment helper.
     /// </summary>
     /// <param name="logger">The logger to use when writing diagnostic messages.</param>
-    public EnvironmentHelper( ILogger logger )
+    public Environment( string environmentDirectory, EnvironmentData data, IAnsiConsole console, ILogger logger )
     {
-        Logger = logger;
+        _environmentDirectory = environmentDirectory;
+        _data = data;
+        _console = console;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Opens an existing environment from a directory.
+    /// </summary>
+    /// <param name="environmentDirectory">The directory that contains the environment.</param>
+    /// <param name="console">The console object to use when writing console messages.</param>
+    /// <param name="loggerFactory">The factory to create new logging facilities.</param>
+    /// <returns>An instance of <see cref="Environment"/> or <c>null</c> if it could not be opened.</returns>
+    public static Environment? Open( string environmentDirectory, IAnsiConsole console, ILoggerFactory loggerFactory )
+    {
+        var logger = loggerFactory.CreateLogger( typeof( Environment ).Name );
+        var environmentFile = Path.Combine( environmentDirectory, EnvironmentData.Filename );
+
+        if ( !File.Exists( environmentFile ) )
+        {
+            console.MarkupLineInterpolated( $"No environment file was found at [cyan]{environmentFile}[/]." );
+            return null;
+        }
+
+        var json = File.ReadAllText( environmentFile );
+        var environment = JsonSerializer.Deserialize<EnvironmentData>( json );
+
+        if ( environment == null )
+        {
+            console.MarkupLineInterpolated( $"Invalid environment configuration found in [cyan]{environmentFile}[/]." );
+            return null;
+        }
+
+        return new Environment( environmentDirectory, environment, console, logger );
     }
 
     /// <summary>
     /// Installs the specified Rock binary version into the destination
     /// directory.
     /// </summary>
-    /// <param name="destinationDirectory">The directory to install the binary release into.</param>
     /// <param name="rockVersion">The version of Rock to install.</param>
     /// <returns>A <see cref="Task"/> that indicates when the operation has completed.</returns>
-    public async Task InstallRockVersion( string destinationDirectory, SemVersion rockVersion )
+    public async Task InstallRockVersionAsync( SemVersion rockVersion )
     {
         var url = $"{RockEnvironmentSourceUrl.TrimEnd( '/' )}/Rock-{rockVersion}.zip";
+        var destinationDirectory = Path.Combine( _environmentDirectory, "Rock" );
 
-        AnsiConsole.MarkupLineInterpolated( $"Installing Rock from [cyan]{url}[/]" );
+        _console.MarkupLineInterpolated( $"Installing Rock from [cyan]{url}[/]" );
 
         // Remove the existing Rock installation, if any.
         RemoveRock( destinationDirectory );
 
-        var progress = AnsiConsole.Progress();
+        var progress = _console.Progress();
 
         await progress.StartAsync( async ctx =>
         {
@@ -96,8 +145,8 @@ class EnvironmentHelper
             ctx.Refresh();
         } );
 
-        AnsiConsole.MarkupLineInterpolated( $"Installed Rock [cyan]{rockVersion}[/] into [cyan]{destinationDirectory}[/]" );
-        AnsiConsole.WriteLine();
+        _console.MarkupLineInterpolated( $"Installed Rock [cyan]{rockVersion}[/] into [cyan]{destinationDirectory}[/]" );
+        _console.WriteLine();
     }
 
     /// <summary>
@@ -157,7 +206,7 @@ class EnvironmentHelper
         {
             var relativeTargetDirectory = Path.GetRelativePath( Directory.GetCurrentDirectory(), targetDirectory );
 
-            AnsiConsole.WriteLine( $"Remove {relativeTargetDirectory}" );
+            _console.WriteLine( $"Remove {relativeTargetDirectory}" );
         }
 
         bool RemoveDirectory( string directory )
@@ -173,7 +222,7 @@ class EnvironmentHelper
                 {
                     if ( IsDryRun )
                     {
-                        AnsiConsole.WriteLine( $"  Preserve {relativepath}" );
+                        _console.WriteLine( $"  Preserve {relativepath}" );
                     }
 
                     removeDirectory = false;
@@ -193,7 +242,7 @@ class EnvironmentHelper
                 {
                     if ( IsDryRun )
                     {
-                        AnsiConsole.WriteLine( $"  Preserve {relativepath}" );
+                        _console.WriteLine( $"  Preserve {relativepath}" );
                     }
 
                     removeDirectory = false;
@@ -218,21 +267,19 @@ class EnvironmentHelper
     /// <summary>
     /// Checks if the environment is up to date with the configuration.
     /// </summary>
-    /// <param name="environmentDirectory">The directory that contains the environment.</param>
-    /// <param name="environment">The environment configuration.</param>
     /// <returns><c>true</c> if the environment is already up to date; otherwise <c>false</c>.</returns>
-    public bool IsEnvironmentUpToDate( string environmentDirectory, EnvironmentData environment )
+    public bool IsEnvironmentUpToDate()
     {
-        if ( !IsRockUpToDate( environmentDirectory, environment.Rock ) )
+        if ( !IsRockUpToDate() )
         {
             return false;
         }
 
-        if ( environment.Plugins != null )
+        if ( _data.Plugins != null )
         {
-            foreach ( var plugin in environment.Plugins )
+            foreach ( var plugin in _data.Plugins )
             {
-                if ( !IsPluginUpToDate( environmentDirectory, plugin ) )
+                if ( !IsPluginUpToDate( plugin ) )
                 {
                     return false;
                 }
@@ -246,26 +293,24 @@ class EnvironmentHelper
     /// Checks if the Rock installation is up to date. This is a best guess
     /// based on the version number of the Rock.dll file.
     /// </summary>
-    /// <param name="environmentDirectory">The directory that contains the environment.</param>
-    /// <param name="rock">The Rock environment configuration.</param>
     /// <returns><c>true</c> if the Rock version number is correct; otherwise <c>false</c>.</returns>
-    private bool IsRockUpToDate( string environmentDirectory, RockData? rock )
+    private bool IsRockUpToDate()
     {
-        if ( rock == null || rock.Version == "custom" )
+        if ( _data.Rock == null || _data.Rock.Version == "custom" )
         {
             return true;
         }
 
-        if ( !SemVersion.TryParse( rock.Version, SemVersionStyles.Strict, out var version ) )
+        if ( !SemVersion.TryParse( _data.Rock.Version, SemVersionStyles.Strict, out var version ) )
         {
-            Logger.LogError( "Unable to parse Rock version number '{version}'.", rock.Version );
+            _logger.LogError( "Unable to parse Rock version number '{version}'.", _data.Rock.Version );
             return false;
         }
 
-        var rockDllPath = Path.Combine( environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
+        var rockDllPath = Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
         if ( !File.Exists( rockDllPath ) )
         {
-            Logger.LogInformation( "No Rock assembly was found at {filename}.", rockDllPath );
+            _logger.LogInformation( "No Rock assembly was found at {filename}.", rockDllPath );
             return false;
         }
 
@@ -273,7 +318,7 @@ class EnvironmentHelper
 
         if ( asmName.Version == null )
         {
-            Logger.LogError( "No version number found in Rock assembly." );
+            _logger.LogError( "No version number found in Rock assembly." );
             return false;
         }
 
@@ -285,7 +330,7 @@ class EnvironmentHelper
 
             if ( !doesVersionMatch )
             {
-                Logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
+                _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
                 return false;
             }
         }
@@ -296,7 +341,7 @@ class EnvironmentHelper
 
             if ( !doesVersionMatch )
             {
-                Logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
+                _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
                 return false;
             }
         }
@@ -307,36 +352,35 @@ class EnvironmentHelper
     /// <summary>
     /// Checks if the plugin is up to date with the environment configuration.
     /// </summary>
-    /// <param name="environmentDirectory">The directory that contains the environment.</param>
     /// <param name="plugin">The plugin configuration.</param>
     /// <returns><c>true</c> if the plugin branch is correct; otherwise <c>false</c>.</returns>
-    private bool IsPluginUpToDate( string environmentDirectory, PluginData plugin )
+    private bool IsPluginUpToDate( PluginData plugin )
     {
         if ( plugin.Path == null || plugin.Url == null )
         {
             if ( plugin.Path == null )
             {
-                Logger.LogError( "Defined plugin is missing path." );
+                _logger.LogError( "Defined plugin is missing path." );
             }
             else
             {
-                Logger.LogError( "Plugin {name} is missing url.", plugin.Path );
+                _logger.LogError( "Plugin {name} is missing url.", plugin.Path );
             }
 
             return false;
         }
 
-        var pluginDirectory = Path.Combine( environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
+        var pluginDirectory = Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
 
         if ( !Directory.Exists( pluginDirectory ) )
         {
-            Logger.LogInformation( "Plugin {path} is missing.", plugin.Path );
+            _logger.LogInformation( "Plugin {path} is missing.", plugin.Path );
             return false;
         }
 
         if ( !Repository.IsValid( pluginDirectory ) )
         {
-            Logger.LogError( "Plugin {path} is not a git repository.", plugin.Path );
+            _logger.LogError( "Plugin {path} is not a git repository.", plugin.Path );
             return false;
         }
 
@@ -350,7 +394,7 @@ class EnvironmentHelper
 
         if ( !reference.StartsWith( "refs/heads/" ) )
         {
-            Logger.LogInformation( "Plugin {path} is not on a branch.", plugin.Path );
+            _logger.LogInformation( "Plugin {path} is not on a branch.", plugin.Path );
             return false;
         }
 
@@ -358,7 +402,7 @@ class EnvironmentHelper
 
         if ( plugin.Branch != branch )
         {
-            Logger.LogInformation( "Plugin {path} is on branch {repoBranch} instead of {expectedBranch}.", plugin.Path, branch, plugin.Branch );
+            _logger.LogInformation( "Plugin {path} is on branch {repoBranch} instead of {expectedBranch}.", plugin.Path, branch, plugin.Branch );
             return false;
         }
 
