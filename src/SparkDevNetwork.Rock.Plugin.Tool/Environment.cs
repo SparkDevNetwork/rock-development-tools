@@ -108,7 +108,29 @@ class Environment
             return null;
         }
 
+        // Validate all plugins and abort if any plugin is not valid.
+        if ( environment.Plugins != null && environment.Plugins.Any( p => p.Path == null ) )
+        {
+            console.WriteLine( "One or more plugins were defined without a path, all plugins must define a path." );
+            return null;
+        }
+
         return new Environment( environmentDirectory, environment, console, logger );
+    }
+
+    /// <summary>
+    /// Installs the configured Rock binary version into the default Rock
+    /// directory.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> that indicates when the operation has completed.</returns>
+    public Task InstallRockAsync()
+    {
+        if ( !SemVersion.TryParse( _data.Rock?.Version, SemVersionStyles.Strict, out var version ) )
+        {
+            throw new Exception( "Invalid Rock version specified in configuration." );
+        }
+
+        return InstallRockVersionAsync( version );
     }
 
     /// <summary>
@@ -123,9 +145,6 @@ class Environment
         var destinationDirectory = Path.Combine( _environmentDirectory, "Rock" );
 
         _console.MarkupLineInterpolated( $"Installing Rock from [cyan]{url}[/]" );
-
-        // Remove the existing Rock installation, if any.
-        RemoveRock( destinationDirectory );
 
         var progress = _console.Progress();
 
@@ -153,7 +172,7 @@ class Environment
             ctx.Refresh();
         } );
 
-        _console.MarkupLineInterpolated( $"Installed Rock [cyan]{rockVersion}[/] into [cyan]{destinationDirectory}[/]" );
+        _console.MarkupLineInterpolated( $"Installed Rock [cyan]{rockVersion}[/] into [cyan]{destinationDirectory.Replace( '/', Path.DirectorySeparatorChar )}[/]" );
         _console.WriteLine();
     }
 
@@ -200,6 +219,17 @@ class Environment
     }
 
     /// <summary>
+    /// Removes the current installation of Rock from the file system using
+    /// the standard Rock directory.
+    /// </summary>
+    public void RemoveRock()
+    {
+        var destinationDirectory = Path.Combine( _environmentDirectory, "Rock" );
+
+        RemoveRock( destinationDirectory );
+    }
+
+    /// <summary>
     /// Removes the current installation of Rock from the file system.
     /// </summary>
     /// <param name="targetDirectory">The directory that Rock is installed in.</param>
@@ -221,36 +251,34 @@ class Environment
         {
             bool removeDirectory = true;
 
-            foreach ( var dir in Directory.EnumerateDirectories( directory ) )
+            foreach ( var dirpath in Directory.EnumerateDirectories( directory ) )
             {
-                var dirpath = Path.Combine( directory, dir );
                 var relativepath = Path.GetRelativePath( targetDirectory, dirpath );
 
                 if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
                 {
                     if ( IsDryRun )
                     {
-                        _console.WriteLine( $"  Preserve {relativepath}" );
+                        _console.WriteLine( $"  Preserve {Path.GetRelativePath( Directory.GetCurrentDirectory(), dirpath )}" );
                     }
 
                     removeDirectory = false;
                 }
-                else if ( !RemoveDirectory( Path.Combine( directory, dir ) ) )
+                else if ( !RemoveDirectory( dirpath ) )
                 {
                     removeDirectory = false;
                 }
             }
 
-            foreach ( var file in Directory.EnumerateFiles( directory ) )
+            foreach ( var filepath in Directory.EnumerateFiles( directory ) )
             {
-                var filepath = Path.Combine( directory, file );
                 var relativepath = Path.GetRelativePath( targetDirectory, filepath );
 
                 if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
                 {
                     if ( IsDryRun )
                     {
-                        _console.WriteLine( $"  Preserve {relativepath}" );
+                        _console.WriteLine( $"  Preserve {Path.GetRelativePath( Directory.GetCurrentDirectory(), filepath )}" );
                     }
 
                     removeDirectory = false;
@@ -309,24 +337,24 @@ class Environment
     /// based on the version number of the Rock.dll file.
     /// </summary>
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
-    private EnvironmentStatusItem GetRockStatus()
+    public EnvironmentStatusItem GetRockStatus()
     {
         if ( _data.Rock == null || _data.Rock.Version == "custom" )
         {
-            return new EnvironmentStatusItem( "Rock", false );
+            return new EnvironmentStatusItem( "Rock", null );
         }
 
         if ( !SemVersion.TryParse( _data.Rock.Version, SemVersionStyles.Strict, out var version ) )
         {
             _logger.LogError( "Unable to parse Rock version number '{version}'.", _data.Rock.Version );
-            return new EnvironmentStatusItem( "Rock", "has an invalid version number.", false );
+            return new EnvironmentStatusItem( "Rock", "has an invalid version number.", null );
         }
 
         var rockDllPath = Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
         if ( !File.Exists( rockDllPath ) )
         {
             _logger.LogInformation( "No Rock assembly was found at {filename}.", rockDllPath );
-            return new EnvironmentStatusItem( "Rock", "is not installed.", false );
+            return new EnvironmentStatusItem( "Rock", "is not installed.", null );
         }
 
         var asmName = AssemblyName.GetAssemblyName( rockDllPath );
@@ -334,7 +362,7 @@ class Environment
         if ( asmName.Version == null )
         {
             _logger.LogError( "No version number found in Rock assembly." );
-            return new EnvironmentStatusItem( "Rock", "is not installed.", false );
+            return new EnvironmentStatusItem( "Rock", "is not installed.", null );
         }
 
         if ( version.Major < 2 )
@@ -345,8 +373,8 @@ class Environment
 
             if ( !doesVersionMatch )
             {
-                _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
-                return new EnvironmentStatusItem( "Rock", $"version installed is {version} but should be {asmName.Version}.", false );
+                _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", asmName.Version, version );
+                return new EnvironmentStatusItem( "Rock", $"version installed is {version} but should be {asmName.Version}.", null );
             }
         }
         else
@@ -357,11 +385,11 @@ class Environment
             if ( !doesVersionMatch )
             {
                 _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
-                return new EnvironmentStatusItem( "Rock", $"version installed is {version} but should be {asmName.Version}.", false );
+                return new EnvironmentStatusItem( "Rock", $"version installed is {version} but should be {asmName.Version}.", null );
             }
         }
 
-        return new EnvironmentStatusItem( "Rock", false );
+        return new EnvironmentStatusItem( "Rock", null );
     }
 
     /// <summary>
@@ -369,39 +397,25 @@ class Environment
     /// </summary>
     /// <param name="plugin">The plugin configuration.</param>
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
-    private EnvironmentStatusItem GetPluginStatus( PluginData plugin )
+    public EnvironmentStatusItem GetPluginStatus( PluginData plugin )
     {
-        if ( plugin.Path == null || plugin.Url == null )
+        if ( plugin.Url == null )
         {
-            if ( plugin.Path == null )
-            {
-                _logger.LogError( "Defined plugin is missing path." );
-            }
-            else
-            {
-                _logger.LogError( "Plugin {name} is missing url.", plugin.Path );
-            }
-
-            return new EnvironmentStatusItem( "Unknown", "plugin is missing path.", true );
+            _logger.LogError( "Plugin {path} is missing url.", plugin.Path );
+            return new EnvironmentStatusItem( "Unknown", "plugin is missing path.", plugin );
         }
 
         var pluginDirectory = Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
 
-        if ( !Directory.Exists( pluginDirectory ) )
-        {
-            _logger.LogInformation( "Plugin {path} is missing.", plugin.Path );
-            return new EnvironmentStatusItem( plugin.Path, "is missing.", true );
-        }
-
         if ( !Repository.IsValid( pluginDirectory ) )
         {
             _logger.LogError( "Plugin {path} is not a git repository.", plugin.Path );
-            return new EnvironmentStatusItem( plugin.Path, "is not a git repository.", true );
+            return new EnvironmentStatusItem( plugin.Path, "is not a git repository.", plugin );
         }
 
         if ( plugin.Branch == null )
         {
-            return new EnvironmentStatusItem( plugin.Path, true );
+            return new EnvironmentStatusItem( plugin.Path, plugin );
         }
 
         var repository = new Repository( pluginDirectory );
@@ -410,7 +424,7 @@ class Environment
         if ( !reference.StartsWith( "refs/heads/" ) )
         {
             _logger.LogInformation( "Plugin {path} is not on a branch.", plugin.Path );
-            return new EnvironmentStatusItem( plugin.Path, "is not on a branch.", true );
+            return new EnvironmentStatusItem( plugin.Path, "is not on a branch.", plugin );
         }
 
         var branch = reference.Substring( 11 );
@@ -418,9 +432,52 @@ class Environment
         if ( plugin.Branch != branch )
         {
             _logger.LogInformation( "Plugin {path} is on branch {repoBranch} instead of {expectedBranch}.", plugin.Path, branch, plugin.Branch );
-            return new EnvironmentStatusItem( plugin.Path, $"is on branch {branch} but should be {plugin.Branch}.", true );
+            return new EnvironmentStatusItem( plugin.Path, $"is on branch {branch} but should be {plugin.Branch}.", plugin );
         }
 
-        return new EnvironmentStatusItem( plugin.Path, true );
+        return new EnvironmentStatusItem( plugin.Path, plugin );
+    }
+
+    /// <summary>
+    /// Checks if the Rock installation is clean. A clean installation means that
+    /// nothing has been modified from the original files that were put in place.
+    /// </summary>
+    /// <returns><c>true</c> if the Rock installation is in a clean state; otherwise <c>false</c>.</returns>
+    public bool IsRockClean()
+    {
+        // TODO: I think we need to create a .environment-lock.json file or
+        // something like that which contains every file installed for the Rock
+        // installation as well as the SHA1 of the contents. Then in this
+        // method we use that to validate to make sure none of those files have
+        // changed. This should also make it easier to know which files are
+        // safe to delete.
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if the plugin is clean. A clean installation means that the git
+    /// repository is in a clean state.
+    /// </summary>
+    /// <returns><c>true</c> if the plugin is in a clean state; otherwise <c>false</c>.</returns>
+    public bool IsPluginClean( PluginData plugin )
+    {
+        var pluginDirectory = Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
+
+        // If the directory does not exist, it is considered clean so that
+        // an update command can execute.
+        if ( !Directory.Exists( pluginDirectory ) )
+        {
+            return true;
+        }
+
+        if ( !Repository.IsValid( pluginDirectory ) )
+        {
+            _logger.LogError( "Plugin {path} is not a git repository.", plugin.Path );
+            return false;
+        }
+
+        using var repository = new Repository( pluginDirectory );
+
+        return !repository.RetrieveStatus().IsDirty;
     }
 }

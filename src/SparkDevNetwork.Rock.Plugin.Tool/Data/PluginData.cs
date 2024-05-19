@@ -12,7 +12,7 @@ class PluginData
     /// The path to install the plugin into.
     /// </summary>
     [JsonPropertyName( "path" )]
-    public string? Path { get; set; }
+    public string Path { get; set; } = null!;
 
     /// <summary>
     /// The URL to the git repository to install the plugin from.
