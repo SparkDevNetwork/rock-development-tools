@@ -18,7 +18,7 @@ class UpdateCommandHandler : Abstractions.BaseModifyCommandHandler<UpdateCommand
     }
 
     /// <inheritdoc/>
-    public override async Task<int> InvokeAsync()
+    public override Task<int> InvokeAsync()
     {
         var environmentDirectory = Options.Target ?? Directory.GetCurrentDirectory();
 
@@ -26,7 +26,7 @@ class UpdateCommandHandler : Abstractions.BaseModifyCommandHandler<UpdateCommand
 
         if ( environment is null )
         {
-            return 1;
+            return Task.FromResult( 1 );
         }
 
         environment.IsDryRun = Options.DryRun;
@@ -34,9 +34,9 @@ class UpdateCommandHandler : Abstractions.BaseModifyCommandHandler<UpdateCommand
         if ( environment.IsEnvironmentUpToDate() )
         {
             AnsiConsole.WriteLine( "Environment is up to date." );
-            return 0;
+            return Task.FromResult( 0 );
         }
 
-        return 0;
+        return Task.FromResult( 0 );
     }
 }

@@ -19,6 +19,8 @@ namespace SparkDevNetwork.Rock.Plugin.Tool;
 /// </summary>
 class Environment
 {
+    #region Fields
+
     /// <summary>
     /// The files and directories that should be preserved when installing
     /// new Rock versions.
@@ -49,6 +51,10 @@ class Environment
     /// </summary>
     private readonly ILogger _logger;
 
+    #endregion
+
+    #region Properties
+
     /// <summary>
     /// The source for the Rock installation archives used when downloading
     /// binary installations.
@@ -60,6 +66,8 @@ class Environment
     /// will be made to files on disk.
     /// </summary>
     public bool IsDryRun { get; set; }
+
+    #endregion
 
     /// <summary>
     /// Creates a new instance of the environment helper.
@@ -265,53 +273,60 @@ class Environment
     }
 
     /// <summary>
-    /// Checks if the environment is up to date with the configuration.
+    /// Gets the status of the environment by way of individual status
+    /// items to describe the status of Rock and each plugin.
     /// </summary>
-    /// <returns><c>true</c> if the environment is already up to date; otherwise <c>false</c>.</returns>
-    public bool IsEnvironmentUpToDate()
+    /// <returns>A list of status items.</returns>
+    public List<EnvironmentStatusItem> GetEnvironmentStatus()
     {
-        if ( !IsRockUpToDate() )
+        var statuses = new List<EnvironmentStatusItem>
         {
-            return false;
-        }
+            GetRockStatus()
+        };
 
         if ( _data.Plugins != null )
         {
             foreach ( var plugin in _data.Plugins )
             {
-                if ( !IsPluginUpToDate( plugin ) )
-                {
-                    return false;
-                }
+                statuses.Add( GetPluginStatus( plugin ) );
             }
         }
 
-        return true;
+        return statuses;
+    }
+
+    /// <summary>
+    /// Checks if the environment is up to date with the configuration.
+    /// </summary>
+    /// <returns><c>true</c> if the environment is already up to date; otherwise <c>false</c>.</returns>
+    public bool IsEnvironmentUpToDate()
+    {
+        return GetEnvironmentStatus().All( s => s.IsUpToDate );
     }
 
     /// <summary>
     /// Checks if the Rock installation is up to date. This is a best guess
     /// based on the version number of the Rock.dll file.
     /// </summary>
-    /// <returns><c>true</c> if the Rock version number is correct; otherwise <c>false</c>.</returns>
-    private bool IsRockUpToDate()
+    /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
+    private EnvironmentStatusItem GetRockStatus()
     {
         if ( _data.Rock == null || _data.Rock.Version == "custom" )
         {
-            return true;
+            return new EnvironmentStatusItem( "Rock", false );
         }
 
         if ( !SemVersion.TryParse( _data.Rock.Version, SemVersionStyles.Strict, out var version ) )
         {
             _logger.LogError( "Unable to parse Rock version number '{version}'.", _data.Rock.Version );
-            return false;
+            return new EnvironmentStatusItem( "Rock", "has an invalid version number.", false );
         }
 
         var rockDllPath = Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
         if ( !File.Exists( rockDllPath ) )
         {
             _logger.LogInformation( "No Rock assembly was found at {filename}.", rockDllPath );
-            return false;
+            return new EnvironmentStatusItem( "Rock", "is not installed.", false );
         }
 
         var asmName = AssemblyName.GetAssemblyName( rockDllPath );
@@ -319,7 +334,7 @@ class Environment
         if ( asmName.Version == null )
         {
             _logger.LogError( "No version number found in Rock assembly." );
-            return false;
+            return new EnvironmentStatusItem( "Rock", "is not installed.", false );
         }
 
         if ( version.Major < 2 )
@@ -331,7 +346,7 @@ class Environment
             if ( !doesVersionMatch )
             {
                 _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
-                return false;
+                return new EnvironmentStatusItem( "Rock", $"version installed is {version} but should be {asmName.Version}.", false );
             }
         }
         else
@@ -342,19 +357,19 @@ class Environment
             if ( !doesVersionMatch )
             {
                 _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
-                return false;
+                return new EnvironmentStatusItem( "Rock", $"version installed is {version} but should be {asmName.Version}.", false );
             }
         }
 
-        return true;
+        return new EnvironmentStatusItem( "Rock", false );
     }
 
     /// <summary>
     /// Checks if the plugin is up to date with the environment configuration.
     /// </summary>
     /// <param name="plugin">The plugin configuration.</param>
-    /// <returns><c>true</c> if the plugin branch is correct; otherwise <c>false</c>.</returns>
-    private bool IsPluginUpToDate( PluginData plugin )
+    /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
+    private EnvironmentStatusItem GetPluginStatus( PluginData plugin )
     {
         if ( plugin.Path == null || plugin.Url == null )
         {
@@ -367,7 +382,7 @@ class Environment
                 _logger.LogError( "Plugin {name} is missing url.", plugin.Path );
             }
 
-            return false;
+            return new EnvironmentStatusItem( "Unknown", "plugin is missing path.", true );
         }
 
         var pluginDirectory = Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
@@ -375,18 +390,18 @@ class Environment
         if ( !Directory.Exists( pluginDirectory ) )
         {
             _logger.LogInformation( "Plugin {path} is missing.", plugin.Path );
-            return false;
+            return new EnvironmentStatusItem( plugin.Path, "is missing.", true );
         }
 
         if ( !Repository.IsValid( pluginDirectory ) )
         {
             _logger.LogError( "Plugin {path} is not a git repository.", plugin.Path );
-            return false;
+            return new EnvironmentStatusItem( plugin.Path, "is not a git repository.", true );
         }
 
         if ( plugin.Branch == null )
         {
-            return true;
+            return new EnvironmentStatusItem( plugin.Path, true );
         }
 
         var repository = new Repository( pluginDirectory );
@@ -395,7 +410,7 @@ class Environment
         if ( !reference.StartsWith( "refs/heads/" ) )
         {
             _logger.LogInformation( "Plugin {path} is not on a branch.", plugin.Path );
-            return false;
+            return new EnvironmentStatusItem( plugin.Path, "is not on a branch.", true );
         }
 
         var branch = reference.Substring( 11 );
@@ -403,9 +418,9 @@ class Environment
         if ( plugin.Branch != branch )
         {
             _logger.LogInformation( "Plugin {path} is on branch {repoBranch} instead of {expectedBranch}.", plugin.Path, branch, plugin.Branch );
-            return false;
+            return new EnvironmentStatusItem( plugin.Path, $"is on branch {branch} but should be {plugin.Branch}.", true );
         }
 
-        return true;
+        return new EnvironmentStatusItem( plugin.Path, true );
     }
 }

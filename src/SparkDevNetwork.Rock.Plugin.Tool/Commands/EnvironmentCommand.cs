@@ -20,5 +20,6 @@ class EnvironmentCommand : Command
 
         AddCommand( new NewCommand() );
         AddCommand( new UpdateCommand() );
+        AddCommand( new StatusCommand() );
     }
 }
