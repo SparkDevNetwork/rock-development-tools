@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
@@ -479,5 +480,110 @@ class Environment
         using var repository = new Repository( pluginDirectory );
 
         return !repository.RetrieveStatus().IsDirty;
+    }
+
+    /// <summary>
+    /// Clones a remote repository into the environment.
+    /// </summary>
+    /// <param name="remoteUrl">The URL of the remote repository.</param>
+    /// <param name="relativeDirectory">The relative path to the environment root.</param>
+    /// <param name="branch">If specified the name of the remote branch to clone; otherwise the default branch will be cloned.</param>
+    /// <param name="progress">An optional progress reporter for the clone progress.</param>
+    public void Clone( string remoteUrl, string relativeDirectory, string? branch, IProgress<double>? progress )
+    {
+        var destinationDirectory = Path.Combine( _environmentDirectory, relativeDirectory );
+
+        Repository.Clone( remoteUrl, destinationDirectory, new CloneOptions
+        {
+            BranchName = !string.IsNullOrEmpty( branch ) ? branch : null,
+            OnCheckoutProgress = ( a, b, c ) =>
+            {
+                progress?.Report( 0.5 + ( b / ( double ) c / 2.0 ) );
+            },
+            FetchOptions =
+            {
+                CredentialsProvider = GetCredentials,
+                OnTransferProgress = ( transferProgress ) =>
+                {
+                    progress?.Report( transferProgress.ReceivedObjects / ( double ) transferProgress.TotalObjects / 2.0 );
+                    return true;
+                }
+            }
+        } );
+    }
+
+    /// <summary>
+    /// Gets the credentials from the native git implementation for the repository.
+    /// </summary>
+    /// <param name="repoUrl">The URL of the repository that needs authentication.</param>
+    /// <param name="usernameFromUrl">The username to get credentials for.</param>
+    /// <param name="supportedTypes">The supported authentication types.</param>
+    /// <returns>A set of credentials to authenticate with.</returns>
+    /// <exception cref="NoCredentialsException">Thrown if no credentials are available.</exception>
+    private static UsernamePasswordCredentials GetCredentials( string repoUrl, string usernameFromUrl, SupportedCredentialTypes supportedTypes )
+    {
+        var uri = new Uri( repoUrl );
+        string? username = null;
+        string? password = null;
+
+        try
+        {
+            var proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "git.exe",
+                    Arguments = "credential-manager get",
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            proc.Start();
+
+            proc.StandardInput.WriteLine( $"protocol={uri.Scheme}" );
+            proc.StandardInput.WriteLine( $"host={uri.Host}" );
+
+            if ( !string.IsNullOrEmpty( usernameFromUrl ) )
+            {
+                proc.StandardInput.WriteLine( $"username={usernameFromUrl}" );
+            }
+
+            proc.StandardInput.WriteLine();
+
+            while ( !proc.StandardOutput.EndOfStream )
+            {
+                var line = proc.StandardOutput.ReadLine();
+
+                if ( line?.StartsWith( "username=" ) == true )
+                {
+                    username = line.Substring( 9 );
+                }
+                else if ( line?.StartsWith( "password=" ) == true )
+                {
+                    password = line.Substring( 9 );
+                }
+            }
+
+            proc.WaitForExit();
+        }
+        catch
+        {
+            username = null;
+            password = null;
+        }
+
+        if ( username != null && password != null )
+        {
+            return new UsernamePasswordCredentials
+            {
+                Username = username,
+                Password = password
+            };
+        }
+
+        throw new NoCredentialsException();
     }
 }
