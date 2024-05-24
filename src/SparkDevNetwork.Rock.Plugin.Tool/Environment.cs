@@ -247,21 +247,91 @@ class Environment
 
     /// <summary>
     /// Removes the current installation of Rock from the file system using
-    /// the standard Rock directory.
+    /// the standard Rock directory. This method uses the installation log
+    /// file to determine which files to delete.
     /// </summary>
     public void RemoveRock()
     {
-        var destinationDirectory = Path.Combine( _environmentDirectory, "Rock" );
+        var rockDirectory = Path.Combine( _environmentDirectory, "Rock" );
+        var rockStatusFile = Path.Combine( rockDirectory, ".rock.json" );
 
-        RemoveRock( destinationDirectory );
+        if ( !File.Exists( rockStatusFile ) )
+        {
+            // Assume nothing to do.
+            return;
+        }
+
+        var rockInstallation = JsonSerializer.Deserialize<RockInstallationData>( File.ReadAllText( rockStatusFile ) );
+
+        if ( rockInstallation == null || rockInstallation.Files == null )
+        {
+            _logger.LogError( "Rock installation file {file} was not valid.", rockStatusFile );
+
+            throw new InvalidOperationException( "Rock installation is not clean." );
+        }
+
+        var directoryPaths = new List<string>();
+
+        foreach ( var file in rockInstallation.Files )
+        {
+            var filePath = Path.Combine( rockDirectory, file.Key );
+
+            // Remove the file if it exists.
+            if ( File.Exists( filePath ) )
+            {
+                File.Delete( filePath );
+            }
+
+            var fileDirectory = Path.GetDirectoryName( filePath );
+
+            if ( fileDirectory != null && !directoryPaths.Contains( fileDirectory ) )
+            {
+                directoryPaths.Add( fileDirectory );
+            }
+        }
+
+        File.Delete( rockStatusFile );
+
+        // Delete any directory that is now empty.
+        foreach ( var directoryPath in directoryPaths.OrderByDescending( d => d.Length ) )
+        {
+            // Not every directory has a file, so we also need to check
+            // parent directories to see if they are empty in case we are
+            // dealing with a grand-parent directory that only had
+            // sub-directories but no files.
+            var path = directoryPath;
+
+            while ( Path.GetFullPath( path ) != Path.GetFullPath( rockDirectory ) )
+            {
+                if ( Directory.Exists( path ) )
+                {
+                    if ( Directory.GetFiles( path ).Length > 0 || Directory.GetDirectories( path ).Length > 0 )
+                    {
+                        break;
+                    }
+
+                    Directory.Delete( path );
+                }
+
+                path = Path.GetDirectoryName( path );
+
+                if ( path == null )
+                {
+                    break;
+                }
+            }
+        }
     }
 
     /// <summary>
-    /// Removes the current installation of Rock from the file system.
+    /// Removes the current installation of Rock from the file system using
+    /// the standard Rock directory. This is a forceful removal that just
+    /// deletes everything except the specific whitelist files.
     /// </summary>
-    /// <param name="targetDirectory">The directory that Rock is installed in.</param>
-    public void RemoveRock( string targetDirectory )
+    public void ForceRemoveRock()
     {
+        var targetDirectory = Path.Combine( _environmentDirectory, "Rock" );
+
         if ( !Directory.Exists( targetDirectory ) )
         {
             return;
@@ -371,7 +441,7 @@ class Environment
             return new RockStatusItem( [] );
         }
 
-        if ( !SemVersion.TryParse( _data.Rock.Version, SemVersionStyles.Strict, out var version ) )
+        if ( !SemVersion.TryParse( _data.Rock.Version, SemVersionStyles.Strict, out var expectedVersion ) )
         {
             _logger.LogError( "Unable to parse Rock version number '{version}'.", _data.Rock.Version );
             return new RockStatusItem( "has an invalid version number.", null );
@@ -379,12 +449,7 @@ class Environment
 
         var fileStatuses = GetRockFileStatuses();
 
-        if ( fileStatuses == null )
-        {
-            return new RockStatusItem( "was not installed correctly.", null );
-        }
-
-        if ( fileStatuses.Any( f => !f.IsUpToDate ) )
+        if ( fileStatuses != null && fileStatuses.Any( f => !f.IsUpToDate ) )
         {
             return new RockStatusItem( "has been modified since installation.", fileStatuses );
         }
@@ -396,6 +461,11 @@ class Environment
             return new RockStatusItem( "is not installed.", fileStatuses );
         }
 
+        if ( fileStatuses == null )
+        {
+            return new RockStatusItem( "was not installed correctly.", null );
+        }
+
         var asmName = AssemblyName.GetAssemblyName( rockDllPath );
 
         if ( asmName.Version == null )
@@ -404,27 +474,27 @@ class Environment
             return new RockStatusItem( "is not installed.", fileStatuses );
         }
 
-        if ( version.Major < 2 )
+        if ( expectedVersion.Major < 2 )
         {
-            var doesVersionMatch = version.Major == asmName.Version.Major
-                && version.Minor == asmName.Version.Minor
-                && version.Patch == asmName.Version.Build;
+            var doesVersionMatch = expectedVersion.Major == asmName.Version.Major
+                && expectedVersion.Minor == asmName.Version.Minor
+                && expectedVersion.Patch == asmName.Version.Build;
 
             if ( !doesVersionMatch )
             {
-                _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", asmName.Version, version );
-                return new RockStatusItem( $"version installed is {version} but should be {asmName.Version}.", fileStatuses );
+                _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", asmName.Version, expectedVersion );
+                return new RockStatusItem( $"version installed is {asmName.Version} but should be {expectedVersion}.", fileStatuses );
             }
         }
         else
         {
-            var doesVersionMatch = version.Major == asmName.Version.Major
-                && version.Minor == asmName.Version.Minor;
+            var doesVersionMatch = expectedVersion.Major == asmName.Version.Major
+                && expectedVersion.Minor == asmName.Version.Minor;
 
             if ( !doesVersionMatch )
             {
-                _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
-                return new RockStatusItem( $"version installed is {version} but should be {asmName.Version}.", fileStatuses );
+                _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", expectedVersion, asmName.Version );
+                return new RockStatusItem( $"version installed is {asmName.Version} but should be {expectedVersion}.", fileStatuses );
             }
         }
 
@@ -489,7 +559,7 @@ class Environment
 
         if ( !File.Exists( rockStatusFile ) )
         {
-            _logger.LogError( "Rock installation file {file} is missing.", rockStatusFile );
+            _logger.LogInformation( "Rock installation file {file} is missing.", rockStatusFile );
             return null;
         }
 
@@ -536,6 +606,15 @@ class Environment
     public bool IsRockClean()
     {
         var items = GetRockFileStatuses();
+
+        if ( items == null )
+        {
+            var rockDllPath = Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
+
+            // If the rock install log is missing and there is no Rock.dll, then
+            // assume we are clean.
+            return !File.Exists( rockDllPath );
+        }
 
         return items != null
             && items.All( f => f.IsUpToDate );

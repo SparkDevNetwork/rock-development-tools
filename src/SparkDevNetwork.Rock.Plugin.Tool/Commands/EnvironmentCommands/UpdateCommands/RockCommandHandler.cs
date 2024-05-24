@@ -64,7 +64,15 @@ class RockCommandHandler : Abstractions.BaseModifyCommandHandler<RockCommandOpti
         }
 
         AnsiConsole.WriteLine( "Removing Rock..." );
-        environment.RemoveRock();
+
+        if ( Options.Force )
+        {
+            environment.ForceRemoveRock();
+        }
+        else
+        {
+            environment.RemoveRock();
+        }
 
         await environment.InstallRockAsync();
 
