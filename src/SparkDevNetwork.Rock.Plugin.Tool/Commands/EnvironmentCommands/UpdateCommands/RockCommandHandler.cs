@@ -33,7 +33,6 @@ class RockCommandHandler : Abstractions.BaseModifyCommandHandler<RockCommandOpti
 
         if ( !string.IsNullOrEmpty( Options.Source ) )
         {
-            AnsiConsole.WriteLine( $"Setting source {Options.Source}" );
             environment.RockEnvironmentSourceUrl = Options.Source;
         }
 
