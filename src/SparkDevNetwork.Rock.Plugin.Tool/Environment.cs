@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 using LibGit2Sharp;
@@ -21,6 +22,14 @@ namespace SparkDevNetwork.Rock.Plugin.Tool;
 class Environment
 {
     #region Fields
+
+    /// <summary>
+    /// The default serializer options that outputs with indentation.
+    /// </summary>
+    static JsonSerializerOptions SerializerOptions { get; } = new JsonSerializerOptions
+    {
+        WriteIndented = true
+    };
 
     /// <summary>
     /// The files and directories that should be preserved when installing
@@ -167,7 +176,14 @@ class Environment
             memoryStream.Position = 0;
 
             using var archive = new ZipArchive( memoryStream );
-            ExtractAllFiles( destinationDirectory, archive, extractProgress );
+            var hashes = ExtractAllFiles( destinationDirectory, archive, extractProgress );
+
+            var rockObject = new RockInstallationData
+            {
+                Files = hashes
+            };
+            var rockJson = JsonSerializer.Serialize( rockObject, SerializerOptions );
+            File.WriteAllText( Path.Combine( destinationDirectory, ".rock.json" ), rockJson );
 
             extractProgress.StopTask();
             ctx.Refresh();
@@ -183,8 +199,11 @@ class Environment
     /// <param name="destinationDirectory">The directory to extract the archive into.</param>
     /// <param name="archive">The archive to be extracted.</param>
     /// <param name="progress">If not <c>null</c> then this task will be updated with progress.</param>
-    private void ExtractAllFiles( string destinationDirectory, ZipArchive archive, ProgressTask? progress = null )
+    /// <returns>A dictionary of relative filename paths and the SHA1 hash associated with them that were installed.</returns>
+    private Dictionary<string, string> ExtractAllFiles( string destinationDirectory, ZipArchive archive, ProgressTask? progress = null )
     {
+        var fileHashes = new Dictionary<string, string>();
+
         for ( int i = 0; i < archive.Entries.Count; i++ )
         {
             var entry = archive.Entries[i];
@@ -207,6 +226,11 @@ class Environment
                 entry.ExtractToFile( Path.Combine( destinationDirectory, entry.FullName ), true );
             }
 
+            using var fileStream = entry.Open();
+            var hash = CalculateHexHash( fileStream );
+
+            fileHashes[entry.FullName.Replace( "\\", "/" )] = hash;
+
             if ( progress != null )
             {
                 progress.Value = ( float ) i / archive.Entries.Count;
@@ -217,6 +241,8 @@ class Environment
         {
             progress.Value = 1;
         }
+
+        return fileHashes;
     }
 
     /// <summary>
@@ -306,9 +332,9 @@ class Environment
     /// items to describe the status of Rock and each plugin.
     /// </summary>
     /// <returns>A list of status items.</returns>
-    public List<EnvironmentStatusItem> GetEnvironmentStatus()
+    public List<StatusItem> GetEnvironmentStatus()
     {
-        var statuses = new List<EnvironmentStatusItem>
+        var statuses = new List<StatusItem>
         {
             GetRockStatus()
         };
@@ -338,24 +364,36 @@ class Environment
     /// based on the version number of the Rock.dll file.
     /// </summary>
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
-    public EnvironmentStatusItem GetRockStatus()
+    public RockStatusItem GetRockStatus()
     {
         if ( _data.Rock == null || _data.Rock.Version == "custom" )
         {
-            return new EnvironmentStatusItem( "Rock", null );
+            return new RockStatusItem( [] );
         }
 
         if ( !SemVersion.TryParse( _data.Rock.Version, SemVersionStyles.Strict, out var version ) )
         {
             _logger.LogError( "Unable to parse Rock version number '{version}'.", _data.Rock.Version );
-            return new EnvironmentStatusItem( "Rock", "has an invalid version number.", null );
+            return new RockStatusItem( "has an invalid version number.", null );
+        }
+
+        var fileStatuses = GetRockFileStatuses();
+
+        if ( fileStatuses == null )
+        {
+            return new RockStatusItem( "was not installed correctly.", null );
+        }
+
+        if ( fileStatuses.Any( f => !f.IsUpToDate ) )
+        {
+            return new RockStatusItem( "has been modified since installation.", fileStatuses );
         }
 
         var rockDllPath = Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
         if ( !File.Exists( rockDllPath ) )
         {
             _logger.LogInformation( "No Rock assembly was found at {filename}.", rockDllPath );
-            return new EnvironmentStatusItem( "Rock", "is not installed.", null );
+            return new RockStatusItem( "is not installed.", fileStatuses );
         }
 
         var asmName = AssemblyName.GetAssemblyName( rockDllPath );
@@ -363,7 +401,7 @@ class Environment
         if ( asmName.Version == null )
         {
             _logger.LogError( "No version number found in Rock assembly." );
-            return new EnvironmentStatusItem( "Rock", "is not installed.", null );
+            return new RockStatusItem( "is not installed.", fileStatuses );
         }
 
         if ( version.Major < 2 )
@@ -375,7 +413,7 @@ class Environment
             if ( !doesVersionMatch )
             {
                 _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", asmName.Version, version );
-                return new EnvironmentStatusItem( "Rock", $"version installed is {version} but should be {asmName.Version}.", null );
+                return new RockStatusItem( $"version installed is {version} but should be {asmName.Version}.", fileStatuses );
             }
         }
         else
@@ -386,11 +424,11 @@ class Environment
             if ( !doesVersionMatch )
             {
                 _logger.LogInformation( "Rock assembly version number {rockVersion} does not match expected version {expectedVersion}.", version, asmName.Version );
-                return new EnvironmentStatusItem( "Rock", $"version installed is {version} but should be {asmName.Version}.", null );
+                return new RockStatusItem( $"version installed is {version} but should be {asmName.Version}.", fileStatuses );
             }
         }
 
-        return new EnvironmentStatusItem( "Rock", null );
+        return new RockStatusItem( fileStatuses );
     }
 
     /// <summary>
@@ -398,12 +436,12 @@ class Environment
     /// </summary>
     /// <param name="plugin">The plugin configuration.</param>
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
-    public EnvironmentStatusItem GetPluginStatus( PluginData plugin )
+    public PluginStatusItem GetPluginStatus( PluginData plugin )
     {
         if ( plugin.Url == null )
         {
             _logger.LogError( "Plugin {path} is missing url.", plugin.Path );
-            return new EnvironmentStatusItem( "Unknown", "plugin is missing path.", plugin );
+            return new PluginStatusItem( "Unknown", "plugin is missing path.", plugin );
         }
 
         var pluginDirectory = Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
@@ -411,12 +449,12 @@ class Environment
         if ( !Repository.IsValid( pluginDirectory ) )
         {
             _logger.LogError( "Plugin {path} is not a git repository.", plugin.Path );
-            return new EnvironmentStatusItem( plugin.Path, "is not a git repository.", plugin );
+            return new PluginStatusItem( plugin.Path, "is not a git repository.", plugin );
         }
 
         if ( plugin.Branch == null )
         {
-            return new EnvironmentStatusItem( plugin.Path, plugin );
+            return new PluginStatusItem( plugin.Path, plugin );
         }
 
         var repository = new Repository( pluginDirectory );
@@ -425,7 +463,7 @@ class Environment
         if ( !reference.StartsWith( "refs/heads/" ) )
         {
             _logger.LogInformation( "Plugin {path} is not on a branch.", plugin.Path );
-            return new EnvironmentStatusItem( plugin.Path, "is not on a branch.", plugin );
+            return new PluginStatusItem( plugin.Path, "is not on a branch.", plugin );
         }
 
         var branch = reference.Substring( 11 );
@@ -433,10 +471,61 @@ class Environment
         if ( plugin.Branch != branch )
         {
             _logger.LogInformation( "Plugin {path} is on branch {repoBranch} instead of {expectedBranch}.", plugin.Path, branch, plugin.Branch );
-            return new EnvironmentStatusItem( plugin.Path, $"is on branch {branch} but should be {plugin.Branch}.", plugin );
+            return new PluginStatusItem( plugin.Path, $"is on branch {branch} but should be {plugin.Branch}.", plugin );
         }
 
-        return new EnvironmentStatusItem( plugin.Path, plugin );
+        return new PluginStatusItem( plugin.Path, plugin );
+    }
+
+    /// <summary>
+    /// Gets a list of status items that reflect the Rock installation status
+    /// for each individual file.
+    /// </summary>
+    /// <returns>A list of <see cref="StatusItem"/> objects.</returns>
+    public List<StatusItem>? GetRockFileStatuses()
+    {
+        var rockDirectory = Path.Combine( _environmentDirectory, "Rock" );
+        var rockStatusFile = Path.Combine( rockDirectory, ".rock.json" );
+
+        if ( !File.Exists( rockStatusFile ) )
+        {
+            _logger.LogError( "Rock installation file {file} is missing.", rockStatusFile );
+            return null;
+        }
+
+        var rockInstallation = JsonSerializer.Deserialize<RockInstallationData>( File.ReadAllText( rockStatusFile ) );
+
+        if ( rockInstallation == null || rockInstallation.Files == null )
+        {
+            _logger.LogError( "Rock installation file {file} was not valid.", rockStatusFile );
+            return null;
+        }
+
+        var fileStatuses = new List<StatusItem>();
+
+        foreach ( var file in rockInstallation.Files )
+        {
+            var filePath = file.Key.Replace( '/', Path.DirectorySeparatorChar );
+
+            filePath = Path.Combine( rockDirectory, filePath );
+            var relativePath = Path.GetRelativePath( _environmentDirectory, filePath );
+
+            if ( !File.Exists( filePath ) )
+            {
+                fileStatuses.Add( new StatusItem( relativePath, "is missing." ) );
+                continue;
+            }
+
+            var hash = CalculateHexHash( filePath );
+
+            if ( hash != file.Value )
+            {
+                fileStatuses.Add( new StatusItem( relativePath, "Has been modified." ) );
+                continue;
+            }
+        }
+
+        return fileStatuses;
     }
 
     /// <summary>
@@ -446,13 +535,10 @@ class Environment
     /// <returns><c>true</c> if the Rock installation is in a clean state; otherwise <c>false</c>.</returns>
     public bool IsRockClean()
     {
-        // TODO: I think we need to create a .environment-lock.json file or
-        // something like that which contains every file installed for the Rock
-        // installation as well as the SHA1 of the contents. Then in this
-        // method we use that to validate to make sure none of those files have
-        // changed. This should also make it easier to know which files are
-        // safe to delete.
-        return false;
+        var items = GetRockFileStatuses();
+
+        return items != null
+            && items.All( f => f.IsUpToDate );
     }
 
     /// <summary>
@@ -585,5 +671,32 @@ class Environment
         }
 
         throw new NoCredentialsException();
+    }
+
+    /// <summary>
+    /// Calculates the SHA1 hash of a files contents and returns that hash as a
+    /// hexadecimal string without spacing or "0x" prefix.
+    /// </summary>
+    /// <param name="filename">The path to the filename to read.</param>
+    /// <returns>A SHA1 hash in hexadecimal notation.</returns>
+    private static string CalculateHexHash( string filename )
+    {
+        var stream = File.OpenRead( filename );
+
+        return CalculateHexHash( stream );
+    }
+
+    /// <summary>
+    /// Calculates the SHA1 hash of a stream and returns that hash as a
+    /// hexadecimal string without spacing or "0x" prefix.
+    /// </summary>
+    /// <param name="stream">The stream to read.</param>
+    /// <returns>A SHA1 hash in hexadecimal notation.</returns>
+    private static string CalculateHexHash( Stream stream )
+    {
+        using var sha1 = SHA1.Create();
+        var hash = sha1.ComputeHash( stream );
+
+        return Convert.ToHexString( hash );
     }
 }

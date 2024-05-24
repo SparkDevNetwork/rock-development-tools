@@ -42,6 +42,23 @@ class StatusCommandHandler : Abstractions.BaseActionCommandHandler<StatusCommand
             else
             {
                 AnsiConsole.Console.MarkupLineInterpolated( $"[red]{status.Name} {status.Message}[/]" );
+
+                if ( status is RockStatusItem rockStatus )
+                {
+                    var badFiles = rockStatus.Files
+                        .Where( f => !f.IsUpToDate )
+                        .ToList();
+
+                    for ( int i = 0; i < badFiles.Count && i < 10; i++ )
+                    {
+                        AnsiConsole.Console.MarkupLineInterpolated( $"  [red]{badFiles[i].Name} {badFiles[i].Message}[/]" );
+                    }
+
+                    if ( badFiles.Count > 10 )
+                    {
+                        AnsiConsole.Console.MarkupLineInterpolated( $"  (and {badFiles.Count - 10:N0} more files)" );
+                    }
+                }
             }
         }
 
