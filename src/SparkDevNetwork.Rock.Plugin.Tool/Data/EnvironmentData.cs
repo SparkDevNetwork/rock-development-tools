@@ -16,19 +16,19 @@ class EnvironmentData
     /// The details about the organization this environment belongs to.
     /// </summary>
     [JsonPropertyName( "organization" )]
-    public OrganizationData? Organization { get; set; }
+    public OrganizationData Organization { get; set; } = new OrganizationData();
 
     /// <summary>
     /// The details about the Rock instance to install in the environment.
     /// </summary>
     [JsonPropertyName( "rock" )]
-    public RockData? Rock { get; set; }
+    public RockData Rock { get; set; } = new RockData();
 
     /// <summary>
     /// The plugins that should be installed in the environment.
     /// </summary>
     [JsonPropertyName( "plugins" )]
-    public List<PluginData>? Plugins { get; set; }
+    public List<PluginData> Plugins { get; set; } = [];
 
     /// <summary>
     /// Additional data in the JSON stream that we don't know about.

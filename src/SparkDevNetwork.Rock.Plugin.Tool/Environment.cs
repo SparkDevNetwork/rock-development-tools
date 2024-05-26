@@ -119,13 +119,34 @@ class Environment
         }
 
         // Validate all plugins and abort if any plugin is not valid.
-        if ( environment.Plugins != null && environment.Plugins.Any( p => p.Path == null ) )
+        foreach ( var plugin in environment.Plugins )
         {
-            console.WriteLine( "One or more plugins were defined without a path, all plugins must define a path." );
-            return null;
+            if ( string.IsNullOrWhiteSpace( plugin.Path ) )
+            {
+                console.WriteLine( "One or more plugins were defined without a path, all plugins must define a path." );
+            }
+
+            if ( string.IsNullOrWhiteSpace( plugin.Url ) )
+            {
+                console.MarkupLineInterpolated( $"No url defined for plugin [cyan]{plugin.Path}[/]." );
+            }
+
+            if ( string.IsNullOrWhiteSpace( plugin.Branch ) )
+            {
+                console.MarkupLineInterpolated( $"No branch defined for plugin [cyan]{plugin.Path}[/]." );
+            }
         }
 
         return new Environment( environmentDirectory, environment, console, logger );
+    }
+
+    /// <summary>
+    /// Gets all the plugins defined in this environment.
+    /// </summary>
+    /// <returns>A list of plugins.</returns>
+    public List<PluginData> GetPlugins()
+    {
+        return _data.Plugins;
     }
 
     /// <summary>
@@ -135,7 +156,7 @@ class Environment
     /// <returns>A <see cref="Task"/> that indicates when the operation has completed.</returns>
     public Task InstallRockAsync()
     {
-        if ( !SemVersion.TryParse( _data.Rock?.Version, SemVersionStyles.Strict, out var version ) )
+        if ( !SemVersion.TryParse( _data.Rock.Version, SemVersionStyles.Strict, out var version ) )
         {
             throw new Exception( "Invalid Rock version specified in configuration." );
         }
@@ -398,6 +419,84 @@ class Environment
     }
 
     /// <summary>
+    /// Installs or updates a plugin. If the plugin is not yet installed then
+    /// it will be installed. Otherwise it will be updated.
+    /// </summary>
+    /// <param name="plugin">The plugin to be installed or updated.</param>
+    /// <param name="context">The context used to report progress.</param>
+    public void InstallOrUpdatePlugin( PluginData plugin, ProgressContext context )
+    {
+        var pluginPath = Path.Combine( _environmentDirectory, plugin.Path );
+
+        if ( !Directory.Exists( pluginPath ) || !Repository.IsValid( pluginPath ) )
+        {
+            var progress = context.AddTask( $"Installing {plugin.Path}", true, 1 );
+            InstallPluginAsync( plugin, progress );
+        }
+        else
+        {
+            var progress = context.AddTask( $"Updating {plugin.Path}", true, 1 );
+            UpdatePluginAsync( plugin, progress );
+        }
+    }
+
+    /// <summary>
+    /// Installs the plugin into the environment.
+    /// </summary>
+    /// <param name="plugin">The plugin to be installed.</param>
+    /// <param name="progress">The progress reporter.</param>
+    private void InstallPluginAsync( PluginData plugin, IProgress<double>? progress )
+    {
+        var pluginPath = Path.Combine( _environmentDirectory, plugin.Path );
+
+        Clone( plugin.Url,
+            pluginPath,
+            plugin.Branch,
+            progress );
+    }
+
+    /// <summary>
+    /// Update the plugin by ensuring it is on the correct branch and also
+    /// pulls any changes from the remote.
+    /// </summary>
+    /// <param name="plugin">The plugin to be updated.</param>
+    /// <param name="progress">An optional progress reporter.</param>
+    private void UpdatePluginAsync( PluginData plugin, IProgress<double>? progress )
+    {
+        var pluginPath = Path.Combine( _environmentDirectory, plugin.Path );
+        var repo = new Repository( pluginPath );
+        var signature = repo.Config.BuildSignature( DateTimeOffset.Now );
+        var currentBranch = GetCurrentBranch( repo );
+
+        if ( currentBranch != plugin.Branch )
+        {
+            LibGit2Sharp.Commands.Checkout( repo, plugin.Branch );
+        }
+
+        var pullOptions = new PullOptions
+        {
+            FetchOptions = new FetchOptions
+            {
+                CredentialsProvider = GetCredentials,
+                OnTransferProgress = ( transferProgress ) =>
+                {
+                    progress?.Report( transferProgress.ReceivedObjects / ( double ) transferProgress.TotalObjects );
+                    return true;
+                }
+            },
+            MergeOptions = new MergeOptions
+            {
+                FailOnConflict = true,
+                FastForwardStrategy = FastForwardStrategy.FastForwardOnly
+            }
+        };
+
+        LibGit2Sharp.Commands.Pull( repo, signature, pullOptions );
+
+        progress?.Report( 1 );
+    }
+
+    /// <summary>
     /// Gets the status of the environment by way of individual status
     /// items to describe the status of Rock and each plugin.
     /// </summary>
@@ -409,12 +508,9 @@ class Environment
             GetRockStatus()
         };
 
-        if ( _data.Plugins != null )
+        foreach ( var plugin in _data.Plugins )
         {
-            foreach ( var plugin in _data.Plugins )
-            {
-                statuses.Add( GetPluginStatus( plugin ) );
-            }
+            statuses.Add( GetPluginStatus( plugin ) );
         }
 
         return statuses;
@@ -436,7 +532,7 @@ class Environment
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
     public RockStatusItem GetRockStatus()
     {
-        if ( _data.Rock == null || _data.Rock.Version == "custom" )
+        if ( _data.Rock.Version == "custom" )
         {
             return new RockStatusItem( [] );
         }
@@ -522,26 +618,37 @@ class Environment
             return new PluginStatusItem( plugin.Path, "is not a git repository.", plugin );
         }
 
-        if ( plugin.Branch == null )
-        {
-            return new PluginStatusItem( plugin.Path, plugin );
-        }
-
         var repository = new Repository( pluginDirectory );
-        var reference = repository.Head.Reference.TargetIdentifier;
+        var currentBranch = GetCurrentBranch( repository );
 
-        if ( !reference.StartsWith( "refs/heads/" ) )
+        if ( currentBranch == null )
         {
             _logger.LogInformation( "Plugin {path} is not on a branch.", plugin.Path );
             return new PluginStatusItem( plugin.Path, "is not on a branch.", plugin );
         }
 
-        var branch = reference.Substring( 11 );
-
-        if ( plugin.Branch != branch )
+        if ( plugin.Branch != currentBranch )
         {
-            _logger.LogInformation( "Plugin {path} is on branch {repoBranch} instead of {expectedBranch}.", plugin.Path, branch, plugin.Branch );
-            return new PluginStatusItem( plugin.Path, $"is on branch {branch} but should be {plugin.Branch}.", plugin );
+            _logger.LogInformation( "Plugin {path} is on branch {repoBranch} instead of {expectedBranch}.", plugin.Path, currentBranch, plugin.Branch );
+            return new PluginStatusItem( plugin.Path, $"is on branch {currentBranch} but should be {plugin.Branch}.", plugin );
+        }
+
+        var remote = repository.Network.Remotes[repository.Head.RemoteName];
+        var refSpecs = remote.FetchRefSpecs.Select( r => r.Specification );
+
+        if ( !repository.Head.TrackingDetails.BehindBy.HasValue )
+        {
+            return new PluginStatusItem( plugin.Path, "has no upstream remote configured.", plugin );
+        }
+
+        LibGit2Sharp.Commands.Fetch( repository, remote.Name, refSpecs, new FetchOptions
+        {
+            CredentialsProvider = GetCredentials,
+        }, "Fetching remote" );
+
+        if ( repository.Head.TrackingDetails.BehindBy.Value > 0 )
+        {
+            return new PluginStatusItem( plugin.Path, $"is behind by {repository.Head.TrackingDetails.BehindBy} commits.", plugin );
         }
 
         return new PluginStatusItem( plugin.Path, plugin );
@@ -636,6 +743,12 @@ class Environment
             return true;
         }
 
+        // If the directory exists but is empty iti s considered clean.
+        if ( Directory.GetFiles( pluginDirectory ).Length == 0 && Directory.GetDirectories( pluginDirectory ).Length == 0 )
+        {
+            return true;
+        }
+
         if ( !Repository.IsValid( pluginDirectory ) )
         {
             _logger.LogError( "Plugin {path} is not a git repository.", plugin.Path );
@@ -654,7 +767,7 @@ class Environment
     /// <param name="relativeDirectory">The relative path to the environment root.</param>
     /// <param name="branch">If specified the name of the remote branch to clone; otherwise the default branch will be cloned.</param>
     /// <param name="progress">An optional progress reporter for the clone progress.</param>
-    public void Clone( string remoteUrl, string relativeDirectory, string? branch, IProgress<double>? progress )
+    private void Clone( string remoteUrl, string relativeDirectory, string? branch, IProgress<double>? progress )
     {
         var destinationDirectory = Path.Combine( _environmentDirectory, relativeDirectory );
 
@@ -777,5 +890,22 @@ class Environment
         var hash = sha1.ComputeHash( stream );
 
         return Convert.ToHexString( hash );
+    }
+
+    /// <summary>
+    /// Gets the current branch name of the repository.
+    /// </summary>
+    /// <param name="repository">The repository.</param>
+    /// <returns>The name of the branch or <c>null</c> if not on any branch.</returns>
+    private static string? GetCurrentBranch( Repository repository )
+    {
+        var reference = repository.Head.Reference.TargetIdentifier;
+
+        if ( !reference.StartsWith( "refs/heads/" ) )
+        {
+            return null;
+        }
+
+        return reference.Substring( 11 );
     }
 }

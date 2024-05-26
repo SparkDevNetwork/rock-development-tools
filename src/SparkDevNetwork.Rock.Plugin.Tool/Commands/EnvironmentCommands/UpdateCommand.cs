@@ -15,5 +15,6 @@ class UpdateCommand : Command
         : base( "update", "Updates the environment." )
     {
         AddCommand( new UpdateCommands.RockCommand() );
+        AddCommand( new UpdateCommands.PluginCommand() );
     }
 }
