@@ -604,12 +604,6 @@ class Environment
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
     public PluginStatusItem GetPluginStatus( PluginData plugin )
     {
-        if ( plugin.Url == null )
-        {
-            _logger.LogError( "Plugin {path} is missing url.", plugin.Path );
-            return new PluginStatusItem( "Unknown", "plugin is missing path.", plugin );
-        }
-
         var pluginDirectory = Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
 
         if ( !Repository.IsValid( pluginDirectory ) )
