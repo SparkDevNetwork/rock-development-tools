@@ -1,6 +1,9 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 
+using Fluid.Values;
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -10,9 +13,8 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Abstractions;
 /// The base implementation for all commands that perform some action.
 /// </summary>
 /// <typeparam name="TOptions">The type of options used by the command.</typeparam>
-abstract class BaseActionCommand<TOptions, THandler> : Command
+abstract class BaseActionCommand<TOptions> : Command
     where TOptions : BaseActionCommandOptions, new()
-    where THandler : BaseActionCommandHandler<TOptions>
 {
     /// <summary>
     /// The option that describes if diagnostic details are logged.
@@ -20,11 +22,21 @@ abstract class BaseActionCommand<TOptions, THandler> : Command
     private readonly Option<bool> _diagOption;
 
     /// <summary>
+    /// The options for the execution of the command.
+    /// </summary>
+    protected TOptions ExecuteOptions { get; private set; } = new();
+
+    /// <summary>
+    /// The logger for this command instance.
+    /// </summary>
+    protected ILogger Logger { get; private set; } = NullLogger.Instance;
+
+    /// <summary>
     /// Creates a command that will perform some action.
     /// </summary>
     /// <param name="name">The primary name of the action.</param>
     /// <param name="description">The description of what the command will do.</param>
-    public BaseActionCommand( string name, string description )
+    public BaseActionCommand( string name, string description, IServiceProvider serviceProvider )
         : base( name, description )
     {
         _diagOption = new Option<bool>( "--diag", "Include debugging diagnostic information." );
@@ -33,16 +45,18 @@ abstract class BaseActionCommand<TOptions, THandler> : Command
 
         this.SetHandler( async ctx =>
         {
-            var handler = Activator.CreateInstance( typeof( THandler ), [GetOptions( ctx )] ) as THandler;
+            ExecuteOptions = GetOptions( ctx );
 
-            if ( handler != null )
+            var factory = serviceProvider.GetRequiredService<ILoggerFactory>();
+
+            if ( ExecuteOptions.Diagnostics && factory is DynamicLoggerFactory dynamicFactory )
             {
-                ctx.ExitCode = await handler.InvokeAsync();
+                dynamicFactory.IsEnabled = true;
             }
-            else
-            {
-                ctx.ExitCode = 1;
-            }
+
+            Logger = factory.CreateLogger( GetType().FullName! );
+
+            ctx.ExitCode = await ExecuteAsync();
         } );
     }
 
@@ -62,33 +76,15 @@ abstract class BaseActionCommand<TOptions, THandler> : Command
     {
         var options = new TOptions
         {
-            LoggerFactory = CreateLoggerFactory( context )
+            Diagnostics = context.ParseResult.GetValueForOption( _diagOption )
         };
 
         return options;
     }
 
     /// <summary>
-    /// Creates a new logger factory configured for the command line invocation.
+    /// Executes the command with the options obtained from the command line.
     /// </summary>
-    /// <param name="context">The context that describes the command line invocation.</param>
-    /// <returns>An instance of <see cref="ILoggerFactory"/> for the invocation.</returns>
-    private ILoggerFactory CreateLoggerFactory( InvocationContext context )
-    {
-        if ( !context.ParseResult.GetValueForOption( _diagOption ) )
-        {
-            return NullLoggerFactory.Instance;
-        }
-
-        return LoggerFactory.Create( config =>
-        {
-            config.AddSimpleConsole( options =>
-            {
-                options.SingleLine = true;
-                options.TimestampFormat = "[HH:mm:ss.fff] ";
-            } );
-
-            config.SetMinimumLevel( LogLevel.Information );
-        } );
-    }
+    /// <returns>A task that represents when the command has completed.</returns>
+    protected abstract Task<int> ExecuteAsync();
 }

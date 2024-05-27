@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -6,6 +7,7 @@ using System.Text.Json;
 
 using LibGit2Sharp;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 using Semver;
@@ -57,6 +59,11 @@ class Environment
     private readonly IAnsiConsole _console;
 
     /// <summary>
+    /// The object that provides access to the file system.
+    /// </summary>
+    private readonly IFileSystem _fs;
+
+    /// <summary>
     /// The logger to use when writing diagnostic messages.
     /// </summary>
     private readonly ILogger _logger;
@@ -83,11 +90,12 @@ class Environment
     /// Creates a new instance of the environment helper.
     /// </summary>
     /// <param name="logger">The logger to use when writing diagnostic messages.</param>
-    public Environment( string environmentDirectory, EnvironmentData data, IAnsiConsole console, ILogger logger )
+    private Environment( string environmentDirectory, EnvironmentData data, IFileSystem fileSystem, IAnsiConsole console, ILogger logger )
     {
         _environmentDirectory = environmentDirectory;
         _data = data;
         _console = console;
+        _fs = fileSystem;
         _logger = logger;
     }
 
@@ -98,9 +106,10 @@ class Environment
     /// <param name="console">The console object to use when writing console messages.</param>
     /// <param name="loggerFactory">The factory to create new logging facilities.</param>
     /// <returns>An instance of <see cref="Environment"/> or <c>null</c> if it could not be opened.</returns>
-    public static Environment? Open( string environmentDirectory, IAnsiConsole console, ILoggerFactory loggerFactory )
+    public static Environment? Open( string environmentDirectory, IServiceProvider serviceProvider )
     {
-        var logger = loggerFactory.CreateLogger( typeof( Environment ).Name );
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger( typeof( Environment ).FullName! );
+        var console = serviceProvider.GetRequiredService<IAnsiConsole>();
         var environmentFile = Path.Combine( environmentDirectory, EnvironmentData.Filename );
 
         if ( !File.Exists( environmentFile ) )
@@ -137,7 +146,7 @@ class Environment
             }
         }
 
-        return new Environment( environmentDirectory, environment, console, logger );
+        return new Environment( environmentDirectory, environment, null, console, logger );
     }
 
     /// <summary>

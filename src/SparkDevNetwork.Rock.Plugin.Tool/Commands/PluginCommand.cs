@@ -1,5 +1,7 @@
 using System.CommandLine;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
@@ -12,9 +14,9 @@ class PluginCommand : Command
     /// <summary>
     /// Creates a command that will handle routing for all plugin sub-commands.
     /// </summary>
-    public PluginCommand()
+    public PluginCommand( IServiceProvider serviceProvider )
         : base( "plugin", "Run commands related to working with plugins." )
     {
-        AddCommand( new CreateCommand() );
+        AddCommand( ActivatorUtilities.CreateInstance<CreateCommand>( serviceProvider ) );
     }
 }

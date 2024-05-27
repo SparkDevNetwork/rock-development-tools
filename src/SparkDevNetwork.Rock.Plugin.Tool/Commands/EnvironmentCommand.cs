@@ -1,5 +1,7 @@
 using System.CommandLine;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands;
@@ -13,13 +15,13 @@ class EnvironmentCommand : Command
     /// Creates a command that will handle routing for all development
     /// environment sub-commands.
     /// </summary>
-    public EnvironmentCommand()
+    public EnvironmentCommand( IServiceProvider serviceProvider )
         : base( "environment", "Run commands related to working with development environments." )
     {
         AddAlias( "env" );
 
-        AddCommand( new NewCommand() );
-        AddCommand( new UpdateCommand() );
-        AddCommand( new StatusCommand() );
+        AddCommand( ActivatorUtilities.CreateInstance<NewCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<UpdateCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<StatusCommand>( serviceProvider ) );
     }
 }

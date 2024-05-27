@@ -1,5 +1,7 @@
 using System.CommandLine;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using SparkDevNetwork.Rock.Plugin.Tool.Commands;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool;
@@ -12,12 +14,12 @@ class RootAppCommand : RootCommand
     /// <summary>
     /// Creates a new command handler.
     /// </summary>
-    public RootAppCommand()
+    public RootAppCommand( IServiceProvider serviceProvider )
         : base( "Plugin development tool for RockRMS." )
     {
         // Name = "rock-plugin-tool";
 
-        AddCommand( new EnvironmentCommand() );
-        AddCommand( new PluginCommand() );
+        AddCommand( ActivatorUtilities.CreateInstance<EnvironmentCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<PluginCommand>( serviceProvider ) );
     }
 }

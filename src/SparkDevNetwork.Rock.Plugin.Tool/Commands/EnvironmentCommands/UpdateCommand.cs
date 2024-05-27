@@ -1,5 +1,7 @@
 using System.CommandLine;
 
+using Microsoft.Extensions.DependencyInjection;
+
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands;
 
 /// <summary>
@@ -11,10 +13,10 @@ class UpdateCommand : Command
     /// <summary>
     /// Creates a command that will handle updating the environment.
     /// </summary>
-    public UpdateCommand()
+    public UpdateCommand( IServiceProvider serviceProvider )
         : base( "update", "Updates the environment." )
     {
-        AddCommand( new UpdateCommands.RockCommand() );
-        AddCommand( new UpdateCommands.PluginCommand() );
+        AddCommand( ActivatorUtilities.CreateInstance<UpdateCommands.RockCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<UpdateCommands.PluginCommand>( serviceProvider ) );
     }
 }
