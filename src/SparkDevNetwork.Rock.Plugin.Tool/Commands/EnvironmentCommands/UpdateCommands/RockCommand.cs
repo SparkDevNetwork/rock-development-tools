@@ -4,6 +4,8 @@ using System.IO.Abstractions;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using SparkDevNetwork.Rock.Plugin.Tool.DevEnvironment;
+
 using Spectre.Console;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands.UpdateCommands;
@@ -61,11 +63,15 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
     protected override async Task<int> ExecuteAsync()
     {
         var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
+        DevEnvironment.Environment environment;
 
-        var environment = Environment.Open( environmentDirectory, _serviceProvider );
-
-        if ( environment is null )
+        try
         {
+            environment = DevEnvironment.Environment.Open( environmentDirectory, _serviceProvider );
+        }
+        catch ( InvalidEnvironmentException ex )
+        {
+            Console.WriteLine( ex.Message );
             return 1;
         }
 

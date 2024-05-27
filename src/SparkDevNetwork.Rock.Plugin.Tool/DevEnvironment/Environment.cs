@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using System.IO.Compression;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text.Json;
 
 using LibGit2Sharp;
@@ -16,7 +15,7 @@ using SparkDevNetwork.Rock.Plugin.Tool.Data;
 
 using Spectre.Console;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool;
+namespace SparkDevNetwork.Rock.Plugin.Tool.DevEnvironment;
 
 /// <summary>
 /// Handles updating and installing environments.
@@ -106,7 +105,7 @@ class Environment
     /// <param name="console">The console object to use when writing console messages.</param>
     /// <param name="loggerFactory">The factory to create new logging facilities.</param>
     /// <returns>An instance of <see cref="Environment"/> or <c>null</c> if it could not be opened.</returns>
-    public static Environment? Open( string environmentDirectory, IServiceProvider serviceProvider )
+    public static Environment Open( string environmentDirectory, IServiceProvider serviceProvider )
     {
         var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger( typeof( Environment ).FullName! );
         var console = serviceProvider.GetRequiredService<IAnsiConsole>();
@@ -115,35 +114,29 @@ class Environment
 
         if ( !fs.File.Exists( environmentFile ) )
         {
-            console.MarkupLineInterpolated( $"No environment file was found at [cyan]{environmentFile}[/]." );
-            return null;
+            throw new InvalidEnvironmentException( $"No environment file was found at {environmentFile}." );
         }
 
         var json = fs.File.ReadAllText( environmentFile );
-        var environment = JsonSerializer.Deserialize<EnvironmentData>( json );
-
-        if ( environment == null )
-        {
-            console.MarkupLineInterpolated( $"Invalid environment configuration found in [cyan]{environmentFile}[/]." );
-            return null;
-        }
+        var environment = JsonSerializer.Deserialize<EnvironmentData>( json )
+            ?? throw new InvalidEnvironmentException( $"Invalid environment configuration found in {environmentFile}." );
 
         // Validate all plugins and abort if any plugin is not valid.
         foreach ( var plugin in environment.Plugins )
         {
             if ( string.IsNullOrWhiteSpace( plugin.Path ) )
             {
-                console.WriteLine( "One or more plugins were defined without a path, all plugins must define a path." );
+                throw new InvalidEnvironmentException( "One or more plugins were defined without a path, all plugins must define a path." );
             }
 
             if ( string.IsNullOrWhiteSpace( plugin.Url ) )
             {
-                console.MarkupLineInterpolated( $"No url defined for plugin [cyan]{plugin.Path}[/]." );
+                throw new InvalidEnvironmentException( $"No url defined for plugin {plugin.Path}." );
             }
 
             if ( string.IsNullOrWhiteSpace( plugin.Branch ) )
             {
-                console.MarkupLineInterpolated( $"No branch defined for plugin [cyan]{plugin.Path}[/]." );
+                throw new InvalidEnvironmentException( $"No branch defined for plugin {plugin.Path}." );
             }
         }
 

@@ -1,4 +1,4 @@
-namespace SparkDevNetwork.Rock.Plugin.Tool;
+namespace SparkDevNetwork.Rock.Plugin.Tool.DevEnvironment;
 
 /// <summary>
 /// Describes a single status item in the environment for the Rock installation.

@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Semver;
 
 using SparkDevNetwork.Rock.Plugin.Tool.Data;
+using SparkDevNetwork.Rock.Plugin.Tool.DevEnvironment;
 
 using Spectre.Console;
 
@@ -153,21 +154,24 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         if ( rockVersion != null )
         {
-            var environment = Environment.Open( outputDirectory, _serviceProvider );
-
-            if ( environment is null )
+            try
             {
+                var environment = DevEnvironment.Environment.Open( outputDirectory, _serviceProvider );
+
+                environment.IsDryRun = ExecuteOptions.DryRun;
+
+                if ( !string.IsNullOrEmpty( ExecuteOptions.Source ) )
+                {
+                    environment.RockEnvironmentSourceUrl = ExecuteOptions.Source;
+                }
+
+                await environment.InstallRockVersionAsync( rockVersion );
+            }
+            catch ( InvalidEnvironmentException ex )
+            {
+                Console.WriteLine( ex.Message );
                 return 1;
             }
-
-            environment.IsDryRun = ExecuteOptions.DryRun;
-
-            if ( !string.IsNullOrEmpty( ExecuteOptions.Source ) )
-            {
-                environment.RockEnvironmentSourceUrl = ExecuteOptions.Source;
-            }
-
-            await environment.InstallRockVersionAsync( rockVersion );
         }
 
         if ( !_fs.Directory.Exists( _fs.Path.Combine( outputDirectory, ".git" ) ) )

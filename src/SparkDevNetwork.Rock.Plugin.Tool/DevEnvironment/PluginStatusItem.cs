@@ -1,6 +1,6 @@
 using SparkDevNetwork.Rock.Plugin.Tool.Data;
 
-namespace SparkDevNetwork.Rock.Plugin.Tool;
+namespace SparkDevNetwork.Rock.Plugin.Tool.DevEnvironment;
 
 /// <summary>
 /// Describes a single status item in the environment for a plugin.
