@@ -62,11 +62,11 @@ class StatusCommand : Abstractions.BaseActionCommand<StatusCommandOptions>
         {
             if ( status.IsUpToDate )
             {
-                AnsiConsole.Console.WriteLine( $"{status.Name} {status.Message}" );
+                Console.WriteLine( $"{status.Name} {status.Message}" );
             }
             else
             {
-                AnsiConsole.Console.MarkupLineInterpolated( $"[red]{status.Name} {status.Message}[/]" );
+                Console.MarkupLineInterpolated( $"[red]{status.Name} {status.Message}[/]" );
 
                 if ( status is RockStatusItem rockStatus )
                 {
@@ -76,12 +76,12 @@ class StatusCommand : Abstractions.BaseActionCommand<StatusCommandOptions>
 
                     for ( int i = 0; i < badFiles.Count && i < 10; i++ )
                     {
-                        AnsiConsole.Console.MarkupLineInterpolated( $"  [red]{badFiles[i].Name} {badFiles[i].Message}[/]" );
+                        Console.MarkupLineInterpolated( $"  [red]{badFiles[i].Name} {badFiles[i].Message}[/]" );
                     }
 
                     if ( badFiles.Count > 10 )
                     {
-                        AnsiConsole.Console.MarkupLineInterpolated( $"  (and {badFiles.Count - 10:N0} more files)" );
+                        Console.MarkupLineInterpolated( $"  (and {badFiles.Count - 10:N0} more files)" );
                     }
                 }
             }

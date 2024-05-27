@@ -72,7 +72,7 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
         {
             var relativePath = Path.GetRelativePath( Directory.GetCurrentDirectory(), path );
 
-            AnsiConsole.WriteLine( $"Create {relativePath}" );
+            Console.WriteLine( $"Create {relativePath}" );
         }
         else
         {

@@ -3,7 +3,6 @@ using System.IO.Abstractions;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 using Spectre.Console;
 
@@ -24,46 +23,5 @@ public class Program
         var rootCommand = ActivatorUtilities.CreateInstance<RootAppCommand>( serviceProvider );
 
         return await rootCommand.InvokeAsync( args );
-    }
-}
-
-class DynamicLoggerFactory : ILoggerFactory
-{
-    private readonly ILoggerFactory _loggerFactory;
-
-    public bool IsEnabled { get; set; }
-
-    public DynamicLoggerFactory()
-    {
-        _loggerFactory = LoggerFactory.Create( config =>
-        {
-            config.AddSimpleConsole( options =>
-            {
-                options.SingleLine = true;
-                options.TimestampFormat = "[HH:mm:ss.fff] ";
-            } );
-
-            config.SetMinimumLevel( LogLevel.Information );
-        } );
-    }
-
-    public void AddProvider( ILoggerProvider provider )
-    {
-        _loggerFactory.AddProvider( provider );
-    }
-
-    public ILogger CreateLogger( string categoryName )
-    {
-        if ( !IsEnabled )
-        {
-            return NullLogger.Instance;
-        }
-
-        return _loggerFactory.CreateLogger( categoryName );
-    }
-
-    public void Dispose()
-    {
-        _loggerFactory.Dispose();
     }
 }

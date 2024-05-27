@@ -63,7 +63,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
 
         if ( outOfDatePlugins.Count == 0 )
         {
-            AnsiConsole.WriteLine( "All plugins are up to date, nothing to do." );
+            Console.WriteLine( "All plugins are up to date, nothing to do." );
         }
 
         var uncleanPlugins = outOfDatePlugins
@@ -76,16 +76,16 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
         {
             foreach ( var plugin in uncleanPlugins )
             {
-                AnsiConsole.MarkupLineInterpolated( $"[red]Plugin {plugin.Path} is not clean.[/]" );
+                Console.MarkupLineInterpolated( $"[red]Plugin {plugin.Path} is not clean.[/]" );
             }
 
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine( "To update anyway, run the command with '--force' option." );
+            Console.WriteLine();
+            Console.WriteLine( "To update anyway, run the command with '--force' option." );
 
             return Task.FromResult( 1 );
         }
 
-        var progress = AnsiConsole.Progress();
+        var progress = Console.Progress();
 
         progress.Start( ctx =>
         {

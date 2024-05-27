@@ -76,11 +76,11 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
         {
             if ( ExecuteOptions.Force )
             {
-                AnsiConsole.WriteLine( "Rock is up to date, but '--force' option was specified so re-installing." );
+                Console.WriteLine( "Rock is up to date, but '--force' option was specified so re-installing." );
             }
             else
             {
-                AnsiConsole.WriteLine( "Rock is up to date." );
+                Console.WriteLine( "Rock is up to date." );
                 return 0;
             }
         }
@@ -89,15 +89,15 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
         // before we make any changes.
         if ( !ExecuteOptions.Force && !environment.IsRockClean() )
         {
-            AnsiConsole.MarkupLine( "[red]Rock installation is not clean.[/]" );
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine( "To update Rock anyway, run the command with '--force' option." );
-            AnsiConsole.WriteLine();
+            Console.MarkupLine( "[red]Rock installation is not clean.[/]" );
+            Console.WriteLine();
+            Console.WriteLine( "To update Rock anyway, run the command with '--force' option." );
+            Console.WriteLine();
 
             return 1;
         }
 
-        AnsiConsole.WriteLine( "Removing Rock..." );
+        Console.WriteLine( "Removing Rock..." );
 
         if ( ExecuteOptions.Force )
         {

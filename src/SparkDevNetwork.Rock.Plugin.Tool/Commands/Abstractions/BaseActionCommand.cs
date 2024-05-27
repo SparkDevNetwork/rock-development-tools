@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
+using Spectre.Console;
+
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Abstractions;
 
 /// <summary>
@@ -31,6 +33,8 @@ abstract class BaseActionCommand<TOptions> : Command
     /// </summary>
     protected ILogger Logger { get; private set; } = NullLogger.Instance;
 
+    protected IAnsiConsole Console { get; }
+
     /// <summary>
     /// Creates a command that will perform some action.
     /// </summary>
@@ -39,6 +43,8 @@ abstract class BaseActionCommand<TOptions> : Command
     public BaseActionCommand( string name, string description, IServiceProvider serviceProvider )
         : base( name, description )
     {
+        Console = serviceProvider.GetRequiredService<IAnsiConsole>();
+
         _diagOption = new Option<bool>( "--diag", "Include debugging diagnostic information." );
 
         AddOption( _diagOption );

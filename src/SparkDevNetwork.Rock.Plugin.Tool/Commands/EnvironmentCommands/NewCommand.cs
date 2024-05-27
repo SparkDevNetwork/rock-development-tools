@@ -70,9 +70,9 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             return 1;
         }
 
-        var orgName = AnsiConsole.Ask<string>( "Organization Name?" );
-        var orgCode = AnsiConsole.Ask<string>( "Organization Code?" );
-        var rockVersionString = AnsiConsole.Prompt( new TextPrompt<string>( "Rock Version?" )
+        var orgName = Console.Ask<string>( "Organization Name?" );
+        var orgCode = Console.Ask<string>( "Organization Code?" );
+        var rockVersionString = Console.Prompt( new TextPrompt<string>( "Rock Version?" )
         {
             AllowEmpty = true,
             Validator = ValidateRockVersionPrompt
@@ -142,8 +142,8 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             EndGlobal
             """ );
 
-        AnsiConsole.MarkupInterpolated( $"Initialized environment in [cyan]{outputDirectory}[/]" );
-        AnsiConsole.WriteLine();
+        Console.MarkupInterpolated( $"Initialized environment in [cyan]{outputDirectory}[/]" );
+        Console.WriteLine();
 
         if ( rockVersion != null )
         {
@@ -186,9 +186,9 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     {
         if ( File.Exists( outputDirectory ) )
         {
-            AnsiConsole.MarkupLine( "[red]Environment directory exists as a file and cannot be replaced.[/]" );
-            AnsiConsole.MarkupLineInterpolated( $"[red]  Directory: {outputDirectory}[/]" );
-            AnsiConsole.WriteLine();
+            Console.MarkupLine( "[red]Environment directory exists as a file and cannot be replaced.[/]" );
+            Console.MarkupLineInterpolated( $"[red]  Directory: {outputDirectory}[/]" );
+            Console.WriteLine();
 
             return false;
         }
@@ -200,11 +200,11 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         if ( Directory.Exists( outputDirectory ) && Directory.EnumerateFiles( outputDirectory ).Any() )
         {
-            AnsiConsole.MarkupLine( "[red]Environment directory is not empty and might overwrite existing files.[/]" );
-            AnsiConsole.MarkupLineInterpolated( $"[red]  Directory: {outputDirectory}[/]" );
-            AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine( "To create the environment anyway, run the command with '--force' option." );
-            AnsiConsole.WriteLine();
+            Console.MarkupLine( "[red]Environment directory is not empty and might overwrite existing files.[/]" );
+            Console.MarkupLineInterpolated( $"[red]  Directory: {outputDirectory}[/]" );
+            Console.WriteLine();
+            Console.WriteLine( "To create the environment anyway, run the command with '--force' option." );
+            Console.WriteLine();
 
             return false;
         }
