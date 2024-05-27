@@ -1,5 +1,8 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.IO.Abstractions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Spectre.Console;
 
@@ -17,6 +20,8 @@ class StatusCommand : Abstractions.BaseActionCommand<StatusCommandOptions>
 
     private readonly IServiceProvider _serviceProvider;
 
+    private readonly IFileSystem _fs;
+
     /// <summary>
     /// Creates a command that will handle checking on the status of an
     /// existing environment.
@@ -25,6 +30,7 @@ class StatusCommand : Abstractions.BaseActionCommand<StatusCommandOptions>
         : base( "status", "Checks the status of the environment against the configured values.", serviceProvider )
     {
         _serviceProvider = serviceProvider;
+        _fs = _serviceProvider.GetRequiredService<IFileSystem>();
 
         _targetOption = new Option<string?>( "--target", "The directory that contains the environment." );
         _targetOption.AddAlias( "-t" );
@@ -45,9 +51,9 @@ class StatusCommand : Abstractions.BaseActionCommand<StatusCommandOptions>
     /// <inheritdoc/>
     protected override Task<int> ExecuteAsync()
     {
-        var targetDirectory = ExecuteOptions.Target ?? System.Environment.CurrentDirectory;
+        var targetDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
 
-        targetDirectory = Path.GetFullPath( targetDirectory );
+        targetDirectory = _fs.Path.GetFullPath( targetDirectory );
 
         var environment = Environment.Open( targetDirectory, _serviceProvider );
 

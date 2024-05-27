@@ -1,5 +1,8 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.IO.Abstractions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Spectre.Console;
 
@@ -12,6 +15,8 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands.UpdateCo
 class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
 {
     private readonly IServiceProvider _serviceProvider;
+
+    private readonly IFileSystem _fs;
 
     /// <summary>
     /// The base URL when downloading environment files.
@@ -30,6 +35,7 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
         : base( "rock", "Updates the Rock installation to match the configuration file.", serviceProvider )
     {
         _serviceProvider = serviceProvider;
+        _fs = serviceProvider.GetRequiredService<IFileSystem>();
 
         _sourceOption = new Option<string?>( "--source", "The base URL to use when downloading environment files." );
 
@@ -54,7 +60,7 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync()
     {
-        var environmentDirectory = ExecuteOptions.Target ?? Directory.GetCurrentDirectory();
+        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
 
         var environment = Environment.Open( environmentDirectory, _serviceProvider );
 

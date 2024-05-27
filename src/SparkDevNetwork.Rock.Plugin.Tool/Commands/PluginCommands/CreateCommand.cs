@@ -1,8 +1,11 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 
 using Fluid;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Semver;
 
@@ -19,6 +22,8 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 /// </summary>
 class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
 {
+    private readonly IFileSystem _fs;
+
     private readonly Option<string?> _organizationOption;
 
     private readonly Option<string?> _organizationCodeOption;
@@ -39,6 +44,8 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     public CreateCommand( IServiceProvider serviceProvider )
         : base( "create", "Creates a new plugin following a standard template.", serviceProvider )
     {
+        _fs = serviceProvider.GetRequiredService<IFileSystem>();
+
         _organizationOption = new Option<string?>( "--organization", "The name of the organization that owns the plugin" );
         _organizationCodeOption = new Option<string?>( "--organization-code", "The namespace-style code used for the organization" );
         _nameOption = new Option<string?>( "--name", "The name of the plugin" );
@@ -106,12 +113,12 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
         var csharpDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
         var obsidianDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
 
-        if ( Path.Exists( csharpDirectory ) )
+        if ( _fs.Path.Exists( csharpDirectory ) )
         {
             return new ValidationResult( $"Directory {csharpDirectory} already exists, aborting." );
         }
 
-        if ( ExecuteOptions.Obsidian == true && Path.Exists( obsidianDirectory ) )
+        if ( ExecuteOptions.Obsidian == true && _fs.Path.Exists( obsidianDirectory ) )
         {
             return new ValidationResult( $"Directory {obsidianDirectory} already exists, aborting." );
         }
@@ -128,7 +135,7 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     {
         var projectFilename = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.csproj";
 
-        Directory.CreateDirectory( directory );
+        _fs.Directory.CreateDirectory( directory );
 
         await CopyTemplateAsync( "CSharp.project.csproj", [directory, projectFilename] );
         await CopyTemplateAsync( "CSharp.Class1.cs", [directory, "Class1.cs"] );
@@ -145,7 +152,7 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     {
         var projectFilename = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian.esproj";
 
-        Directory.CreateDirectory( directory );
+        _fs.Directory.CreateDirectory( directory );
 
         await CopyTemplateAsync( "Obsidian.eslintrc.json", [directory, ".eslintrc.json"] );
         await CopyTemplateAsync( "Obsidian.gitignore", [directory, ".gitignore"] );
@@ -196,22 +203,22 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
             }
 
             var userPath = options.RockWebPath
-                .Replace( '/', Path.DirectorySeparatorChar )
-                .Replace( '\\', Path.DirectorySeparatorChar );
-            var fullPath = Path.GetFullPath( Path.Combine( [.. rockWebPrefix, userPath] ) );
+                .Replace( '/', _fs.Path.DirectorySeparatorChar )
+                .Replace( '\\', _fs.Path.DirectorySeparatorChar );
+            var fullPath = _fs.Path.GetFullPath( _fs.Path.Combine( [.. rockWebPrefix, userPath] ) );
 
-            options.RockWebPath = Path.GetRelativePath( Directory.GetCurrentDirectory(), fullPath );
+            options.RockWebPath = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), fullPath );
         }
 
         var content = await template.RenderAsync( new TemplateContext( options ) );
-        var destinationDirectory = Path.GetDirectoryName( Path.Combine( destination ) );
+        var destinationDirectory = _fs.Path.GetDirectoryName( _fs.Path.Combine( destination ) );
 
         if ( destinationDirectory != null )
         {
-            Directory.CreateDirectory( destinationDirectory );
+            _fs.Directory.CreateDirectory( destinationDirectory );
         }
 
-        await File.WriteAllTextAsync( Path.Combine( destination ), content );
+        await _fs.File.WriteAllTextAsync( _fs.Path.Combine( destination ), content );
     }
 
     /// <summary>
@@ -223,20 +230,20 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
         {
             ExecuteOptions.Organization = Prompt.Input<string>( "Organization",
                 placeholder: "Rock Solid Church Demo",
-                validators: new[] { Validators.Required() } );
+                validators: [Validators.Required()] );
         }
 
         if ( string.IsNullOrEmpty( ExecuteOptions.OrganizationCode ) )
         {
             ExecuteOptions.OrganizationCode = Prompt.Input<string>( "Organization Code",
                 placeholder: $"com.rocksolidchurchdemo",
-                validators: new[] { Validators.Required() } );
+                validators: [Validators.Required()] );
         }
 
         if ( string.IsNullOrEmpty( ExecuteOptions.PluginName ) )
         {
             ExecuteOptions.PluginName = Prompt.Input<string>( "Plugin Name",
-                validators: new[] { Validators.Required() } );
+                validators: [Validators.Required()] );
         }
 
         if ( ExecuteOptions.RockVersion is null )
@@ -250,13 +257,13 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
         {
             var possibleRockWebPaths = new string[] {
                 "RockWeb",
-                Path.Combine( "Rock", "RockWeb" )
+                _fs.Path.Combine( "Rock", "RockWeb" )
             };
             var defaultRockWebPath = "";
 
             foreach ( var p in possibleRockWebPaths )
             {
-                if ( Path.Exists( Path.Combine( p, "web.config" ) ) )
+                if ( _fs.Path.Exists( _fs.Path.Combine( p, "web.config" ) ) )
                 {
                     defaultRockWebPath = p;
                     break;
@@ -264,7 +271,7 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
             }
 
             ExecuteOptions.RockWebPath = Prompt.Input<string>( "Path to RockWeb",
-                validators: new[] { ValidateRockWebPathPrompt } );
+                validators: [ValidateRockWebPathPrompt] );
         }
 
         ExecuteOptions.Obsidian ??= Prompt.Confirm( "Create Obsidian Project" );
@@ -288,16 +295,16 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     /// </summary>
     /// <param name="value">The value entered in the prompt.</param>
     /// <returns>The validation error or <c>null</c> if it was valid.</returns>
-    private static ValidationResult? ValidateRockWebPathPrompt( object value )
+    private ValidationResult? ValidateRockWebPathPrompt( object value )
     {
         if ( value is string stringValue )
         {
-            if ( !Path.Exists( stringValue ) )
+            if ( !_fs.Path.Exists( stringValue ) )
             {
                 return new ValidationResult( "That path does not appear to exist" );
             }
 
-            if ( !Path.Exists( Path.Combine( stringValue, "web.config" ) ) )
+            if ( !_fs.Path.Exists( _fs.Path.Combine( stringValue, "web.config" ) ) )
             {
                 return new ValidationResult( "That path does not appear to be a RockWeb path" );
             }

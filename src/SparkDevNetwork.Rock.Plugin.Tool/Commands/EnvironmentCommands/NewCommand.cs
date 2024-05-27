@@ -1,8 +1,11 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.IO.Abstractions;
 using System.Text.Json;
 
 using LibGit2Sharp;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Semver;
 
@@ -29,6 +32,8 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
     private readonly IServiceProvider _serviceProvider;
 
+    private readonly IFileSystem _fs;
+
     /// <summary>
     /// Creates a command that will handle creating a new development
     /// environment.
@@ -37,6 +42,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         : base( "new", "Create a new development environment.", serviceProvider )
     {
         _serviceProvider = serviceProvider;
+        _fs = serviceProvider.GetRequiredService<IFileSystem>();
 
         _outputOption = new Option<string?>( "--output", "Location to place the generated output." );
         _outputOption.AddAlias( "-o" );
@@ -61,9 +67,9 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync()
     {
-        var outputDirectory = ExecuteOptions.Output ?? System.Environment.CurrentDirectory;
+        var outputDirectory = ExecuteOptions.Output ?? _fs.Directory.GetCurrentDirectory();
 
-        outputDirectory = Path.GetFullPath( outputDirectory );
+        outputDirectory = _fs.Path.GetFullPath( outputDirectory );
 
         if ( !ValidateOutput( outputDirectory ) )
         {
@@ -95,13 +101,13 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <returns>A task that indicates when the operation has completed.</returns>
     private async Task<int> CreateEnvironment( string outputDirectory, string orgName, string orgCode, SemVersion? rockVersion )
     {
-        if ( !Directory.Exists( outputDirectory ) )
+        if ( !_fs.Directory.Exists( outputDirectory ) )
         {
-            Directory.CreateDirectory( outputDirectory );
+            _fs.Directory.CreateDirectory( outputDirectory );
         }
 
         // Write the "/.gitignore" file.
-        WriteFile( Path.Join( outputDirectory, ".gitignore" ),
+        WriteFile( _fs.Path.Join( outputDirectory, ".gitignore" ),
             """
             # Do not make any changes below this line.
             /Rock
@@ -121,11 +127,11 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             }
         };
 
-        WriteFile( Path.Join( outputDirectory, EnvironmentData.Filename ),
+        WriteFile( _fs.Path.Join( outputDirectory, EnvironmentData.Filename ),
             JsonSerializer.Serialize( environmentData, SerializerOptions ) );
 
         // Write the solution file.
-        WriteFile( Path.Join( outputDirectory, $"{orgName.Replace( " ", string.Empty )}.sln" ),
+        WriteFile( _fs.Path.Join( outputDirectory, $"{orgName.Replace( " ", string.Empty )}.sln" ),
             """
             Microsoft Visual Studio Solution File, Format Version 12.00
             # Visual Studio Version 17
@@ -164,9 +170,9 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             await environment.InstallRockVersionAsync( rockVersion );
         }
 
-        if ( !Directory.Exists( Path.Combine( outputDirectory, ".git" ) ) )
+        if ( !_fs.Directory.Exists( _fs.Path.Combine( outputDirectory, ".git" ) ) )
         {
-            Repository.Init( Path.Combine( outputDirectory ) );
+            Repository.Init( _fs.Path.Combine( outputDirectory ) );
             using var repo = new Repository( outputDirectory );
 
             // Switch the repository to use "main" as the default branch.
@@ -184,7 +190,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <returns><c>true</c> if the output directory is valid; otherwise <c>false</c>.</returns>
     private bool ValidateOutput( string outputDirectory )
     {
-        if ( File.Exists( outputDirectory ) )
+        if ( _fs.File.Exists( outputDirectory ) )
         {
             Console.MarkupLine( "[red]Environment directory exists as a file and cannot be replaced.[/]" );
             Console.MarkupLineInterpolated( $"[red]  Directory: {outputDirectory}[/]" );
@@ -198,7 +204,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             return true;
         }
 
-        if ( Directory.Exists( outputDirectory ) && Directory.EnumerateFiles( outputDirectory ).Any() )
+        if ( _fs.Directory.Exists( outputDirectory ) && _fs.Directory.EnumerateFiles( outputDirectory ).Any() )
         {
             Console.MarkupLine( "[red]Environment directory is not empty and might overwrite existing files.[/]" );
             Console.MarkupLineInterpolated( $"[red]  Directory: {outputDirectory}[/]" );

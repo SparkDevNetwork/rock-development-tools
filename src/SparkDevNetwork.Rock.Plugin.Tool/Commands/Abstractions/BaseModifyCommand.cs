@@ -1,6 +1,9 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.IO.Abstractions;
 using System.Text.Json;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Spectre.Console;
 
@@ -13,6 +16,8 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.Abstractions;
 abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
     where TOptions : BaseModifyCommandOptions, new()
 {
+    private readonly IFileSystem _fs;
+
     /// <summary>
     /// The option that describes if this command should be a dry-run and not
     /// actually make any modifications.
@@ -41,6 +46,8 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
     public BaseModifyCommand( string name, string description, IServiceProvider serviceProvider )
         : base( name, description, serviceProvider )
     {
+        _fs = serviceProvider.GetRequiredService<IFileSystem>();
+
         _dryRunOption = new Option<bool>( "--dry-run", "Displays a summary of what would happen if the given command line were run." );
         _forceOption = new Option<bool>( "--force", "Forces content to be generated even if it would change existing files." );
 
@@ -70,20 +77,20 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
     {
         if ( ExecuteOptions.DryRun )
         {
-            var relativePath = Path.GetRelativePath( Directory.GetCurrentDirectory(), path );
+            var relativePath = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), path );
 
             Console.WriteLine( $"Create {relativePath}" );
         }
         else
         {
-            var directory = Path.GetDirectoryName( path );
+            var directory = _fs.Path.GetDirectoryName( path );
 
-            if ( !string.IsNullOrEmpty( directory ) && !Directory.Exists( directory ) )
+            if ( !string.IsNullOrEmpty( directory ) && !_fs.Directory.Exists( directory ) )
             {
-                Directory.CreateDirectory( directory );
+                _fs.Directory.CreateDirectory( directory );
             }
 
-            File.WriteAllText( path, content );
+            _fs.File.WriteAllText( path, content );
         }
     }
 }

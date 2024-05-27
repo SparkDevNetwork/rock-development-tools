@@ -1,5 +1,8 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.IO.Abstractions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Spectre.Console;
 
@@ -18,6 +21,8 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
 
     private readonly IServiceProvider _serviceProvider;
 
+    private readonly IFileSystem _fs;
+
     /// <summary>
     /// Creates a command that will handle updating the Rock installation.
     /// </summary>
@@ -25,6 +30,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
         : base( "plugin", "Updates the plugins to match the configuration file.", serviceProvider )
     {
         _serviceProvider = serviceProvider;
+        _fs = serviceProvider.GetRequiredService<IFileSystem>();
 
         _targetOption = new Option<string?>( "--target", "The directory that contains the environment." );
         _targetOption.AddAlias( "-t" );
@@ -45,7 +51,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
     /// <inheritdoc/>
     protected override Task<int> ExecuteAsync()
     {
-        var environmentDirectory = ExecuteOptions.Target ?? Directory.GetCurrentDirectory();
+        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
 
         var environment = Environment.Open( environmentDirectory, _serviceProvider );
 

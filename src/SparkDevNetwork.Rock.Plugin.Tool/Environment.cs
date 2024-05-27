@@ -110,15 +110,16 @@ class Environment
     {
         var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger( typeof( Environment ).FullName! );
         var console = serviceProvider.GetRequiredService<IAnsiConsole>();
-        var environmentFile = Path.Combine( environmentDirectory, EnvironmentData.Filename );
+        var fs = serviceProvider.GetRequiredService<IFileSystem>();
+        var environmentFile = fs.Path.Combine( environmentDirectory, EnvironmentData.Filename );
 
-        if ( !File.Exists( environmentFile ) )
+        if ( !fs.File.Exists( environmentFile ) )
         {
             console.MarkupLineInterpolated( $"No environment file was found at [cyan]{environmentFile}[/]." );
             return null;
         }
 
-        var json = File.ReadAllText( environmentFile );
+        var json = fs.File.ReadAllText( environmentFile );
         var environment = JsonSerializer.Deserialize<EnvironmentData>( json );
 
         if ( environment == null )
@@ -146,7 +147,7 @@ class Environment
             }
         }
 
-        return new Environment( environmentDirectory, environment, null, console, logger );
+        return new Environment( environmentDirectory, environment, fs, console, logger );
     }
 
     /// <summary>
@@ -182,7 +183,7 @@ class Environment
     public async Task InstallRockVersionAsync( SemVersion rockVersion )
     {
         var url = $"{RockEnvironmentSourceUrl.TrimEnd( '/' )}/Rock-{rockVersion}.zip";
-        var destinationDirectory = Path.Combine( _environmentDirectory, "Rock" );
+        var destinationDirectory = _fs.Path.Combine( _environmentDirectory, "Rock" );
 
         _console.MarkupLineInterpolated( $"Installing Rock from [cyan]{url}[/]" );
 
@@ -196,7 +197,16 @@ class Environment
             using var client = new HttpClient();
             using var memoryStream = new MemoryStream();
 
-            await client.DownloadAsync( url, memoryStream, p => downloadProgress.Value = p );
+            if ( !url.Contains( "://" ) )
+            {
+                await _fs.File.ReadFileAsync( url, memoryStream, p => downloadProgress.Value = p );
+
+                return;
+            }
+            else
+            {
+                await client.DownloadAsync( url, memoryStream, p => downloadProgress.Value = p );
+            }
 
             downloadProgress.StopTask();
             ctx.Refresh();
@@ -213,7 +223,7 @@ class Environment
                 Files = hashes
             };
             var rockJson = JsonSerializer.Serialize( rockObject, SerializerOptions );
-            File.WriteAllText( Path.Combine( destinationDirectory, ".rock.json" ), rockJson );
+            _fs.File.WriteAllText( _fs.Path.Combine( destinationDirectory, ".rock.json" ), rockJson );
 
             extractProgress.StopTask();
             ctx.Refresh();
@@ -243,21 +253,21 @@ class Environment
                 continue;
             }
 
-            var destinationFilePath = Path.Combine( destinationDirectory, entry.FullName );
-            var fileDirectory = Path.GetDirectoryName( destinationFilePath );
+            var destinationFilePath = _fs.Path.Combine( destinationDirectory, entry.FullName );
+            var fileDirectory = _fs.Path.GetDirectoryName( destinationFilePath );
 
             if ( !IsDryRun )
             {
-                if ( fileDirectory != null && !Directory.Exists( fileDirectory ) )
+                if ( fileDirectory != null && !_fs.Directory.Exists( fileDirectory ) )
                 {
-                    Directory.CreateDirectory( fileDirectory );
+                    _fs.Directory.CreateDirectory( fileDirectory );
                 }
 
-                entry.ExtractToFile( Path.Combine( destinationDirectory, entry.FullName ), true );
+                entry.ExtractToFile( _fs.Path.Combine( destinationDirectory, entry.FullName ), true );
             }
 
             using var fileStream = entry.Open();
-            var hash = CalculateHexHash( fileStream );
+            var hash = fileStream.CalculateHexHash();
 
             fileHashes[entry.FullName.Replace( "\\", "/" )] = hash;
 
@@ -282,16 +292,16 @@ class Environment
     /// </summary>
     public void RemoveRock()
     {
-        var rockDirectory = Path.Combine( _environmentDirectory, "Rock" );
-        var rockStatusFile = Path.Combine( rockDirectory, ".rock.json" );
+        var rockDirectory = _fs.Path.Combine( _environmentDirectory, "Rock" );
+        var rockStatusFile = _fs.Path.Combine( rockDirectory, ".rock.json" );
 
-        if ( !File.Exists( rockStatusFile ) )
+        if ( !_fs.File.Exists( rockStatusFile ) )
         {
             // Assume nothing to do.
             return;
         }
 
-        var rockInstallation = JsonSerializer.Deserialize<RockInstallationData>( File.ReadAllText( rockStatusFile ) );
+        var rockInstallation = JsonSerializer.Deserialize<RockInstallationData>( _fs.File.ReadAllText( rockStatusFile ) );
 
         if ( rockInstallation == null || rockInstallation.Files == null )
         {
@@ -304,15 +314,15 @@ class Environment
 
         foreach ( var file in rockInstallation.Files )
         {
-            var filePath = Path.Combine( rockDirectory, file.Key );
+            var filePath = _fs.Path.Combine( rockDirectory, file.Key );
 
             // Remove the file if it exists.
-            if ( File.Exists( filePath ) )
+            if ( _fs.File.Exists( filePath ) )
             {
-                File.Delete( filePath );
+                _fs.File.Delete( filePath );
             }
 
-            var fileDirectory = Path.GetDirectoryName( filePath );
+            var fileDirectory = _fs.Path.GetDirectoryName( filePath );
 
             if ( fileDirectory != null && !directoryPaths.Contains( fileDirectory ) )
             {
@@ -320,7 +330,7 @@ class Environment
             }
         }
 
-        File.Delete( rockStatusFile );
+        _fs.File.Delete( rockStatusFile );
 
         // Delete any directory that is now empty.
         foreach ( var directoryPath in directoryPaths.OrderByDescending( d => d.Length ) )
@@ -331,19 +341,19 @@ class Environment
             // sub-directories but no files.
             var path = directoryPath;
 
-            while ( Path.GetFullPath( path ) != Path.GetFullPath( rockDirectory ) )
+            while ( _fs.Path.GetFullPath( path ) != _fs.Path.GetFullPath( rockDirectory ) )
             {
-                if ( Directory.Exists( path ) )
+                if ( _fs.Directory.Exists( path ) )
                 {
-                    if ( Directory.GetFiles( path ).Length > 0 || Directory.GetDirectories( path ).Length > 0 )
+                    if ( _fs.Directory.GetFiles( path ).Length > 0 || _fs.Directory.GetDirectories( path ).Length > 0 )
                     {
                         break;
                     }
 
-                    Directory.Delete( path );
+                    _fs.Directory.Delete( path );
                 }
 
-                path = Path.GetDirectoryName( path );
+                path = _fs.Path.GetDirectoryName( path );
 
                 if ( path == null )
                 {
@@ -360,16 +370,16 @@ class Environment
     /// </summary>
     public void ForceRemoveRock()
     {
-        var targetDirectory = Path.Combine( _environmentDirectory, "Rock" );
+        var targetDirectory = _fs.Path.Combine( _environmentDirectory, "Rock" );
 
-        if ( !Directory.Exists( targetDirectory ) )
+        if ( !_fs.Directory.Exists( targetDirectory ) )
         {
             return;
         }
 
         if ( IsDryRun )
         {
-            var relativeTargetDirectory = Path.GetRelativePath( Directory.GetCurrentDirectory(), targetDirectory );
+            var relativeTargetDirectory = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), targetDirectory );
 
             _console.WriteLine( $"Remove {relativeTargetDirectory}" );
         }
@@ -378,13 +388,13 @@ class Environment
         {
             bool removeDirectory = true;
 
-            foreach ( var dirpath in Directory.EnumerateDirectories( directory ) )
+            foreach ( var dirpath in _fs.Directory.EnumerateDirectories( directory ) )
             {
-                var relativepath = Path.GetRelativePath( targetDirectory, dirpath );
+                var relativepath = _fs.Path.GetRelativePath( targetDirectory, dirpath );
 
                 if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
                 {
-                    var preservedPath = Path.GetRelativePath( Directory.GetCurrentDirectory(), dirpath );
+                    var preservedPath = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), dirpath );
 
                     _logger.LogInformation( "Preserving diretory {path}", preservedPath );
                     removeDirectory = false;
@@ -395,26 +405,26 @@ class Environment
                 }
             }
 
-            foreach ( var filepath in Directory.EnumerateFiles( directory ) )
+            foreach ( var filepath in _fs.Directory.EnumerateFiles( directory ) )
             {
-                var relativepath = Path.GetRelativePath( targetDirectory, filepath );
+                var relativepath = _fs.Path.GetRelativePath( targetDirectory, filepath );
 
                 if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
                 {
-                    var preservedPath = Path.GetRelativePath( Directory.GetCurrentDirectory(), filepath );
+                    var preservedPath = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), filepath );
 
                     _logger.LogInformation( "Preserving file {path}", preservedPath );
                     removeDirectory = false;
                 }
                 else if ( !IsDryRun )
                 {
-                    File.Delete( filepath );
+                    _fs.File.Delete( filepath );
                 }
             }
 
             if ( removeDirectory && !IsDryRun )
             {
-                Directory.Delete( directory, false );
+                _fs.Directory.Delete( directory, false );
             }
 
             return removeDirectory;
@@ -431,9 +441,9 @@ class Environment
     /// <param name="context">The context used to report progress.</param>
     public void InstallOrUpdatePlugin( PluginData plugin, ProgressContext context )
     {
-        var pluginPath = Path.Combine( _environmentDirectory, plugin.Path );
+        var pluginPath = _fs.Path.Combine( _environmentDirectory, plugin.Path );
 
-        if ( !Directory.Exists( pluginPath ) || !Repository.IsValid( pluginPath ) )
+        if ( !_fs.Directory.Exists( pluginPath ) || !Repository.IsValid( pluginPath ) )
         {
             var progress = context.AddTask( $"Installing {plugin.Path}", true, 1 );
             InstallPluginAsync( plugin, progress );
@@ -452,7 +462,7 @@ class Environment
     /// <param name="progress">The progress reporter.</param>
     private void InstallPluginAsync( PluginData plugin, IProgress<double>? progress )
     {
-        var pluginPath = Path.Combine( _environmentDirectory, plugin.Path );
+        var pluginPath = _fs.Path.Combine( _environmentDirectory, plugin.Path );
 
         Clone( plugin.Url,
             pluginPath,
@@ -468,7 +478,7 @@ class Environment
     /// <param name="progress">An optional progress reporter.</param>
     private void UpdatePluginAsync( PluginData plugin, IProgress<double>? progress )
     {
-        var pluginPath = Path.Combine( _environmentDirectory, plugin.Path );
+        var pluginPath = _fs.Path.Combine( _environmentDirectory, plugin.Path );
         var repo = new Repository( pluginPath );
         var signature = repo.Config.BuildSignature( DateTimeOffset.Now );
         var currentBranch = GetCurrentBranch( repo );
@@ -555,8 +565,8 @@ class Environment
             return new RockStatusItem( "has been modified since installation.", fileStatuses );
         }
 
-        var rockDllPath = Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
-        if ( !File.Exists( rockDllPath ) )
+        var rockDllPath = _fs.Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
+        if ( !_fs.File.Exists( rockDllPath ) )
         {
             _logger.LogInformation( "No Rock assembly was found at {filename}.", rockDllPath );
             return new RockStatusItem( "is not installed.", fileStatuses );
@@ -609,7 +619,7 @@ class Environment
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
     public PluginStatusItem GetPluginStatus( PluginData plugin )
     {
-        var pluginDirectory = Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
+        var pluginDirectory = _fs.Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
 
         if ( !Repository.IsValid( pluginDirectory ) )
         {
@@ -660,16 +670,16 @@ class Environment
     /// <returns>A list of <see cref="StatusItem"/> objects.</returns>
     public List<StatusItem>? GetRockFileStatuses()
     {
-        var rockDirectory = Path.Combine( _environmentDirectory, "Rock" );
-        var rockStatusFile = Path.Combine( rockDirectory, ".rock.json" );
+        var rockDirectory = _fs.Path.Combine( _environmentDirectory, "Rock" );
+        var rockStatusFile = _fs.Path.Combine( rockDirectory, ".rock.json" );
 
-        if ( !File.Exists( rockStatusFile ) )
+        if ( !_fs.File.Exists( rockStatusFile ) )
         {
             _logger.LogInformation( "Rock installation file {file} is missing.", rockStatusFile );
             return null;
         }
 
-        var rockInstallation = JsonSerializer.Deserialize<RockInstallationData>( File.ReadAllText( rockStatusFile ) );
+        var rockInstallation = JsonSerializer.Deserialize<RockInstallationData>( _fs.File.ReadAllText( rockStatusFile ) );
 
         if ( rockInstallation == null || rockInstallation.Files == null )
         {
@@ -683,16 +693,16 @@ class Environment
         {
             var filePath = file.Key.Replace( '/', Path.DirectorySeparatorChar );
 
-            filePath = Path.Combine( rockDirectory, filePath );
-            var relativePath = Path.GetRelativePath( _environmentDirectory, filePath );
+            filePath = _fs.Path.Combine( rockDirectory, filePath );
+            var relativePath = _fs.Path.GetRelativePath( _environmentDirectory, filePath );
 
-            if ( !File.Exists( filePath ) )
+            if ( !_fs.File.Exists( filePath ) )
             {
                 fileStatuses.Add( new StatusItem( relativePath, "is missing." ) );
                 continue;
             }
 
-            var hash = CalculateHexHash( filePath );
+            var hash = _fs.File.CalculateHexHash( filePath );
 
             if ( hash != file.Value )
             {
@@ -715,11 +725,11 @@ class Environment
 
         if ( items == null )
         {
-            var rockDllPath = Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
+            var rockDllPath = _fs.Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Bin", "Rock.dll" );
 
             // If the rock install log is missing and there is no Rock.dll, then
             // assume we are clean.
-            return !File.Exists( rockDllPath );
+            return !_fs.File.Exists( rockDllPath );
         }
 
         return items != null
@@ -733,17 +743,17 @@ class Environment
     /// <returns><c>true</c> if the plugin is in a clean state; otherwise <c>false</c>.</returns>
     public bool IsPluginClean( PluginData plugin )
     {
-        var pluginDirectory = Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
+        var pluginDirectory = _fs.Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
 
         // If the directory does not exist, it is considered clean so that
         // an update command can execute.
-        if ( !Directory.Exists( pluginDirectory ) )
+        if ( !_fs.Directory.Exists( pluginDirectory ) )
         {
             return true;
         }
 
         // If the directory exists but is empty iti s considered clean.
-        if ( Directory.GetFiles( pluginDirectory ).Length == 0 && Directory.GetDirectories( pluginDirectory ).Length == 0 )
+        if ( _fs.Directory.GetFiles( pluginDirectory ).Length == 0 && _fs.Directory.GetDirectories( pluginDirectory ).Length == 0 )
         {
             return true;
         }
@@ -768,7 +778,7 @@ class Environment
     /// <param name="progress">An optional progress reporter for the clone progress.</param>
     private void Clone( string remoteUrl, string relativeDirectory, string? branch, IProgress<double>? progress )
     {
-        var destinationDirectory = Path.Combine( _environmentDirectory, relativeDirectory );
+        var destinationDirectory = _fs.Path.Combine( _environmentDirectory, relativeDirectory );
 
         Repository.Clone( remoteUrl, destinationDirectory, new CloneOptions
         {
@@ -862,33 +872,6 @@ class Environment
         }
 
         throw new NoCredentialsException();
-    }
-
-    /// <summary>
-    /// Calculates the SHA1 hash of a files contents and returns that hash as a
-    /// hexadecimal string without spacing or "0x" prefix.
-    /// </summary>
-    /// <param name="filename">The path to the filename to read.</param>
-    /// <returns>A SHA1 hash in hexadecimal notation.</returns>
-    private static string CalculateHexHash( string filename )
-    {
-        var stream = File.OpenRead( filename );
-
-        return CalculateHexHash( stream );
-    }
-
-    /// <summary>
-    /// Calculates the SHA1 hash of a stream and returns that hash as a
-    /// hexadecimal string without spacing or "0x" prefix.
-    /// </summary>
-    /// <param name="stream">The stream to read.</param>
-    /// <returns>A SHA1 hash in hexadecimal notation.</returns>
-    private static string CalculateHexHash( Stream stream )
-    {
-        using var sha1 = SHA1.Create();
-        var hash = sha1.ComputeHash( stream );
-
-        return Convert.ToHexString( hash );
     }
 
     /// <summary>

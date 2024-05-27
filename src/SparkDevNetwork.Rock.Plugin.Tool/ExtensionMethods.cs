@@ -1,4 +1,6 @@
+using System.IO.Abstractions;
 using System.Net;
+using System.Security.Cryptography;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool;
 
@@ -16,13 +18,6 @@ static class ExtensionMethods
     /// <returns>A <see cref="Task"/> that indicates when the operation has completed.</returns>
     public static async Task DownloadAsync( this HttpClient client, string requestUri, Stream destination, Action<float> progress, CancellationToken cancellationToken = default )
     {
-        if ( !requestUri.Contains( "://" ) )
-        {
-            await ReadFileAsync( requestUri, destination, progress, cancellationToken );
-
-            return;
-        }
-
         using var response = await client.GetAsync( requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken ).ConfigureAwait( false );
 
         if ( response.StatusCode == HttpStatusCode.NotFound )
@@ -68,10 +63,10 @@ static class ExtensionMethods
     /// <param name="progress">The callback for progress reporting as a value between <c>0</c> and <c>1</c>.</param>
     /// <param name="cancellationToken">The token monitored for cancellation requests.</param>
     /// <returns>A <see cref="Task"/> that indicates when the operation has completed.</returns>
-    private static async Task ReadFileAsync( string requestUri, Stream destination, Action<float> progress, CancellationToken cancellationToken = default )
+    public static async Task ReadFileAsync( this IFile file, string requestUri, Stream destination, Action<float> progress, CancellationToken cancellationToken = default )
     {
-        using var readStream = File.OpenRead( requestUri );
-        var totalSize = new FileInfo( requestUri ).Length;
+        using var readStream = file.OpenRead( requestUri );
+        var totalSize = file.FileSystem.FileInfo.New( requestUri ).Length;
 
         var buffer = new byte[81920];
         long totalBytesRead = 0;
@@ -85,5 +80,33 @@ static class ExtensionMethods
         }
 
         progress( 1 );
+    }
+
+    /// <summary>
+    /// Calculates the SHA1 hash of a files contents and returns that hash as a
+    /// hexadecimal string without spacing or "0x" prefix.
+    /// </summary>
+    /// <param name="file">The object that provides access to the file system.
+    /// <param name="filename">The path to the filename to read.</param>
+    /// <returns>A SHA1 hash in hexadecimal notation.</returns>
+    public static string CalculateHexHash( this IFile file, string filename )
+    {
+        using var stream = file.OpenRead( filename );
+
+        return stream.CalculateHexHash();
+    }
+
+    /// <summary>
+    /// Calculates the SHA1 hash of a stream and returns that hash as a
+    /// hexadecimal string without spacing or "0x" prefix.
+    /// </summary>
+    /// <param name="stream">The stream to read.</param>
+    /// <returns>A SHA1 hash in hexadecimal notation.</returns>
+    public static string CalculateHexHash( this Stream stream )
+    {
+        using var sha1 = SHA1.Create();
+        var hash = sha1.ComputeHash( stream );
+
+        return Convert.ToHexString( hash );
     }
 }
