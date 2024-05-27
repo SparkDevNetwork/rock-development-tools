@@ -31,7 +31,7 @@ class StatusItem
     public StatusItem( string name )
     {
         Name = name;
-        Message = "is OK.";
+        Message = "is up-to-date.";
         IsUpToDate = true;
     }
 

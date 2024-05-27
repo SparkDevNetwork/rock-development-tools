@@ -375,11 +375,9 @@ class Environment
 
                 if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
                 {
-                    if ( IsDryRun )
-                    {
-                        _console.WriteLine( $"  Preserve {Path.GetRelativePath( Directory.GetCurrentDirectory(), dirpath )}" );
-                    }
+                    var preservedPath = Path.GetRelativePath( Directory.GetCurrentDirectory(), dirpath );
 
+                    _logger.LogInformation( "Preserving diretory {path}", preservedPath );
                     removeDirectory = false;
                 }
                 else if ( !RemoveDirectory( dirpath ) )
@@ -394,11 +392,9 @@ class Environment
 
                 if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
                 {
-                    if ( IsDryRun )
-                    {
-                        _console.WriteLine( $"  Preserve {Path.GetRelativePath( Directory.GetCurrentDirectory(), filepath )}" );
-                    }
+                    var preservedPath = Path.GetRelativePath( Directory.GetCurrentDirectory(), filepath );
 
+                    _logger.LogInformation( "Preserving file {path}", preservedPath );
                     removeDirectory = false;
                 }
                 else if ( !IsDryRun )
