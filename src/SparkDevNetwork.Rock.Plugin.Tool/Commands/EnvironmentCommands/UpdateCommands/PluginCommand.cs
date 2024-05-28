@@ -75,7 +75,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
 
         var plugins = environment.GetPlugins();
         var outOfDatePlugins = plugins
-            .Where( p => !environment.GetPluginStatus( p ).IsUpToDate )
+            .Where( p => !p.GetStatus().IsUpToDate )
             .ToList();
 
         if ( outOfDatePlugins.Count == 0 )
@@ -84,7 +84,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
         }
 
         var uncleanPlugins = outOfDatePlugins
-            .Where( p => !environment.IsPluginClean( p ) )
+            .Where( p => !p.IsClean() )
             .ToList();
 
         // If we aren't forcing the update then check if everything is clean
@@ -108,7 +108,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
         {
             foreach ( var plugin in outOfDatePlugins )
             {
-                environment.InstallOrUpdatePlugin( plugin, ctx );
+                plugin.InstallOrUpdatePlugin( ctx );
             }
         } );
 

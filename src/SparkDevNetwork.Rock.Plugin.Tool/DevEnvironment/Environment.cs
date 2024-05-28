@@ -1,8 +1,5 @@
-using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Text.Json;
-
-using LibGit2Sharp;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -132,87 +129,14 @@ class Environment
     /// Gets all the plugins defined in this environment.
     /// </summary>
     /// <returns>A list of plugins.</returns>
-    public List<PluginData> GetPlugins()
+    public List<PluginInstallation> GetPlugins()
     {
-        return _data.Plugins;
-    }
-
-    /// <summary>
-    /// Installs or updates a plugin. If the plugin is not yet installed then
-    /// it will be installed. Otherwise it will be updated.
-    /// </summary>
-    /// <param name="plugin">The plugin to be installed or updated.</param>
-    /// <param name="context">The context used to report progress.</param>
-    public void InstallOrUpdatePlugin( PluginData plugin, ProgressContext context )
-    {
-        var pluginPath = _fs.Path.Combine( _environmentDirectory, plugin.Path );
-
-        if ( !_fs.Directory.Exists( pluginPath ) || !Repository.IsValid( pluginPath ) )
+        return _data.Plugins.Select( p =>
         {
-            var progress = context.AddTask( $"Installing {plugin.Path}", true, 1 );
-            InstallPluginAsync( plugin, progress );
-        }
-        else
-        {
-            var progress = context.AddTask( $"Updating {plugin.Path}", true, 1 );
-            UpdatePluginAsync( plugin, progress );
-        }
-    }
-
-    /// <summary>
-    /// Installs the plugin into the environment.
-    /// </summary>
-    /// <param name="plugin">The plugin to be installed.</param>
-    /// <param name="progress">The progress reporter.</param>
-    private void InstallPluginAsync( PluginData plugin, IProgress<double>? progress )
-    {
-        var pluginPath = _fs.Path.Combine( _environmentDirectory, plugin.Path );
-
-        Clone( plugin.Url,
-            pluginPath,
-            plugin.Branch,
-            progress );
-    }
-
-    /// <summary>
-    /// Update the plugin by ensuring it is on the correct branch and also
-    /// pulls any changes from the remote.
-    /// </summary>
-    /// <param name="plugin">The plugin to be updated.</param>
-    /// <param name="progress">An optional progress reporter.</param>
-    private void UpdatePluginAsync( PluginData plugin, IProgress<double>? progress )
-    {
-        var pluginPath = _fs.Path.Combine( _environmentDirectory, plugin.Path );
-        var repo = new Repository( pluginPath );
-        var signature = repo.Config.BuildSignature( DateTimeOffset.Now );
-        var currentBranch = GetCurrentBranch( repo );
-
-        if ( currentBranch != plugin.Branch )
-        {
-            LibGit2Sharp.Commands.Checkout( repo, plugin.Branch );
-        }
-
-        var pullOptions = new PullOptions
-        {
-            FetchOptions = new FetchOptions
-            {
-                CredentialsProvider = GetCredentials,
-                OnTransferProgress = ( transferProgress ) =>
-                {
-                    progress?.Report( transferProgress.ReceivedObjects / ( double ) transferProgress.TotalObjects );
-                    return true;
-                }
-            },
-            MergeOptions = new MergeOptions
-            {
-                FailOnConflict = true,
-                FastForwardStrategy = FastForwardStrategy.FastForwardOnly
-            }
-        };
-
-        LibGit2Sharp.Commands.Pull( repo, signature, pullOptions );
-
-        progress?.Report( 1 );
+            var path = _fs.Path.Combine( _environmentDirectory, p.Path.Replace( '/', Path.PathSeparator ) );
+            return new PluginInstallation( path, p, _fs, _logger );
+        } )
+        .ToList();
     }
 
     /// <summary>
@@ -227,9 +151,9 @@ class Environment
             GetRockInstallation().GetRockStatus()
         };
 
-        foreach ( var plugin in _data.Plugins )
+        foreach ( var plugin in GetPlugins() )
         {
-            statuses.Add( GetPluginStatus( plugin ) );
+            statuses.Add( plugin.GetStatus() );
         }
 
         return statuses;
@@ -242,211 +166,5 @@ class Environment
     public bool IsEnvironmentUpToDate()
     {
         return GetEnvironmentStatus().All( s => s.IsUpToDate );
-    }
-
-    /// <summary>
-    /// Checks if the plugin is up to date with the environment configuration.
-    /// </summary>
-    /// <param name="plugin">The plugin configuration.</param>
-    /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
-    public PluginStatusItem GetPluginStatus( PluginData plugin )
-    {
-        var pluginDirectory = _fs.Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
-
-        if ( !Repository.IsValid( pluginDirectory ) )
-        {
-            _logger.LogError( "Plugin {path} is not a git repository.", plugin.Path );
-            return new PluginStatusItem( plugin.Path, "is not a git repository.", plugin );
-        }
-
-        var repository = new Repository( pluginDirectory );
-        var currentBranch = GetCurrentBranch( repository );
-
-        if ( currentBranch == null )
-        {
-            _logger.LogInformation( "Plugin {path} is not on a branch.", plugin.Path );
-            return new PluginStatusItem( plugin.Path, "is not on a branch.", plugin );
-        }
-
-        if ( plugin.Branch != currentBranch )
-        {
-            _logger.LogInformation( "Plugin {path} is on branch {repoBranch} instead of {expectedBranch}.", plugin.Path, currentBranch, plugin.Branch );
-            return new PluginStatusItem( plugin.Path, $"is on branch {currentBranch} but should be {plugin.Branch}.", plugin );
-        }
-
-        var remote = repository.Network.Remotes[repository.Head.RemoteName];
-        var refSpecs = remote.FetchRefSpecs.Select( r => r.Specification );
-
-        if ( !repository.Head.TrackingDetails.BehindBy.HasValue )
-        {
-            return new PluginStatusItem( plugin.Path, "has no upstream remote configured.", plugin );
-        }
-
-        LibGit2Sharp.Commands.Fetch( repository, remote.Name, refSpecs, new FetchOptions
-        {
-            CredentialsProvider = GetCredentials,
-        }, "Fetching remote" );
-
-        if ( repository.Head.TrackingDetails.BehindBy.Value > 0 )
-        {
-            return new PluginStatusItem( plugin.Path, $"is behind by {repository.Head.TrackingDetails.BehindBy} commits.", plugin );
-        }
-
-        return new PluginStatusItem( plugin.Path, plugin );
-    }
-
-    /// <summary>
-    /// Checks if the plugin is clean. A clean installation means that the git
-    /// repository is in a clean state.
-    /// </summary>
-    /// <returns><c>true</c> if the plugin is in a clean state; otherwise <c>false</c>.</returns>
-    public bool IsPluginClean( PluginData plugin )
-    {
-        var pluginDirectory = _fs.Path.Combine( _environmentDirectory, plugin.Path.Replace( '/', Path.PathSeparator ) );
-
-        // If the directory does not exist, it is considered clean so that
-        // an update command can execute.
-        if ( !_fs.Directory.Exists( pluginDirectory ) )
-        {
-            return true;
-        }
-
-        // If the directory exists but is empty iti s considered clean.
-        if ( _fs.Directory.GetFiles( pluginDirectory ).Length == 0 && _fs.Directory.GetDirectories( pluginDirectory ).Length == 0 )
-        {
-            return true;
-        }
-
-        if ( !Repository.IsValid( pluginDirectory ) )
-        {
-            _logger.LogError( "Plugin {path} is not a git repository.", plugin.Path );
-            return false;
-        }
-
-        using var repository = new Repository( pluginDirectory );
-
-        return !repository.RetrieveStatus().IsDirty;
-    }
-
-    /// <summary>
-    /// Clones a remote repository into the environment.
-    /// </summary>
-    /// <param name="remoteUrl">The URL of the remote repository.</param>
-    /// <param name="relativeDirectory">The relative path to the environment root.</param>
-    /// <param name="branch">If specified the name of the remote branch to clone; otherwise the default branch will be cloned.</param>
-    /// <param name="progress">An optional progress reporter for the clone progress.</param>
-    private void Clone( string remoteUrl, string relativeDirectory, string? branch, IProgress<double>? progress )
-    {
-        var destinationDirectory = _fs.Path.Combine( _environmentDirectory, relativeDirectory );
-
-        Repository.Clone( remoteUrl, destinationDirectory, new CloneOptions
-        {
-            BranchName = !string.IsNullOrEmpty( branch ) ? branch : null,
-            OnCheckoutProgress = ( a, b, c ) =>
-            {
-                progress?.Report( 0.5 + ( b / ( double ) c / 2.0 ) );
-            },
-            FetchOptions =
-            {
-                CredentialsProvider = GetCredentials,
-                OnTransferProgress = ( transferProgress ) =>
-                {
-                    progress?.Report( transferProgress.ReceivedObjects / ( double ) transferProgress.TotalObjects / 2.0 );
-                    return true;
-                }
-            }
-        } );
-    }
-
-    /// <summary>
-    /// Gets the credentials from the native git implementation for the repository.
-    /// </summary>
-    /// <param name="repoUrl">The URL of the repository that needs authentication.</param>
-    /// <param name="usernameFromUrl">The username to get credentials for.</param>
-    /// <param name="supportedTypes">The supported authentication types.</param>
-    /// <returns>A set of credentials to authenticate with.</returns>
-    /// <exception cref="NoCredentialsException">Thrown if no credentials are available.</exception>
-    private static UsernamePasswordCredentials GetCredentials( string repoUrl, string usernameFromUrl, SupportedCredentialTypes supportedTypes )
-    {
-        var uri = new Uri( repoUrl );
-        string? username = null;
-        string? password = null;
-
-        try
-        {
-            var proc = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "git.exe",
-                    Arguments = "credential-manager get",
-                    UseShellExecute = false,
-                    RedirectStandardInput = true,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-
-            proc.Start();
-
-            proc.StandardInput.WriteLine( $"protocol={uri.Scheme}" );
-            proc.StandardInput.WriteLine( $"host={uri.Host}" );
-
-            if ( !string.IsNullOrEmpty( usernameFromUrl ) )
-            {
-                proc.StandardInput.WriteLine( $"username={usernameFromUrl}" );
-            }
-
-            proc.StandardInput.WriteLine();
-
-            while ( !proc.StandardOutput.EndOfStream )
-            {
-                var line = proc.StandardOutput.ReadLine();
-
-                if ( line?.StartsWith( "username=" ) == true )
-                {
-                    username = line.Substring( 9 );
-                }
-                else if ( line?.StartsWith( "password=" ) == true )
-                {
-                    password = line.Substring( 9 );
-                }
-            }
-
-            proc.WaitForExit();
-        }
-        catch
-        {
-            username = null;
-            password = null;
-        }
-
-        if ( username != null && password != null )
-        {
-            return new UsernamePasswordCredentials
-            {
-                Username = username,
-                Password = password
-            };
-        }
-
-        throw new NoCredentialsException();
-    }
-
-    /// <summary>
-    /// Gets the current branch name of the repository.
-    /// </summary>
-    /// <param name="repository">The repository.</param>
-    /// <returns>The name of the branch or <c>null</c> if not on any branch.</returns>
-    private static string? GetCurrentBranch( Repository repository )
-    {
-        var reference = repository.Head.Reference.TargetIdentifier;
-
-        if ( !reference.StartsWith( "refs/heads/" ) )
-        {
-            return null;
-        }
-
-        return reference.Substring( 11 );
     }
 }
