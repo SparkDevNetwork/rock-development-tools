@@ -75,14 +75,15 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
             return 1;
         }
 
-        environment.IsDryRun = ExecuteOptions.DryRun;
+        var rock = environment.GetRockInstallation();
+        rock.IsDryRun = ExecuteOptions.DryRun;
 
         if ( !string.IsNullOrEmpty( ExecuteOptions.Source ) )
         {
-            environment.RockEnvironmentSourceUrl = ExecuteOptions.Source;
+            rock.RockEnvironmentSourceUrl = ExecuteOptions.Source;
         }
 
-        var rockStatus = environment.GetRockStatus();
+        var rockStatus = rock.GetRockStatus();
 
         if ( rockStatus.IsUpToDate )
         {
@@ -99,7 +100,7 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
 
         // If we aren't forcing the update then check if everything is clean
         // before we make any changes.
-        if ( !ExecuteOptions.Force && !environment.IsRockClean() )
+        if ( !ExecuteOptions.Force && !rock.IsRockClean() )
         {
             Console.MarkupLine( "[red]Rock installation is not clean.[/]" );
             Console.WriteLine();
@@ -113,14 +114,14 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
 
         if ( ExecuteOptions.Force )
         {
-            environment.ForceRemoveRock();
+            rock.ForceRemoveRock();
         }
         else
         {
-            environment.RemoveRock();
+            rock.RemoveRock();
         }
 
-        await environment.InstallRockAsync();
+        await rock.InstallRockAsync();
 
         return 0;
     }

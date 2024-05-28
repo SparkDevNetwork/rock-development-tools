@@ -157,15 +157,16 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             try
             {
                 var environment = DevEnvironment.Environment.Open( outputDirectory, _serviceProvider );
+                var rockInstallation = environment.GetRockInstallation();
 
                 environment.IsDryRun = ExecuteOptions.DryRun;
 
                 if ( !string.IsNullOrEmpty( ExecuteOptions.Source ) )
                 {
-                    environment.RockEnvironmentSourceUrl = ExecuteOptions.Source;
+                    rockInstallation.RockEnvironmentSourceUrl = ExecuteOptions.Source;
                 }
 
-                await environment.InstallRockVersionAsync( rockVersion );
+                await rockInstallation.InstallRockVersionAsync( rockVersion );
             }
             catch ( InvalidEnvironmentException ex )
             {

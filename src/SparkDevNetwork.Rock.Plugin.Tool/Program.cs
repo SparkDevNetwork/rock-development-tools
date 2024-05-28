@@ -17,7 +17,8 @@ public class Program
         services.AddSingleton<IFileSystem, FileSystem>();
         services.AddSingleton( AnsiConsole.Console );
         services.AddSingleton<ILoggerFactory, DynamicLoggerFactory>();
-        services.AddSingleton( ServiceDescriptor.Singleton( typeof( ILogger<> ), typeof( Logger<> ) ) );
+        services.AddSingleton( sp => sp.GetRequiredService<ILoggerFactory>().CreateLogger( "RockTool" ) );
+        services.AddLogging();
 
         var serviceProvider = services.BuildServiceProvider();
         var rootCommand = ActivatorUtilities.CreateInstance<RootAppCommand>( serviceProvider );
