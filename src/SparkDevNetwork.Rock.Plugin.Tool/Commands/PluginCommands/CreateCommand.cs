@@ -1,6 +1,5 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.ComponentModel.DataAnnotations;
 using System.IO.Abstractions;
 
 using Fluid;
@@ -9,11 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Semver;
 
-using Sharprompt;
+using SparkDevNetwork.Rock.Plugin.Tool.DevEnvironment;
 
 using Spectre.Console;
-
-using ValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 
@@ -24,19 +21,19 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
 {
     private readonly IFileSystem _fs;
 
-    private readonly Option<string?> _organizationOption;
+    private readonly IServiceProvider _serviceProvider;
 
-    private readonly Option<string?> _organizationCodeOption;
+    /// <summary>
+    /// The option that defines the target directory of the environment.
+    /// </summary>
+    private readonly Option<string?> _targetOption;
 
-    private readonly Option<string?> _nameOption;
+    /// <summary>
+    /// The option that defines the output directory of the new environment.
+    /// </summary>
+    private readonly Option<string?> _outputOption;
 
-    private readonly Option<string?> _rockVersionOption;
-
-    private readonly Option<string?> _rockWebOption;
-
-    private readonly Option<bool?> _obsidianOption;
-
-    private readonly Option<bool?> _copyOption;
+    private DevEnvironment.Environment _environment = null!;
 
     /// <summary>
     /// Creates a command that will handle creating a new Rock plugin.
@@ -45,23 +42,16 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
         : base( "create", "Creates a new plugin following a standard template.", serviceProvider )
     {
         _fs = serviceProvider.GetRequiredService<IFileSystem>();
+        _serviceProvider = serviceProvider;
 
-        _organizationOption = new Option<string?>( "--organization", "The name of the organization that owns the plugin" );
-        _organizationCodeOption = new Option<string?>( "--organization-code", "The namespace-style code used for the organization" );
-        _nameOption = new Option<string?>( "--name", "The name of the plugin" );
-        _rockVersionOption = new Option<string?>( "--rock-version", "The version of Rock to base the plugin on" )
-            .FromAmong( Support.SupportedRockVersions );
-        _rockWebOption = new Option<string?>( "--rock-web", "The path to the RockWeb folder" );
-        _obsidianOption = new Option<bool?>( "--obsidian", "Determines if an Obsidian project is created" );
-        _copyOption = new Option<bool?>( "--copy", "Copies the built artifacts to the RockWeb folder automatically" );
+        _targetOption = new Option<string?>( "--target", "The directory that contains the environment." );
+        _targetOption.AddAlias( "-t" );
 
-        AddOption( _organizationOption );
-        AddOption( _organizationCodeOption );
-        AddOption( _nameOption );
-        AddOption( _rockVersionOption );
-        AddOption( _rockWebOption );
-        AddOption( _obsidianOption );
-        AddOption( _copyOption );
+        _outputOption = new Option<string?>( "--output", "Location to place the generated output in the environment." );
+        _outputOption.AddAlias( "-o" );
+
+        AddOption( _targetOption );
+        AddOption( _outputOption );
     }
 
     /// <inheritdoc/>
@@ -69,17 +59,8 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     {
         var options = base.GetOptions( context );
 
-        options.Organization = context.ParseResult.GetValueForOption( _organizationOption );
-        options.OrganizationCode = context.ParseResult.GetValueForOption( _organizationCodeOption );
-        options.PluginName = context.ParseResult.GetValueForOption( _nameOption );
-        options.RockWebPath = context.ParseResult.GetValueForOption( _rockWebOption );
-        options.Obsidian = context.ParseResult.GetValueForOption( _obsidianOption );
-        options.Copy = context.ParseResult.GetValueForOption( _copyOption );
-
-        if ( SemVersion.TryParse( context.ParseResult.GetValueForOption( _rockVersionOption ), SemVersionStyles.Strict, out var version ) )
-        {
-            options.RockVersion = version;
-        }
+        options.Target = context.ParseResult.GetValueForOption( _targetOption );
+        options.Output = context.ParseResult.GetValueForOption( _outputOption );
 
         return options;
     }
@@ -87,15 +68,26 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync()
     {
+        var env = OpenEnvironment();
+
+        if ( env == null )
+        {
+            return 1;
+        }
+
+        _environment = env;
+
+        PopulateOptionsFromEnvironment();
+
         PromptForMissingOptions();
 
         var result = await GenerateProjectsAsync();
 
         if ( result is not null )
         {
-            if ( result.ErrorMessage != null )
+            if ( result.Message != null )
             {
-                Console.WriteLine( result.ErrorMessage );
+                Console.WriteLine( result.Message );
             }
 
             return 1;
@@ -108,30 +100,54 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     /// Generate all the project files needed for the specified options.
     /// </summary>
     /// <returns>The validation error or <c>null</c>.</returns>
-    private async Task<ValidationResult?> GenerateProjectsAsync()
+    private async Task<ValidationResult> GenerateProjectsAsync()
     {
+        System.Diagnostics.Debugger.Launch();
+        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
         var csharpDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
         var obsidianDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
 
-        if ( _fs.Path.Exists( csharpDirectory ) )
+        csharpDirectory = _fs.Path.Combine( environmentDirectory, csharpDirectory );
+        obsidianDirectory = _fs.Path.Combine( environmentDirectory, obsidianDirectory );
+
+        if ( ExecuteOptions.DllProject == true && _fs.Path.Exists( csharpDirectory ) )
         {
-            return new ValidationResult( $"Directory {csharpDirectory} already exists, aborting." );
+            return ValidationResult.Error( $"Directory {csharpDirectory} already exists, aborting." );
         }
 
-        if ( ExecuteOptions.Obsidian == true && _fs.Path.Exists( obsidianDirectory ) )
+        if ( ExecuteOptions.ObsidianProject == true && _fs.Path.Exists( obsidianDirectory ) )
         {
-            return new ValidationResult( $"Directory {obsidianDirectory} already exists, aborting." );
+            return ValidationResult.Error( $"Directory {obsidianDirectory} already exists, aborting." );
         }
 
-        return await CreateCSharpProject( csharpDirectory )
-            ?? await CreateObsidianProject( obsidianDirectory );
+        if ( ExecuteOptions.DllProject == true )
+        {
+            var result = await CreateCSharpProject( csharpDirectory );
+
+            if ( !result.Successful )
+            {
+                return result;
+            }
+        }
+
+        if ( ExecuteOptions.ObsidianProject == true )
+        {
+            var result = await CreateObsidianProject( obsidianDirectory );
+
+            if ( !result.Successful )
+            {
+                return result;
+            }
+        }
+
+        return ValidationResult.Success();
     }
 
     /// <summary>
     /// Generate all the project files needed for the C# project.
     /// </summary>
     /// <returns>The validation error or <c>null</c>.</returns>
-    private async Task<ValidationResult?> CreateCSharpProject( string directory )
+    private async Task<ValidationResult> CreateCSharpProject( string directory )
     {
         var projectFilename = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.csproj";
 
@@ -141,14 +157,14 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
         await CopyTemplateAsync( "CSharp.Class1.cs", [directory, "Class1.cs"] );
         await CopyTemplateAsync( "CSharp.gitignore", [directory, ".gitignore"] );
 
-        return null;
+        return ValidationResult.Success();
     }
 
     /// <summary>
     /// Generate all the project files needed for the Obsidian project.
     /// </summary>
     /// <returns>The validation error or <c>null</c>.</returns>
-    private async Task<ValidationResult?> CreateObsidianProject( string directory )
+    private async Task<ValidationResult> CreateObsidianProject( string directory )
     {
         var projectFilename = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian.esproj";
 
@@ -167,7 +183,7 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
         await CopyTemplateAsync( "Obsidian.tests.sample.spec.ts", [directory, "tests", "sample.spec.ts"] );
         await CopyTemplateAsync( "Obsidian.tests.tsconfig.json", [directory, "tests", "tsconfig.json"] );
 
-        return null;
+        return ValidationResult.Success();
     }
 
     /// <summary>
@@ -221,95 +237,114 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
         await _fs.File.WriteAllTextAsync( _fs.Path.Combine( destination ), content );
     }
 
+    private DevEnvironment.Environment? OpenEnvironment()
+    {
+        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
+        DevEnvironment.Environment environment;
+
+        environmentDirectory = _fs.Path.GetFullPath( environmentDirectory );
+
+        try
+        {
+            environment = DevEnvironment.Environment.Open( environmentDirectory, _serviceProvider );
+
+            return environment;
+        }
+        catch ( InvalidEnvironmentException ex )
+        {
+            Console.WriteLine( ex.Message );
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Update the options with values from the development environment.
+    /// </summary>
+    private void PopulateOptionsFromEnvironment()
+    {
+        if ( ExecuteOptions.RockVersion == null )
+        {
+            ExecuteOptions.RockVersion = _environment.GetRockVersion();
+        }
+
+        if ( ExecuteOptions.Organization == null )
+        {
+            ExecuteOptions.Organization = _environment.GetOrganizationName();
+        }
+
+        if ( ExecuteOptions.OrganizationCode == null )
+        {
+            ExecuteOptions.OrganizationCode = _environment.GetOrganizationCode();
+        }
+
+        if ( ExecuteOptions.RockWebPath == null && _environment.GetRockVersion() != null )
+        {
+            ExecuteOptions.RockWebPath = "Rock/RockWeb";
+        }
+    }
+
     /// <summary>
     /// Prompts for any missing options and updates the options object.
     /// </summary>
     private void PromptForMissingOptions()
     {
-        if ( string.IsNullOrEmpty( ExecuteOptions.Organization ) )
-        {
-            ExecuteOptions.Organization = Prompt.Input<string>( "Organization",
-                placeholder: "Rock Solid Church Demo",
-                validators: [Validators.Required()] );
-        }
+        ExecuteOptions.Organization = new TextPrompt<string?>( "Organization" )
+            .DefaultValue( ExecuteOptions.Organization )
+            .DefaultValueStyle( "blue" )
+            .Show( Console );
 
-        if ( string.IsNullOrEmpty( ExecuteOptions.OrganizationCode ) )
-        {
-            ExecuteOptions.OrganizationCode = Prompt.Input<string>( "Organization Code",
-                placeholder: $"com.rocksolidchurchdemo",
-                validators: [Validators.Required()] );
-        }
+        ExecuteOptions.OrganizationCode = new TextPrompt<string?>( "Organization Code" )
+            .DefaultValue( ExecuteOptions.OrganizationCode )
+            .DefaultValueStyle( "blue" )
+            .Show( Console );
 
-        if ( string.IsNullOrEmpty( ExecuteOptions.PluginName ) )
-        {
-            ExecuteOptions.PluginName = Prompt.Input<string>( "Plugin Name",
-                validators: [Validators.Required()] );
-        }
+        ExecuteOptions.PluginName = new TextPrompt<string?>( "Plugin Name" )
+            .Show( Console );
 
-        if ( ExecuteOptions.RockVersion is null )
-        {
-            var versionText = Prompt.Select( "Rock Version", Support.SupportedRockVersions );
+        var rockVersionString = new TextPrompt<string?>( "Rock Version" )
+            .DefaultValue( ExecuteOptions.RockVersion?.ToString() )
+            .DefaultValueStyle( "blue" )
+            .Validate( VersionStringValidator )
+            .Show( Console );
 
-            ExecuteOptions.RockVersion = SemVersion.Parse( versionText, SemVersionStyles.Strict );
-        }
+        ExecuteOptions.RockVersion = SemVersion.Parse( rockVersionString, SemVersionStyles.Strict );
 
-        if ( ExecuteOptions.RockWebPath is null )
-        {
-            var possibleRockWebPaths = new string[] {
-                "RockWeb",
-                _fs.Path.Combine( "Rock", "RockWeb" )
-            };
-            var defaultRockWebPath = "";
+        ExecuteOptions.RockWebPath = new TextPrompt<string?>( "Path to RockWeb" )
+            .DefaultValue( ExecuteOptions.RockWebPath )
+            .DefaultValueStyle( "blue" )
+            .Show( Console );
 
-            foreach ( var p in possibleRockWebPaths )
-            {
-                if ( _fs.Path.Exists( _fs.Path.Combine( p, "web.config" ) ) )
-                {
-                    defaultRockWebPath = p;
-                    break;
-                }
-            }
+        ExecuteOptions.DllProject = new ConfirmationPrompt( "Create DLL Project?" )
+            .DefaultValueStyle( "blue" )
+            .Show( Console );
 
-            ExecuteOptions.RockWebPath = Prompt.Input<string>( "Path to RockWeb",
-                validators: [ValidateRockWebPathPrompt] );
-        }
+        ExecuteOptions.ObsidianProject = new ConfirmationPrompt( "Create Obsidian Project?" )
+            .DefaultValueStyle( "blue" )
+            .Show( Console );
 
-        ExecuteOptions.Obsidian ??= Prompt.Confirm( "Create Obsidian Project" );
-
-        if ( ExecuteOptions.Copy == null )
-        {
-            if ( ExecuteOptions.RockWebPath != null )
-            {
-                ExecuteOptions.Copy = Prompt.Confirm( "Copy artifacts to RockWeb" );
-            }
-            else
-            {
-                ExecuteOptions.Copy = false;
-            }
-        }
+        ExecuteOptions.Copy = new ConfirmationPrompt( "Copy artifacts to RockWeb?" )
+            .DefaultValueStyle( "blue" )
+            .Show( Console );
     }
 
     /// <summary>
-    /// Validates the Rock version specified from the UI prompt against
-    /// versions that are supported.
+    /// Validate the string to make sure it is a valid version number.
     /// </summary>
-    /// <param name="value">The value entered in the prompt.</param>
-    /// <returns>The validation error or <c>null</c> if it was valid.</returns>
-    private ValidationResult? ValidateRockWebPathPrompt( object value )
+    /// <param name="value">The text entered on the prompt.</param>
+    /// <returns>The result of the validation.</returns>
+    private ValidationResult VersionStringValidator( string? value )
     {
-        if ( value is string stringValue )
+        if ( string.IsNullOrWhiteSpace( value ) )
         {
-            if ( !_fs.Path.Exists( stringValue ) )
-            {
-                return new ValidationResult( "That path does not appear to exist" );
-            }
-
-            if ( !_fs.Path.Exists( _fs.Path.Combine( stringValue, "web.config" ) ) )
-            {
-                return new ValidationResult( "That path does not appear to be a RockWeb path" );
-            }
+            return ValidationResult.Error( "A value is required." );
         }
-
-        return ValidationResult.Success;
+        if ( !SemVersion.TryParse( value, SemVersionStyles.Strict, out _ ) )
+        {
+            return ValidationResult.Error( "That is not a valid version number." );
+        }
+        else
+        {
+            return ValidationResult.Success();
+        }
     }
 }

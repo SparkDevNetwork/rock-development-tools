@@ -4,6 +4,8 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
+using Semver;
+
 using SparkDevNetwork.Rock.Plugin.Tool.Data;
 
 using Spectre.Console;
@@ -166,5 +168,42 @@ class Environment
     public bool IsEnvironmentUpToDate()
     {
         return GetEnvironmentStatus().All( s => s.IsUpToDate );
+    }
+
+    /// <summary>
+    /// Gets the configured Rock version for the environment.
+    /// </summary>
+    /// <returns>An instance of <see cref="SemVersion"/> or <c>null</c>.</returns>
+    public SemVersion? GetRockVersion()
+    {
+        if ( _data.Rock?.Version == null )
+        {
+            return null;
+        }
+
+        if ( !SemVersion.TryParse( _data.Rock.Version, SemVersionStyles.Strict, out var version ) )
+        {
+            return null;
+        }
+
+        return version;
+    }
+
+    /// <summary>
+    /// Gets the name of the organization defined in the environment.
+    /// </summary>
+    /// <returns>A string or <c>null</c>.</returns>
+    public string? GetOrganizationName()
+    {
+        return _data.Organization?.Name;
+    }
+
+    /// <summary>
+    /// Gets the name of the organization code defined in the environment.
+    /// </summary>
+    /// <returns>A string or <c>null</c>.</returns>
+    public string? GetOrganizationCode()
+    {
+        return _data.Organization?.Code;
     }
 }

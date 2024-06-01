@@ -2,15 +2,14 @@
 
     <PropertyGroup>
       <TargetFramework>net472</TargetFramework>
-      <RockWebPath>{{ RockWebPath }}</RockWebPath>
-      <CopyToRockWeb>false</CopyToRockWeb>
+      <RockWebPath>{{ RockWebPath | replace:'/','\\' }}</RockWebPath>
+      <CopyToRockWeb>{{ Copy }}</CopyToRockWeb>
     </PropertyGroup>
-  
+
     <ItemGroup>
       <PackageReference Include="SparkDevNetwork.Rock.Build.Tasks" Version="1.0.0-rc.1" />
       <PackageReference Include="SparkDevNetwork.Rock.Analyzers" Version="1.0.0-rc.1" />
       <PackageReference Include="RockRMS.Rock" Version="{{ RockVersion }}" />
     </ItemGroup>
-  
+
   </Project>
-  

@@ -6,6 +6,16 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 class CreateCommandOptions : Abstractions.BaseModifyCommandOptions
 {
     /// <summary>
+    /// The path to create the new environment in.
+    /// </summary>
+    public string? Output { get; set; }
+
+    /// <summary>
+    /// The target directory that contains the environment.
+    /// </summary>
+    public string? Target { get; set; }
+
+    /// <summary>
     /// The name of the organization such as <c>Rock Solid Church</c>.
     /// </summary>
     public string? Organization { get; set; }
@@ -36,9 +46,14 @@ class CreateCommandOptions : Abstractions.BaseModifyCommandOptions
     public string? RockWebPath { get; set; }
 
     /// <summary>
+    /// Determines if the C# project will be created.
+    /// </summary>
+    public bool? DllProject { get; set; }
+
+    /// <summary>
     /// Determines if the Obsidian project will be created.
     /// </summary>
-    public bool? Obsidian { get; set; }
+    public bool? ObsidianProject { get; set; }
 
     /// <summary>
     /// Determines if the build artifacts will be copied to <see cref="RockWebPath" />.
@@ -59,12 +74,15 @@ class CreateCommandOptions : Abstractions.BaseModifyCommandOptions
     public CreateCommandOptions( CreateCommandOptions source )
         : base( source )
     {
+        Output = source.Output;
+        Target = source.Target;
         Organization = source.Organization;
         OrganizationCode = source.OrganizationCode;
         PluginName = source.PluginName;
         RockVersion = source.RockVersion;
         RockWebPath = source.RockWebPath;
-        Obsidian = source.Obsidian;
+        DllProject = source.DllProject;
+        ObsidianProject = source.ObsidianProject;
         Copy = source.Copy;
     }
 }
