@@ -1,9 +1,9 @@
 namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 
 /// <summary>
-/// The options that are used by <see cref="CreateCommand"/>.
+/// The options that are used by <see cref="NewCommand"/>.
 /// </summary>
-class CreateCommandOptions : Abstractions.BaseModifyCommandOptions
+class NewCommandOptions : Abstractions.BaseModifyCommandOptions
 {
     /// <summary>
     /// The path to create the new environment in.
@@ -63,7 +63,7 @@ class CreateCommandOptions : Abstractions.BaseModifyCommandOptions
     /// <summary>
     /// Creates a new options instance with default values.
     /// </summary>
-    public CreateCommandOptions()
+    public NewCommandOptions()
     {
     }
 
@@ -71,7 +71,7 @@ class CreateCommandOptions : Abstractions.BaseModifyCommandOptions
     /// Creates a new options instance that is a copy of the specified options.
     /// </summary>
     /// <param name="source">The source options to copy.</param>
-    public CreateCommandOptions( CreateCommandOptions source )
+    public NewCommandOptions( NewCommandOptions source )
         : base( source )
     {
         Output = source.Output;

@@ -17,7 +17,7 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 /// <summary>
 /// Container for sub-commands related to working with plugins.
 /// </summary>
-class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
+class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 {
     private readonly IFileSystem _fs;
 
@@ -38,8 +38,8 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     /// <summary>
     /// Creates a command that will handle creating a new Rock plugin.
     /// </summary>
-    public CreateCommand( IServiceProvider serviceProvider )
-        : base( "create", "Creates a new plugin following a standard template.", serviceProvider )
+    public NewCommand( IServiceProvider serviceProvider )
+        : base( "new", "Creates a new plugin following a standard template.", serviceProvider )
     {
         _fs = serviceProvider.GetRequiredService<IFileSystem>();
         _serviceProvider = serviceProvider;
@@ -55,7 +55,7 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     }
 
     /// <inheritdoc/>
-    protected override CreateCommandOptions GetOptions( InvocationContext context )
+    protected override NewCommandOptions GetOptions( InvocationContext context )
     {
         var options = base.GetOptions( context );
 
@@ -102,13 +102,12 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
     /// <returns>The validation error or <c>null</c>.</returns>
     private async Task<ValidationResult> GenerateProjectsAsync()
     {
-        System.Diagnostics.Debugger.Launch();
         var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
         var csharpDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
         var obsidianDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
 
-        csharpDirectory = _fs.Path.Combine( environmentDirectory, csharpDirectory );
-        obsidianDirectory = _fs.Path.Combine( environmentDirectory, obsidianDirectory );
+        csharpDirectory = _fs.Path.Combine( environmentDirectory, ExecuteOptions.PluginCode!, csharpDirectory );
+        obsidianDirectory = _fs.Path.Combine( environmentDirectory, ExecuteOptions.PluginCode!, obsidianDirectory );
 
         if ( ExecuteOptions.DllProject == true && _fs.Path.Exists( csharpDirectory ) )
         {
@@ -205,11 +204,14 @@ class CreateCommand : Abstractions.BaseModifyCommand<CreateCommandOptions>
             throw new Exception( error );
         }
 
-        var options = new CreateCommandOptions( ExecuteOptions );
+        var options = new NewCommandOptions( ExecuteOptions );
 
         if ( options.RockWebPath is not null )
         {
-            var rockWebPrefix = new List<string>();
+            var rockWebPrefix = new List<string>
+            {
+                ".."
+            };
 
             // The RockWeb path is relative to the current directory. So we need
             // to adjust it to be relative to the sub-directory.
