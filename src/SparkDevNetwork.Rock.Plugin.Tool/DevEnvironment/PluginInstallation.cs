@@ -84,6 +84,11 @@ class PluginInstallation
     /// <param name="progress">The progress reporter.</param>
     private void InstallPluginAsync( IProgress<double>? progress )
     {
+        if ( string.IsNullOrWhiteSpace( _data.Url ) || string.IsNullOrWhiteSpace( _data.Branch ) )
+        {
+            throw new InvalidOperationException( "Can't install plugin without repository url and branch name." );
+        }
+
         Clone( _data.Url,
             _pluginPath,
             _data.Branch,
@@ -97,6 +102,11 @@ class PluginInstallation
     /// <param name="progress">An optional progress reporter.</param>
     private void UpdatePluginAsync( IProgress<double>? progress )
     {
+        if ( string.IsNullOrWhiteSpace( _data.Url ) || string.IsNullOrWhiteSpace( _data.Branch ) )
+        {
+            throw new InvalidOperationException( "Can't install plugin without repository url and branch name." );
+        }
+
         var repo = new Repository( _pluginPath );
         var signature = repo.Config.BuildSignature( DateTimeOffset.Now );
         var currentBranch = GetCurrentBranch( repo );
@@ -135,6 +145,11 @@ class PluginInstallation
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
     public PluginStatusItem GetStatus()
     {
+        if ( string.IsNullOrWhiteSpace(_data.Url ) || string.IsNullOrWhiteSpace( _data.Branch ) )
+        {
+            return new PluginStatusItem( _data.Path, _data );
+        }
+
         if ( !Repository.IsValid( _pluginPath ) )
         {
             _logger.LogError( "Plugin {path} is not a git repository.", _data.Path );

@@ -97,19 +97,20 @@ class Environment
             {
                 throw new InvalidEnvironmentException( "One or more plugins were defined without a path, all plugins must define a path." );
             }
-
-            if ( string.IsNullOrWhiteSpace( plugin.Url ) )
-            {
-                throw new InvalidEnvironmentException( $"No url defined for plugin {plugin.Path}." );
-            }
-
-            if ( string.IsNullOrWhiteSpace( plugin.Branch ) )
-            {
-                throw new InvalidEnvironmentException( $"No branch defined for plugin {plugin.Path}." );
-            }
         }
 
         return new Environment( environmentDirectory, data, serviceProvider );
+    }
+
+    /// <summary>
+    /// Saves the environment data back to the environment definition file.
+    /// </summary>
+    public void Save()
+    {
+        var environmentFile = _fs.Path.Combine( _environmentDirectory, EnvironmentData.Filename );
+        var json = JsonSerializer.Serialize( _data, Support.SerializerOptions );
+
+        _fs.File.WriteAllText( environmentFile, json );
     }
 
     /// <summary>
@@ -139,6 +140,19 @@ class Environment
             return new PluginInstallation( path, p, _fs, _logger );
         } )
         .ToList();
+    }
+
+    /// <summary>
+    /// Adds a new plugin to the environment. No vlaidation is performed to see
+    /// if the plugin is actually valid.
+    /// </summary>
+    /// <param name="relativePath">The path, relative to the environment.</param>
+    public void AddPlugin( string relativePath )
+    {
+        _data.Plugins.Add( new PluginData
+        {
+            Path = relativePath.Replace( '\\', '/' )
+        } );
     }
 
     /// <summary>

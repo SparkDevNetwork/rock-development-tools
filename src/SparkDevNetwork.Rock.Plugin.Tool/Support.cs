@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SparkDevNetwork.Rock.Plugin.Tool;
 
@@ -18,7 +19,8 @@ class Support
     /// </summary>
     public static JsonSerializerOptions SerializerOptions { get; } = new JsonSerializerOptions
     {
-        WriteIndented = true
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
 }

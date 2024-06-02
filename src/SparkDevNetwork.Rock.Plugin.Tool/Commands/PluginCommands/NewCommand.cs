@@ -127,6 +127,15 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             Repository.Init( outputDirectory );
         }
 
+        var pluginRelativePath = _fs.Path.GetRelativePath( environmentDirectory, outputDirectory );
+
+        if ( _environment.GetPlugins().Any( p => p.Path == pluginRelativePath ) )
+        {
+            _environment.AddPlugin( pluginRelativePath );
+        }
+
+        _environment.Save();
+
         return 0;
     }
 
@@ -314,20 +323,20 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// </summary>
     private void PromptForMissingOptions()
     {
-        ExecuteOptions.Organization = new TextPrompt<string?>( "Organization" )
+        ExecuteOptions.Organization = new TextPrompt<string?>( "Organization?" )
             .DefaultValue( ExecuteOptions.Organization )
             .DefaultValueStyle( "blue" )
             .Show( Console );
 
-        ExecuteOptions.OrganizationCode = new TextPrompt<string?>( "Organization Code" )
+        ExecuteOptions.OrganizationCode = new TextPrompt<string?>( "Organization Code?" )
             .DefaultValue( ExecuteOptions.OrganizationCode )
             .DefaultValueStyle( "blue" )
             .Show( Console );
 
-        ExecuteOptions.PluginName = new TextPrompt<string?>( "Plugin Name" )
+        ExecuteOptions.PluginName = new TextPrompt<string?>( "Plugin Name?" )
             .Show( Console );
 
-        var rockVersionString = new TextPrompt<string?>( "Rock Version" )
+        var rockVersionString = new TextPrompt<string?>( "Rock Version?" )
             .DefaultValue( ExecuteOptions.RockVersion?.ToString() )
             .DefaultValueStyle( "blue" )
             .Validate( VersionStringValidator )
@@ -335,7 +344,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         ExecuteOptions.RockVersion = SemVersion.Parse( rockVersionString, SemVersionStyles.Strict );
 
-        ExecuteOptions.RockWebPath = new TextPrompt<string?>( "Path to RockWeb" )
+        ExecuteOptions.RockWebPath = new TextPrompt<string?>( "Path to RockWeb?" )
             .DefaultValue( ExecuteOptions.RockWebPath )
             .DefaultValueStyle( "blue" )
             .Show( Console );

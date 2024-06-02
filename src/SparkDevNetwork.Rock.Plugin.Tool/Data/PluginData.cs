@@ -18,13 +18,13 @@ class PluginData
     /// The URL to the git repository to install the plugin from.
     /// </summary>
     [JsonPropertyName( "url" )]
-    public string Url { get; set; } = string.Empty;
+    public string? Url { get; set; }
 
     /// <summary>
     /// The branch name to checkout in the plugin repository.
     /// </summary>
     [JsonPropertyName( "branch" )]
-    public string Branch { get; set; } = string.Empty;
+    public string? Branch { get; set; }
 
     /// <summary>
     /// Additional data in the JSON stream that we don't know about.
