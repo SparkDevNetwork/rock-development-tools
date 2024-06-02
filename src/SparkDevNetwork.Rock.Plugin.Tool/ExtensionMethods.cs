@@ -109,4 +109,21 @@ static class ExtensionMethods
 
         return Convert.ToHexString( hash );
     }
+
+    /// <summary>
+    /// Checks if the specified directory is empty. This will also return
+    /// <c>true</c> if the directory does not exist.
+    /// </summary>
+    /// <param name="directory">The directory object that handles fiel system access.</param>
+    /// <param name="path">The path to check.</param>
+    /// <returns><c>true</c> if the directory does not exist or has no files or directories.</returns>
+    public static bool IsEmpty( this IDirectory directory, string path )
+    {
+        if ( !directory.Exists( path ) )
+        {
+            return true;
+        }
+
+        return !directory.EnumerateFiles( path ).Any() && !directory.EnumerateDirectories( path ).Any();
+    }
 }
