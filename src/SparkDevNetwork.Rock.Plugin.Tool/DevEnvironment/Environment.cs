@@ -110,7 +110,23 @@ class Environment
         var environmentFile = _fs.Path.Combine( _environmentDirectory, EnvironmentData.Filename );
         var json = JsonSerializer.Serialize( _data, Support.SerializerOptions );
 
-        _fs.File.WriteAllText( environmentFile, json );
+        if ( IsDryRun )
+        {
+            var friendlyPath = _fs.Path.GetFriendlyPath( environmentFile );
+
+            if ( _fs.File.Exists( environmentFile ) )
+            {
+                _console.MarkupLineInterpolated( $"Replace [cyan]{friendlyPath}[/]." );
+            }
+            else
+            {
+                _console.MarkupLineInterpolated( $"Create [cyan]{friendlyPath}[/]." );
+            }
+        }
+        else
+        {
+            _fs.File.WriteAllText( environmentFile, json );
+        }
     }
 
     /// <summary>

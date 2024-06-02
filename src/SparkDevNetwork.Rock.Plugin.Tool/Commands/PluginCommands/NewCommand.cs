@@ -124,7 +124,16 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         if ( !Repository.IsValid( outputDirectory ) )
         {
-            Repository.Init( outputDirectory );
+            if ( ExecuteOptions.DryRun )
+            {
+                var friendlyPath = _fs.Path.GetFriendlyPath( outputDirectory );
+
+                Console.MarkupLineInterpolated( $"Create git repository [cyan]{friendlyPath}[/]." );
+            }
+            else
+            {
+                Repository.Init( outputDirectory );
+            }
         }
 
         var pluginRelativePath = _fs.Path.GetRelativePath( environmentDirectory, outputDirectory );
@@ -183,7 +192,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     {
         var projectFilename = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.csproj";
 
-        _fs.Directory.CreateDirectory( directory );
+        CreateDirectory( directory );
 
         await CopyTemplateAsync( "CSharp.project.csproj", [directory, projectFilename] );
         await CopyTemplateAsync( "CSharp.Class1.cs", [directory, "Class1.cs"] );
@@ -200,7 +209,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     {
         var projectFilename = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian.esproj";
 
-        _fs.Directory.CreateDirectory( directory );
+        CreateDirectory( directory );
 
         await CopyTemplateAsync( "Obsidian.eslintrc.json", [directory, ".eslintrc.json"] );
         await CopyTemplateAsync( "Obsidian.gitignore", [directory, ".gitignore"] );
@@ -266,12 +275,16 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         if ( destinationDirectory != null )
         {
-            _fs.Directory.CreateDirectory( destinationDirectory );
+            CreateDirectory( destinationDirectory );
         }
 
-        await _fs.File.WriteAllTextAsync( _fs.Path.Combine( destination ), content );
+        WriteFile( _fs.Path.Combine( destination ), content );
     }
 
+    /// <summary>
+    /// Open the environment or return null if the environment is not valid.
+    /// </summary>
+    /// <returns>An instance of <see cref="DevEnvironment.Environment"/> or <c>null</c>.</returns>
     private DevEnvironment.Environment? OpenEnvironment()
     {
         var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
@@ -282,6 +295,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         try
         {
             environment = DevEnvironment.Environment.Open( environmentDirectory, _serviceProvider );
+            environment.IsDryRun = ExecuteOptions.DryRun;
 
             return environment;
         }

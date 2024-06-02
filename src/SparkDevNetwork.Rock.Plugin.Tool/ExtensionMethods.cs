@@ -114,7 +114,7 @@ static class ExtensionMethods
     /// Checks if the specified directory is empty. This will also return
     /// <c>true</c> if the directory does not exist.
     /// </summary>
-    /// <param name="directory">The directory object that handles fiel system access.</param>
+    /// <param name="directory">The directory object that handles file system access.</param>
     /// <param name="path">The path to check.</param>
     /// <returns><c>true</c> if the directory does not exist or has no files or directories.</returns>
     public static bool IsEmpty( this IDirectory directory, string path )
@@ -125,5 +125,40 @@ static class ExtensionMethods
         }
 
         return !directory.EnumerateFiles( path ).Any() && !directory.EnumerateDirectories( path ).Any();
+    }
+
+    /// <summary>
+    /// Normalize the path separators in the string to match the one used
+    /// by the native operating system.
+    /// </summary>
+    /// <param name="pathObject">The path object that handles file system access.</param>
+    /// <param name="path">The path to be normalized.</param>
+    /// <returns>The normalized version of the path.</returns>
+    public static string NormalizePathSeperator( this IPath pathObject, string path )
+    {
+        if ( pathObject.DirectorySeparatorChar == '/' )
+        {
+            return path.Replace( '\\', '/' );
+        }
+        else
+        {
+            return path.Replace( '/', pathObject.DirectorySeparatorChar );
+        }
+    }
+
+    /// <summary>
+    /// Returns a string that can be used to display to the individual. This
+    /// converts the path to be relative to the current directory and also
+    /// normalizes the directory separators.
+    /// </summary>
+    /// <param name="pathObject">The path object that handles file system access.</param>
+    /// <param name="path">The path to make friendly.</param>
+    /// <returns>A new string that represents the friendly path.</returns>
+    public static string GetFriendlyPath( this IPath pathObject, string path )
+    {
+        var currentDirectory = pathObject.FileSystem.Directory.GetCurrentDirectory();
+        var relativePath = pathObject.GetRelativePath( currentDirectory, path );
+
+        return pathObject.NormalizePathSeperator( relativePath );
     }
 }

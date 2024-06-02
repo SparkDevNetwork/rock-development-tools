@@ -53,7 +53,7 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
 
         AddOption( _dryRunOption );
         AddOption( _forceOption );
-     }
+    }
 
     /// <inheritdoc/>
     protected override TOptions GetOptions( InvocationContext context )
@@ -77,9 +77,16 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
     {
         if ( ExecuteOptions.DryRun )
         {
-            var relativePath = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), path );
+            var relativePath = _fs.Path.GetFriendlyPath( path );
 
-            Console.WriteLine( $"Create {relativePath}" );
+            if ( _fs.File.Exists( path ) )
+            {
+                Console.MarkupLineInterpolated( $"Replace [cyan]{relativePath}[/]." );
+            }
+            else
+            {
+                Console.MarkupLineInterpolated( $"Create [cyan]{relativePath}[/]." );
+            }
         }
         else
         {
@@ -87,10 +94,27 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
 
             if ( !string.IsNullOrEmpty( directory ) && !_fs.Directory.Exists( directory ) )
             {
-                _fs.Directory.CreateDirectory( directory );
+                CreateDirectory( directory );
             }
 
             _fs.File.WriteAllText( path, content );
+        }
+    }
+
+    /// <summary>
+    /// Create the directory at the given path unless in a dry-run.
+    /// </summary>
+    /// <param name="path">The path to be created.</param>
+    protected void CreateDirectory( string path )
+    {
+        if ( _fs.Directory.Exists( path ) )
+        {
+            return;
+        }
+
+        if ( !ExecuteOptions.DryRun )
+        {
+            _fs.Directory.CreateDirectory( path );
         }
     }
 }
