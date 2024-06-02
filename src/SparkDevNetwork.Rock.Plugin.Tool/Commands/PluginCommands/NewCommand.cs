@@ -4,6 +4,8 @@ using System.IO.Abstractions;
 
 using Fluid;
 
+using LibGit2Sharp;
+
 using Microsoft.Extensions.DependencyInjection;
 
 using Semver;
@@ -118,6 +120,11 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             }
 
             return 1;
+        }
+
+        if ( !Repository.IsValid( outputDirectory ) )
+        {
+            Repository.Init( outputDirectory );
         }
 
         return 0;
