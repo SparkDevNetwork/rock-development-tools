@@ -68,6 +68,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync()
     {
+        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
         var env = OpenEnvironment();
 
         if ( env == null )
@@ -81,9 +82,35 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         PromptForMissingOptions();
 
-        var result = await GenerateProjectsAsync();
+        var outputDirectory = ExecuteOptions.Output ?? _fs.Path.Combine( environmentDirectory, ExecuteOptions.PluginCode! );
 
-        if ( result is not null )
+        if ( !ExecuteOptions.Force )
+        {
+            if ( env.GetPlugins().Any( p => p.Path == ExecuteOptions.PluginCode ) )
+            {
+                Console.MarkupLine( "[red]Plugin already exists in the environment.[/]" );
+                Console.WriteLine();
+                Console.WriteLine( "To create the plugin anyway, run the command with '--force' option." );
+                Console.WriteLine();
+
+                return 1;
+            }
+
+            if ( !_fs.Directory.IsEmpty( outputDirectory ) )
+            {
+                Console.MarkupLine( "[red]Plugin directory is not empty and might overwrite existing files.[/]" );
+                Console.MarkupLineInterpolated( $"[red]  Directory: {outputDirectory}[/]" );
+                Console.WriteLine();
+                Console.WriteLine( "To create the plugin anyway, run the command with '--force' option." );
+                Console.WriteLine();
+
+                return 1;
+            }
+        }
+
+        var result = await GenerateProjectsAsync( outputDirectory );
+
+        if ( !result.Successful )
         {
             if ( result.Message != null )
             {
@@ -99,25 +126,15 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <summary>
     /// Generate all the project files needed for the specified options.
     /// </summary>
+    /// <param name="outputDirectory">The directory to output all the new content into.
     /// <returns>The validation error or <c>null</c>.</returns>
-    private async Task<ValidationResult> GenerateProjectsAsync()
+    private async Task<ValidationResult> GenerateProjectsAsync( string outputDirectory )
     {
-        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
         var csharpDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
         var obsidianDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
 
-        csharpDirectory = _fs.Path.Combine( environmentDirectory, ExecuteOptions.PluginCode!, csharpDirectory );
-        obsidianDirectory = _fs.Path.Combine( environmentDirectory, ExecuteOptions.PluginCode!, obsidianDirectory );
-
-        if ( ExecuteOptions.DllProject == true && _fs.Path.Exists( csharpDirectory ) )
-        {
-            return ValidationResult.Error( $"Directory {csharpDirectory} already exists, aborting." );
-        }
-
-        if ( ExecuteOptions.ObsidianProject == true && _fs.Path.Exists( obsidianDirectory ) )
-        {
-            return ValidationResult.Error( $"Directory {obsidianDirectory} already exists, aborting." );
-        }
+        csharpDirectory = _fs.Path.Combine( outputDirectory, csharpDirectory );
+        obsidianDirectory = _fs.Path.Combine( outputDirectory, obsidianDirectory );
 
         if ( ExecuteOptions.DllProject == true )
         {
@@ -327,6 +344,8 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         ExecuteOptions.Copy = new ConfirmationPrompt( "Copy artifacts to RockWeb?" )
             .DefaultValueStyle( "blue" )
             .Show( Console );
+
+        Console.WriteLine();
     }
 
     /// <summary>
