@@ -304,9 +304,9 @@ class RockInstallation
 
         if ( IsDryRun )
         {
-            var relativeDiretory = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), _rockPath );
+            var friendlyPath = _fs.Path.GetFriendlyPath( _rockPath );
 
-            _console.WriteLine( $"Remove {relativeDiretory}" );
+            _console.MarkupLineInterpolated( $"Remove [cyan]{friendlyPath}[/]." );
         }
 
         bool RemoveDirectory( string directory )
@@ -315,13 +315,13 @@ class RockInstallation
 
             foreach ( var dirpath in _fs.Directory.EnumerateDirectories( directory ) )
             {
-                var relativepath = _fs.Path.GetRelativePath( _rockPath, dirpath );
+                var relativePath = _fs.Path.GetRelativePath( _rockPath, dirpath );
 
-                if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
+                if ( PreservedRockFiles.Contains( relativePath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
                 {
-                    var preservedPath = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), dirpath );
+                    var friendlyPath = _fs.Path.GetFriendlyPath( dirpath );
 
-                    _logger.LogInformation( "Preserving diretory {path}", preservedPath );
+                    _logger.LogInformation( "Preserving directory {path}", friendlyPath );
                     removeDirectory = false;
                 }
                 else if ( !RemoveDirectory( dirpath ) )
@@ -332,13 +332,13 @@ class RockInstallation
 
             foreach ( var filepath in _fs.Directory.EnumerateFiles( directory ) )
             {
-                var relativepath = _fs.Path.GetRelativePath( _rockPath, filepath );
+                var relativePath = _fs.Path.GetRelativePath( _rockPath, filepath );
 
-                if ( PreservedRockFiles.Contains( relativepath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
+                if ( PreservedRockFiles.Contains( relativePath.Replace( '\\', '/' ), StringComparer.OrdinalIgnoreCase ) )
                 {
-                    var preservedPath = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), filepath );
+                    var friendlyPath = _fs.Path.GetFriendlyPath( filepath );
 
-                    _logger.LogInformation( "Preserving file {path}", preservedPath );
+                    _logger.LogInformation( "Preserving file {path}", friendlyPath );
                     removeDirectory = false;
                 }
                 else if ( !IsDryRun )
@@ -460,11 +460,11 @@ class RockInstallation
             var filePath = file.Key.Replace( '/', Path.DirectorySeparatorChar );
 
             filePath = _fs.Path.Combine( _rockPath, filePath );
-            var relativePath = _fs.Path.GetRelativePath( _fs.Directory.GetCurrentDirectory(), filePath );
+            var friendlyPath = _fs.Path.GetFriendlyPath( filePath );
 
             if ( !_fs.File.Exists( filePath ) )
             {
-                fileStatuses.Add( new StatusItem( relativePath, "is missing." ) );
+                fileStatuses.Add( new StatusItem( friendlyPath, "is missing." ) );
                 continue;
             }
 
@@ -472,7 +472,7 @@ class RockInstallation
 
             if ( hash != file.Value )
             {
-                fileStatuses.Add( new StatusItem( relativePath, "Has been modified." ) );
+                fileStatuses.Add( new StatusItem( friendlyPath, "Has been modified." ) );
                 continue;
             }
         }
