@@ -18,5 +18,6 @@ class PluginCommand : Command
         : base( "plugin", "Run commands related to working with plugins." )
     {
         AddCommand( ActivatorUtilities.CreateInstance<NewCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<ConfigureCommand>( serviceProvider ) );
     }
 }

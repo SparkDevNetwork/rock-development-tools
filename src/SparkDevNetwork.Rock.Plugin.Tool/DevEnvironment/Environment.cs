@@ -83,7 +83,9 @@ class Environment
 
         if ( !fs.File.Exists( environmentFile ) )
         {
-            throw new InvalidEnvironmentException( $"No environment file was found at {environmentFile}." );
+            var friendlyPath = fs.Path.GetFriendlyPath( environmentFile );
+
+            throw new InvalidEnvironmentException( $"No environment file was found at {friendlyPath}." );
         }
 
         var json = fs.File.ReadAllText( environmentFile );
@@ -156,6 +158,17 @@ class Environment
             return new PluginInstallation( path, p, _fs, _logger );
         } )
         .ToList();
+    }
+
+    /// <summary>
+    /// Gets the data that defines the plugin at the specified path. This can
+    /// be used to modify the plugin definition in the environment.
+    /// </summary>
+    /// <param name="path">The relative path to the plugin.</param>
+    /// <returns>A <see cref="PluginData"/> instance or <c>null</c>.</returns>
+    public PluginData? GetPluginData( string path )
+    {
+        return _data.Plugins.FirstOrDefault( p => p.Path == path );
     }
 
     /// <summary>
