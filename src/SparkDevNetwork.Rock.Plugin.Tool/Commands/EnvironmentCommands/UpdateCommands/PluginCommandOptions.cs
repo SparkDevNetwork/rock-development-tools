@@ -6,9 +6,9 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands.UpdateCo
 class PluginCommandOptions : Abstractions.BaseModifyCommandOptions
 {
     /// <summary>
-    /// The target directory that contains the environment.
+    /// The directory that contains the environment.
     /// </summary>
-    public string? Target { get; set; }
+    public string? EnvironmentPath { get; set; }
 
     /// <summary>
     /// Creates a new options instance with default values.
@@ -24,6 +24,6 @@ class PluginCommandOptions : Abstractions.BaseModifyCommandOptions
     public PluginCommandOptions( RockCommandOptions source )
         : base( source )
     {
-        Target = source.Target;
+        EnvironmentPath = source.EnvironmentPath;
     }
 }

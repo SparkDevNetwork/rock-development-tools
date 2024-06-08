@@ -11,9 +11,9 @@ class NewCommandOptions : Abstractions.BaseModifyCommandOptions
     public string? Output { get; set; }
 
     /// <summary>
-    /// The target directory that contains the environment.
+    /// The directory that contains the environment.
     /// </summary>
-    public string? Target { get; set; }
+    public string? EnvironmentPath { get; set; }
 
     /// <summary>
     /// The name of the organization such as <c>Rock Solid Church</c>.
@@ -75,7 +75,7 @@ class NewCommandOptions : Abstractions.BaseModifyCommandOptions
         : base( source )
     {
         Output = source.Output;
-        Target = source.Target;
+        EnvironmentPath = source.EnvironmentPath;
         Organization = source.Organization;
         OrganizationCode = source.OrganizationCode;
         PluginName = source.PluginName;

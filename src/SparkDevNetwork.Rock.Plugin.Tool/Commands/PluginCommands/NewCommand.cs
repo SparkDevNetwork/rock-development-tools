@@ -26,9 +26,9 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
-    /// The option that defines the target directory of the environment.
+    /// The option that defines the directory of the environment.
     /// </summary>
-    private readonly Option<string?> _targetOption;
+    private readonly Option<string?> _environmentOption;
 
     /// <summary>
     /// The option that defines the output directory of the new environment.
@@ -46,13 +46,13 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         _fs = serviceProvider.GetRequiredService<IFileSystem>();
         _serviceProvider = serviceProvider;
 
-        _targetOption = new Option<string?>( "--target", "The directory that contains the environment." );
-        _targetOption.AddAlias( "-t" );
+        _environmentOption = new Option<string?>( "--environment", "The directory that contains the environment." );
+        _environmentOption.AddAlias( "--env" );
 
         _outputOption = new Option<string?>( "--output", "Location to place the generated output in the environment." );
         _outputOption.AddAlias( "-o" );
 
-        AddOption( _targetOption );
+        AddOption( _environmentOption );
         AddOption( _outputOption );
     }
 
@@ -61,7 +61,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     {
         var options = base.GetOptions( context );
 
-        options.Target = context.ParseResult.GetValueForOption( _targetOption );
+        options.EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
         options.Output = context.ParseResult.GetValueForOption( _outputOption );
 
         return options;
@@ -70,7 +70,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync()
     {
-        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         var env = OpenEnvironment();
 
         if ( env == null )
@@ -288,7 +288,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <returns>An instance of <see cref="DevEnvironment.Environment"/> or <c>null</c>.</returns>
     private DevEnvironment.Environment? OpenEnvironment()
     {
-        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         DevEnvironment.Environment environment;
 
         environmentDirectory = _fs.Path.GetFullPath( environmentDirectory );

@@ -17,9 +17,9 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands.UpdateCo
 class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
 {
     /// <summary>
-    /// The option that defines the target directory of the environment.
+    /// The option that defines the directory of the environment.
     /// </summary>
-    private readonly Option<string?> _targetOption;
+    private readonly Option<string?> _environmentOption;
 
     private readonly IServiceProvider _serviceProvider;
 
@@ -34,10 +34,10 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
         _serviceProvider = serviceProvider;
         _fs = serviceProvider.GetRequiredService<IFileSystem>();
 
-        _targetOption = new Option<string?>( "--target", "The directory that contains the environment." );
-        _targetOption.AddAlias( "-t" );
+        _environmentOption = new Option<string?>( "--environment", "The directory that contains the environment." );
+        _environmentOption.AddAlias( "--env" );
 
-        AddOption( _targetOption );
+        AddOption( _environmentOption );
     }
 
     /// <inheritdoc/>
@@ -45,7 +45,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
     {
         var options = base.GetOptions( context );
 
-        options.Target = context.ParseResult.GetValueForOption( _targetOption );
+        options.EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
 
         return options;
     }
@@ -53,7 +53,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
     /// <inheritdoc/>
     protected override Task<int> ExecuteAsync()
     {
-        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         DevEnvironment.Environment environment;
 
         try

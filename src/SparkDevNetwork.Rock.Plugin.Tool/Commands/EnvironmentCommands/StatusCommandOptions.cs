@@ -6,9 +6,9 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.EnvironmentCommands;
 class StatusCommandOptions : Abstractions.BaseActionCommandOptions
 {
     /// <summary>
-    /// The target directory that contains the environment.
+    /// The directory that contains the environment.
     /// </summary>
-    public string? Target { get; set; }
+    public string? EnvironmentPath { get; set; }
 
     /// <summary>
     /// Creates a new options instance with default values.
@@ -24,6 +24,6 @@ class StatusCommandOptions : Abstractions.BaseActionCommandOptions
     public StatusCommandOptions( StatusCommandOptions source )
         : base( source )
     {
-        Target = source.Target;
+        EnvironmentPath = source.EnvironmentPath;
     }
 }

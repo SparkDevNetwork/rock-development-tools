@@ -26,9 +26,9 @@ class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
-    /// The option that defines the target directory of the environment.
+    /// The option that defines the directory of the environment.
     /// </summary>
-    private readonly Option<string?> _targetOption;
+    private readonly Option<string?> _environmentOption;
 
     /// <summary>
     /// The option that defines the URL for the plugin.
@@ -54,15 +54,15 @@ class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
         _fs = serviceProvider.GetRequiredService<IFileSystem>();
         _serviceProvider = serviceProvider;
 
-        _targetOption = new Option<string?>( "--target", "The directory that contains the environment." );
-        _targetOption.AddAlias( "-t" );
+        _environmentOption = new Option<string?>( "--environment", "The directory that contains the environment." );
+        _environmentOption.AddAlias( "--env" );
 
         _urlOption = new Option<string?>( "--url", "The URL to set on the plugin." );
         _branchOption = new Option<string?>( "--branch", "The branch name to set on the plugin." );
 
         _pluginPathArgument = new Argument<string>( "plugin", "The plugin path relative to the environment." );
 
-        AddOption( _targetOption );
+        AddOption( _environmentOption );
         AddOption( _urlOption );
         AddOption( _branchOption );
 
@@ -74,7 +74,7 @@ class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
     {
         var options = base.GetOptions( context );
 
-        options.Target = context.ParseResult.GetValueForOption( _targetOption );
+        options.EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
         options.Url = context.ParseResult.GetValueForOption( _urlOption );
         options.Branch = context.ParseResult.GetValueForOption( _branchOption );
         options.PluginPath = context.ParseResult.GetValueForArgument( _pluginPathArgument );
@@ -121,7 +121,7 @@ class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
     /// <returns>An instance of <see cref="DevEnvironment.Environment"/> or <c>null</c>.</returns>
     private DevEnvironment.Environment? OpenEnvironment()
     {
-        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         DevEnvironment.Environment environment;
 
         environmentDirectory = _fs.Path.GetFullPath( environmentDirectory );

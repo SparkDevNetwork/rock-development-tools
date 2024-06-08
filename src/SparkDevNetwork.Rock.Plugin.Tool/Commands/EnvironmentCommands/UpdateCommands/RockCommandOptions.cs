@@ -11,9 +11,9 @@ class RockCommandOptions : Abstractions.BaseModifyCommandOptions
     public string? Source { get; set; }
 
     /// <summary>
-    /// The target directory that contains the environment.
+    /// The directory that contains the environment.
     /// </summary>
-    public string? Target { get; set; }
+    public string? EnvironmentPath { get; set; }
 
     /// <summary>
     /// Creates a new options instance with default values.
@@ -30,6 +30,6 @@ class RockCommandOptions : Abstractions.BaseModifyCommandOptions
         : base( source )
     {
         Source = source.Source;
-        Target = source.Target;
+        EnvironmentPath = source.EnvironmentPath;
     }
 }

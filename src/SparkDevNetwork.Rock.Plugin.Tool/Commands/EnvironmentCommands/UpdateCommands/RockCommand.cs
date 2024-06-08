@@ -26,9 +26,9 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
     private readonly Option<string?> _sourceOption;
 
     /// <summary>
-    /// The option that defines the target directory of the environment.
+    /// The option that defines the directory of the environment.
     /// </summary>
-    private readonly Option<string?> _targetOption;
+    private readonly Option<string?> _environmentOption;
 
     /// <summary>
     /// Creates a command that will handle updating the Rock installation.
@@ -41,11 +41,11 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
 
         _sourceOption = new Option<string?>( "--source", "The base URL to use when downloading environment files." );
 
-        _targetOption = new Option<string?>( "--target", "The directory that contains the environment." );
-        _targetOption.AddAlias( "-t" );
+        _environmentOption = new Option<string?>( "--environment", "The directory that contains the environment." );
+        _environmentOption.AddAlias( "--env" );
 
         AddOption( _sourceOption );
-        AddOption( _targetOption );
+        AddOption( _environmentOption );
     }
 
     /// <inheritdoc/>
@@ -54,7 +54,7 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
         var options = base.GetOptions( context );
 
         options.Source = context.ParseResult.GetValueForOption( _sourceOption );
-        options.Target = context.ParseResult.GetValueForOption( _targetOption );
+        options.EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
 
         return options;
     }
@@ -62,7 +62,7 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync()
     {
-        var environmentDirectory = ExecuteOptions.Target ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         DevEnvironment.Environment environment;
 
         try

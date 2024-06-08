@@ -6,9 +6,9 @@ namespace SparkDevNetwork.Rock.Plugin.Tool.Commands.PluginCommands;
 class ConfigureCommandOptions : Abstractions.BaseModifyCommandOptions
 {
     /// <summary>
-    /// The target directory that contains the environment.
+    /// The directory that contains the environment.
     /// </summary>
-    public string? Target { get; set; }
+    public string? EnvironmentPath { get; set; }
 
     /// <summary>
     /// The URL to configure the plugin to use or <c>null</c> to leave unchanged.
@@ -40,7 +40,7 @@ class ConfigureCommandOptions : Abstractions.BaseModifyCommandOptions
     public ConfigureCommandOptions( ConfigureCommandOptions source )
         : base( source )
     {
-        Target = source.Target;
+        EnvironmentPath = source.EnvironmentPath;
         Url = source.Url;
         Branch = source.Branch;
         PluginPath = source.PluginPath;
