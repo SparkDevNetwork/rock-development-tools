@@ -166,7 +166,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         if ( !_fs.Directory.Exists( _fs.Path.Combine( outputDirectory, ".git" ) ) )
         {
-            Repository.Init( _fs.Path.Combine( outputDirectory ) );
+            Repository.Init( outputDirectory );
             using var repo = new Repository( outputDirectory );
 
             // Switch the repository to use "main" as the default branch.

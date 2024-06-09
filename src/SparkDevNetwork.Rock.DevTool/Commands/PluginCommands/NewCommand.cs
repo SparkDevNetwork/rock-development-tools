@@ -133,6 +133,10 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             else
             {
                 Repository.Init( outputDirectory );
+                using var repo = new Repository( outputDirectory );
+
+                // Switch the repository to use "main" as the default branch.
+                repo.Refs.Add( "HEAD", "refs/heads/main", null, true );
             }
         }
 
