@@ -234,6 +234,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
                             SolutionGuid = {{solutionGuid}}
                     EndGlobalSection
             EndGlobal
+
             """.Replace( "        ", "\t" );
         }
         else
@@ -256,6 +257,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
                             SolutionGuid = {{solutionGuid}}
                     EndGlobalSection
             EndGlobal
+
             """.Replace( "        ", "\t" );
         }
     }
