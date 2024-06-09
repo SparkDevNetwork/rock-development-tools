@@ -2,16 +2,21 @@ root = true
 
 [*]
 indent_style = space
+indent_size = 4
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[*.json]
-indent_size = 2
-
+# Legacy solution files
 [*.sln]
 indent_style = tab
+indent_size = 8
 
-[*.csproj]
+# Xml project files
+[*.{csproj,esproj}]
+indent_size = 2
+
+# Xml config files
+[*.{props,targets,config,nuspec}]
 indent_size = 2
 
 [*.cs]
@@ -22,3 +27,9 @@ csharp_space_between_parentheses = control_flow_statements, expressions, type_ca
 csharp_space_between_method_declaration_parameter_list_parentheses = true
 csharp_space_between_method_call_parameter_list_parentheses = true
 dotnet_diagnostic.IDE0290.severity = none
+
+# Shell scripts
+[*.sh]
+end_of_line = lf
+[*.{cmd,bat}]
+end_of_line = crlf

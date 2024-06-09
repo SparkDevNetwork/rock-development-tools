@@ -1,22 +1,22 @@
 {
-  "dotnet.defaultSolution": "rock-development-tools.sln",
-  "csharp.debug.console": "integratedTerminal",
-  "xml.format.maxLineWidth": 0,
-  "files.exclude": {
-    "**/.git": true,
-    "**/.DS_Store": true,
-    "**/Thumbs.db": true,
-    "**/node_modules": true,
-    "**/bin": true,
-    "**/obj": true
-  },
-  "[json]": {
-    "files.insertFinalNewline": true
-  },
-  "[jsonc]": {
-    "files.insertFinalNewline": true
-  },
-  "[xml]": {
-    "files.insertFinalNewline": true
-  }
+    "dotnet.defaultSolution": "rock-development-tools.sln",
+    "csharp.debug.console": "integratedTerminal",
+    "xml.format.maxLineWidth": 0,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/node_modules": true,
+        "**/bin": true,
+        "**/obj": true
+    },
+    "[json]": {
+        "files.insertFinalNewline": true
+    },
+    "[jsonc]": {
+        "files.insertFinalNewline": true
+    },
+    "[xml]": {
+        "files.insertFinalNewline": true
+    }
 }
