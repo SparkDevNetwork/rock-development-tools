@@ -7,7 +7,7 @@
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
-        "@rockrms/eslint-config-rock-recommended"
+        "@sparkdevnetwork/eslint-config-rock-recommended"
     ],
     "env": {
         "browser": true,
