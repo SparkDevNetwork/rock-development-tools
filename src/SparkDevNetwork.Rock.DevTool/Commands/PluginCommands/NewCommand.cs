@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
 
 using Fluid;
 
@@ -19,7 +20,7 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.PluginCommands;
 /// <summary>
 /// Container for sub-commands related to working with plugins.
 /// </summary>
-class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
+partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 {
     private readonly IFileSystem _fs;
 
@@ -149,6 +150,9 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         }
 
         _environment.Save();
+
+        AddPluginToGitIgnore();
+        AddPluginToSolutionFile();
 
         return 0;
     }
@@ -312,6 +316,111 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     }
 
     /// <summary>
+    /// Adds the newly created plugin to the .gitignore file.
+    /// </summary>
+    private void AddPluginToGitIgnore()
+    {
+        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var path = _fs.Path.Combine( environmentDirectory, ".gitignore" );
+
+        var content = _fs.File.ReadAllText( path );
+        var lineEnding = content.Contains( "\r\n" ) ? "\r\n" : "\n";
+
+        if ( !content.EndsWith( lineEnding ) )
+        {
+            content = $"{content}{lineEnding}/{ExecuteOptions.PluginCode}{lineEnding}";
+        }
+        else
+        {
+            content = $"{content}/{ExecuteOptions.PluginCode}{lineEnding}";
+        }
+
+        WriteFile( path, content );
+    }
+
+    /// <summary>
+    /// Adds the new plugin projects to the solution file.
+    /// </summary>
+    private void AddPluginToSolutionFile()
+    {
+        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var path = _fs.Path.Combine( environmentDirectory, $"{_environment.GetOrganizationName()?.Replace( " ", "" )}.sln" );
+
+        if ( !_fs.File.Exists( path ) )
+        {
+            return;
+        }
+
+        var content = _fs.File.ReadAllText( path );
+        var lineEnding = content.Contains( "\r\n" ) ? "\r\n" : "\n";
+        var csprojGuid = Guid.NewGuid().ToString().ToUpper();
+        var tsprojGuid = Guid.NewGuid().ToString().ToUpper();
+        string? csprojName = null;
+        string? csprojPath = null;
+        string? tsprojName = null;
+        string? tsprojPath = null;
+
+        if ( ExecuteOptions.DllProject == true )
+        {
+            csprojName = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
+            csprojPath = $"{ExecuteOptions.PluginCode}\\{csprojName}\\{csprojName}.csproj";
+        }
+
+        if ( ExecuteOptions.ObsidianProject == true )
+        {
+            tsprojName = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
+            tsprojPath = $"{ExecuteOptions.PluginCode}\\{tsprojName}\\{tsprojName}.esproj";
+        }
+
+        content = GlobalSectionRegex().Replace( content, m =>
+        {
+            var text = string.Empty;
+
+            if ( csprojName != null && csprojPath != null )
+            {
+                text += $"Project(\"{{9A19103F-16F7-4668-BE54-9A1E7A4F7556}}\") = \"{csprojName}\", \"{csprojPath}\", \"{{{csprojGuid}}}\"{lineEnding}";
+                text += $"EndProject{lineEnding}";
+            }
+
+            if ( tsprojName != null && tsprojPath != null )
+            {
+                text += $"Project(\"{{54A90642-561A-4BB1-A94E-469ADEE60C69}}\") = \"{tsprojName}\", \"{tsprojPath}\", \"{{{tsprojGuid}}}\"{lineEnding}";
+                text += $"EndProject{lineEnding}";
+            }
+
+            return text + m.Value;
+        } );
+
+        content = ProjectConfigurationRegex().Replace( content, m =>
+        {
+            Console.WriteLine( "Project match");
+            var text = string.Empty;
+
+            if ( csprojName != null )
+            {
+                text += $"\t\t{{{csprojGuid}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU{lineEnding}";
+                text += $"\t\t{{{csprojGuid}}}.Debug|Any CPU.Build.0 = Debug|Any CPU{lineEnding}";
+                text += $"\t\t{{{csprojGuid}}}.Release|Any CPU.ActiveCfg = Release|Any CPU{lineEnding}";
+                text += $"\t\t{{{csprojGuid}}}.Release|Any CPU.Build.0 = Release|Any CPU{lineEnding}";
+            }
+
+            if ( tsprojName != null )
+            {
+                text += $"\t\t{{{tsprojGuid}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU{lineEnding}";
+                text += $"\t\t{{{tsprojGuid}}}.Debug|Any CPU.Build.0 = Debug|Any CPU{lineEnding}";
+                text += $"\t\t{{{tsprojGuid}}}.Debug|Any CPU.Deploy.0 = Debug|Any CPU{lineEnding}";
+                text += $"\t\t{{{tsprojGuid}}}.Release|Any CPU.ActiveCfg = Release|Any CPU{lineEnding}";
+                text += $"\t\t{{{tsprojGuid}}}.Release|Any CPU.Build.0 = Release|Any CPU{lineEnding}";
+                text += $"\t\t{{{tsprojGuid}}}.Release|Any CPU.Deploy.0 = Release|Any CPU{lineEnding}";
+            }
+
+            return m.Groups[1].Value + text + m.Groups[2].Value;
+        } );
+
+        WriteFile( path, content );
+    }
+
+    /// <summary>
     /// Update the options with values from the development environment.
     /// </summary>
     private void PopulateOptionsFromEnvironment()
@@ -403,4 +512,10 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             return ValidationResult.Success();
         }
     }
+
+    [GeneratedRegex( "^Global", RegexOptions.Multiline )]
+    private static partial Regex GlobalSectionRegex();
+
+    [GeneratedRegex( "(GlobalSection\\(ProjectConfigurationPlatforms\\).*?)([\\t ]+EndGlobalSection)", RegexOptions.Singleline )]
+    private static partial Regex ProjectConfigurationRegex();
 }
