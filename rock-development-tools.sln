@@ -8,7 +8,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.Build.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.Analyzers", "src\SparkDevNetwork.Rock.Analyzers\SparkDevNetwork.Rock.Analyzers.csproj", "{604475F8-E37E-484D-B5A7-B8C6C49A7ED0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.Plugin.Tool", "src\SparkDevNetwork.Rock.Plugin.Tool\SparkDevNetwork.Rock.Plugin.Tool.csproj", "{274F2048-D008-4B3A-9BF4-0E8D0E9AB007}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.DevTool", "src\SparkDevNetwork.Rock.DevTool\SparkDevNetwork.Rock.DevTool.csproj", "{274F2048-D008-4B3A-9BF4-0E8D0E9AB007}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
