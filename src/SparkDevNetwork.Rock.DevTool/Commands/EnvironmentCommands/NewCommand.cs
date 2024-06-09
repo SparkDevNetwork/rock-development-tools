@@ -117,6 +117,54 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
             """ );
 
+        // Write the "/.vscode/extensions.json" file.
+        WriteFile( _fs.Path.Join( outputDirectory, ".vscode", "extensions.json" ),
+            """
+            {
+                "recommendations": [
+                    "dbaeumer.vscode-eslint",
+                    "vue.volar",
+                    "orta.vscode-jest"
+                ]
+            }
+
+            """ );
+
+        // Write the "/.vscode/setings.json" file.
+        WriteFile( _fs.Path.Join( outputDirectory, ".vscode", "settings.json" ),
+            """
+            {
+                "files.associations": {
+                    "*.obs": "vue"
+                },
+                "vue.format.template.initialIndent": true,
+                "vue.format.script.initialIndent": true,
+                "vue.complete.casing.props": "camel",
+                "vue.complete.casing.tags": "pascal",
+                "files.trimTrailingWhitespace": true,
+                "html.format.wrapAttributes": "preserve-aligned",
+                "html.format.wrapLineLength": 0,
+                "editor.codeActionsOnSave": {
+                    "source.fixAll.eslint": "explicit"
+                },
+                "eslint.validate": [
+                    "javascript",
+                    "javascriptreact",
+                    "typescript",
+                    "typescriptreact",
+                    "vue"
+                ],
+                "[vue]": {
+                    "editor.defaultFormatter": "Vue.volar"
+                },
+                "css.format.spaceAroundSelectorSeparator": true,
+                "css.lint.duplicateProperties": "warning",
+                "css.lint.zeroUnits": "warning",
+                "css.lint.propertyIgnoredDueToDisplay": "warning"
+            }
+
+            """ );
+
         // Write the environment JSON file.
         var environmentData = new EnvironmentData
         {
