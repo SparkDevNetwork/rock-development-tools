@@ -219,10 +219,13 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             Global
                     GlobalSection(SolutionConfigurationPlatforms) = preSolution
                             Debug|Any CPU = Debug|Any CPU
+                            Release|Any CPU = Release|Any CPU
                     EndGlobalSection
                     GlobalSection(ProjectConfigurationPlatforms) = postSolution
                             {{rockWebGuid}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
                             {{rockWebGuid}}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                            {{rockWebGuid}}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+                            {{rockWebGuid}}.Release|Any CPU.Build.0 = Debug|Any CPU
                     EndGlobalSection
                     GlobalSection(SolutionProperties) = preSolution
                             HideSolutionNode = FALSE
