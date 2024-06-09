@@ -110,8 +110,11 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         // Write the "/.gitignore" file.
         WriteFile( _fs.Path.Join( outputDirectory, ".gitignore" ),
             """
-            # Do not make any changes below this line.
+            # Environment Ignores - DO NOT MODIFY
             /Rock
+            /.vs
+            /packages
+
             """ );
 
         // Write the environment JSON file.
@@ -132,22 +135,8 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             JsonSerializer.Serialize( environmentData, SerializerOptions ) );
 
         // Write the solution file.
-        WriteFile( _fs.Path.Join( outputDirectory, $"{orgName.Replace( " ", string.Empty )}.sln" ),
-            """
-            Microsoft Visual Studio Solution File, Format Version 12.00
-            # Visual Studio Version 17
-            VisualStudioVersion = 17.0.31903.59
-            MinimumVisualStudioVersion = 10.0.40219.1
-            Global
-                GlobalSection(SolutionConfigurationPlatforms) = preSolution
-                    Debug|Any CPU = Debug|Any CPU
-                    Release|Any CPU = Release|Any CPU
-                EndGlobalSection
-                GlobalSection(SolutionProperties) = preSolution
-                    HideSolutionNode = FALSE
-                EndGlobalSection
-            EndGlobal
-            """ );
+        var solutionFile = _fs.Path.Join( outputDirectory, $"{orgName.Replace( " ", string.Empty )}.sln" );
+        WriteFile( solutionFile, GetSolutionFileContent( rockVersion != null ) );
 
         Console.MarkupInterpolated( $"Initialized environment in [cyan]{outputDirectory}[/]" );
         Console.WriteLine();
@@ -185,6 +174,87 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// Gets the solution file content to initialize the environment with.
+    /// </summary>
+    /// <param name="hasRockWeb"><c>true</c> if we have a RockWeb folder.</param>
+    /// <returns>The text content to put in the solution file.</returns>
+    private static string GetSolutionFileContent( bool hasRockWeb )
+    {
+        var solutionGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
+
+        if ( hasRockWeb )
+        {
+            var rockWebGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
+
+            return
+            $$"""
+            Microsoft Visual Studio Solution File, Format Version 12.00
+            # Visual Studio Version 17
+            VisualStudioVersion = 17.0.31903.59
+            MinimumVisualStudioVersion = 10.0.40219.1
+            Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "RockWeb", "Rock\RockWeb\", "{{rockWebGuid}}"
+                    ProjectSection(WebsiteProperties) = preProject
+                            TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.7.2"
+                            Debug.AspNetCompiler.VirtualPath = "/localhost_64706"
+                            Debug.AspNetCompiler.PhysicalPath = "Rock\RockWeb\"
+                            Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_64706\"
+                            Debug.AspNetCompiler.Updateable = "true"
+                            Debug.AspNetCompiler.ForceOverwrite = "true"
+                            Debug.AspNetCompiler.FixedNames = "false"
+                            Debug.AspNetCompiler.Debug = "True"
+                            Release.AspNetCompiler.VirtualPath = "/localhost_64706"
+                            Release.AspNetCompiler.PhysicalPath = "Rock\RockWeb\"
+                            Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_64706\"
+                            Release.AspNetCompiler.Updateable = "true"
+                            Release.AspNetCompiler.ForceOverwrite = "true"
+                            Release.AspNetCompiler.FixedNames = "false"
+                            Release.AspNetCompiler.Debug = "False"
+                            VWDPort = "64706"
+                            SlnRelativePath = "Rock\RockWeb\"
+                    EndProjectSection
+            EndProject
+            Global
+                    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                            Debug|Any CPU = Debug|Any CPU
+                    EndGlobalSection
+                    GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                            {{rockWebGuid}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                            {{rockWebGuid}}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                    EndGlobalSection
+                    GlobalSection(SolutionProperties) = preSolution
+                            HideSolutionNode = FALSE
+                    EndGlobalSection
+                    GlobalSection(ExtensibilityGlobals) = postSolution
+                            SolutionGuid = {{solutionGuid}}
+                    EndGlobalSection
+            EndGlobal
+            """.Replace( "        ", "\t" );
+        }
+        else
+        {
+            return
+            $$"""
+            Microsoft Visual Studio Solution File, Format Version 12.00
+            # Visual Studio Version 17
+            VisualStudioVersion = 17.0.31903.59
+            MinimumVisualStudioVersion = 10.0.40219.1
+            Global
+                    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                            Debug|Any CPU = Debug|Any CPU
+                            Release|Any CPU = Release|Any CPU
+                    EndGlobalSection
+                    GlobalSection(SolutionProperties) = preSolution
+                            HideSolutionNode = FALSE
+                    EndGlobalSection
+                    GlobalSection(ExtensibilityGlobals) = postSolution
+                            SolutionGuid = {{solutionGuid}}
+                    EndGlobalSection
+            EndGlobal
+            """.Replace( "        ", "\t" );
+        }
     }
 
     /// <summary>
