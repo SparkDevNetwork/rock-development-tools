@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Builds npm packages from specific versions of Rock for Obsidian.",
     "scripts": {
-        "main": "ts-node main.ts"
+        "build": "ts-node main.ts"
     },
     "repository": {
         "type": "git",
