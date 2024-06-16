@@ -8,9 +8,11 @@
         "clean": "rimraf dist",
         "test": "jest"
     },
+    "dependencies": {
+        "@rockrms/obsidian-framework": "^{{ RockVersion }}"
+    },
     "devDependencies": {
         "@sparkdevnetwork/eslint-config-rock-recommended": "^1.0.0-rc.1",
-        "@rockrms/obsidian-framework": "^{{ RockVersion }}",
         "@sparkdevnetwork/obsidian-build-tools": "^1.0.0-rc.2",
         "@types/jest": "^29.5.4",
         "@types/node": "^20.5.7",
