@@ -393,7 +393,6 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         content = ProjectConfigurationRegex().Replace( content, m =>
         {
-            Console.WriteLine( "Project match");
             var text = string.Empty;
 
             if ( csprojName != null )
