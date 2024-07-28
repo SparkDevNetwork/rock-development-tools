@@ -144,7 +144,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         var pluginRelativePath = _fs.Path.GetRelativePath( environmentDirectory, outputDirectory )
             .Replace( '\\', '/' );
 
-        if ( _environment.GetPlugins().Any( p => p.Path == pluginRelativePath ) )
+        if ( !_environment.GetPlugins().Any( p => p.Path == pluginRelativePath ) )
         {
             _environment.AddPlugin( pluginRelativePath );
         }
