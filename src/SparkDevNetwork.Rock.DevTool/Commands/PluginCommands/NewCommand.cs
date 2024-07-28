@@ -167,7 +167,6 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         var sdkProjectDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
         var obsidianProjectDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
 
-        GetType().Assembly.GetManifestResourceNames().ToList().ForEach( n => Console.WriteLine(n));
         await CopyTemplateAsync( "plugin.plugin.json.template", [outputDirectory, "plugin.json"] );
 
         sdkProjectDirectory = _fs.Path.Combine( outputDirectory, sdkProjectDirectory );
