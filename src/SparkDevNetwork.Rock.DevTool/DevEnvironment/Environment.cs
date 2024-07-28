@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Text.Json;
 
@@ -155,7 +156,7 @@ class Environment
         return _data.Plugins.Select( p =>
         {
             var path = _fs.Path.Combine( _environmentDirectory, p.Path.Replace( '/', Path.PathSeparator ) );
-            return new PluginInstallation( path, p, _fs, _logger );
+            return PluginInstallation.Open( path, p, _fs, _logger );
         } )
         .ToList();
     }
@@ -182,6 +183,29 @@ class Environment
         {
             Path = relativePath.Replace( '\\', '/' )
         } );
+    }
+
+    /// <summary>
+    /// Setup the plugin for use in this environment. This performs any
+    /// modifications to the file system that are required for the plugin to
+    /// be functional in this environment.
+    /// </summary>
+    /// <param name="plugin">The plugin to setup.</param>
+    /// <returns><c>true</c> if the plugin was setup; otherwise <c>false</c>.</returns>
+    public bool SetupPlugin( PluginInstallation plugin )
+    {
+        var webFormsDirectory = _fs.Path.Combine( _environmentDirectory, plugin.Path, "WebForms" );
+        var junctionDirectory = _fs.Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Plugins", plugin.OrganizationCode, plugin.Code );
+
+        if ( _fs.Directory.Exists( webFormsDirectory ) )
+        {
+            if ( !CreateJunction( junctionDirectory, webFormsDirectory ) )
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -248,5 +272,64 @@ class Environment
     public string? GetOrganizationCode()
     {
         return _data.Organization?.Code;
+    }
+
+    /// <summary>
+    /// Creates a Windows Junction at <paramref name="junctionDirectory"/>. These
+    /// are kind of like symbolic links for directories, except they don't require
+    /// administrative access to create.
+    /// </summary>
+    /// <param name="junctionDirectory">The directory path to create the junction at.</param>
+    /// <param name="targetDirectory">The target of the junction.</param>
+    /// <returns></returns>
+    private bool CreateJunction( string junctionDirectory, string targetDirectory )
+    {
+        var junctionParentDirectory = _fs.Path.GetDirectoryName( junctionDirectory );
+
+        if ( !OperatingSystem.IsWindows() )
+        {
+            _logger.LogError( "Junctions are only supported on Windows." );
+            return false;
+        }
+
+        if ( IsDryRun )
+        {
+            return true;
+        }
+
+        if ( junctionParentDirectory != null )
+        {
+            _fs.Directory.CreateDirectory( junctionParentDirectory );
+        }
+
+        if ( _fs.Directory.Exists( junctionDirectory ) )
+        {
+            _fs.Directory.Delete( junctionDirectory );
+        }
+
+        var info = new ProcessStartInfo
+        {
+            FileName = "cmd",
+            UseShellExecute = false,
+            RedirectStandardOutput = true
+        };
+
+        info.ArgumentList.Add( "/c" );
+        info.ArgumentList.Add( "mklink" );
+        info.ArgumentList.Add( "/J" );
+        info.ArgumentList.Add( junctionDirectory );
+        info.ArgumentList.Add( targetDirectory );
+
+        var process = Process.Start( info );
+
+        process?.WaitForExit();
+
+        if ( process == null || process.ExitCode != 0 )
+        {
+            _logger.LogError( "Unable to create junction at {path}.", junctionDirectory );
+            return false;
+        }
+
+        return true;
     }
 }

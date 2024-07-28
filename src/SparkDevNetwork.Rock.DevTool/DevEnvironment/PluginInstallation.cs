@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Abstractions;
+using System.Text.Json;
 
 using LibGit2Sharp;
 
@@ -19,6 +20,11 @@ class PluginInstallation
     /// The directory that contains the environment.
     /// </summary>
     private readonly string _pluginPath;
+
+    /// <summary>
+    /// The data from the plugin.json file.
+    /// </summary>
+    private readonly PluginData _pluginData;
 
     /// <summary>
     /// The data that represents the plugin configuration.
@@ -42,7 +48,45 @@ class PluginInstallation
     /// <inheritdoc cref="PluginReferenceData.Path"/>
     public string Path => _data.Path;
 
+    /// <summary>
+    /// The name of the organization this plugin belongs to.
+    /// </summary>
+    public string Organization => _pluginData.Organization.Name!;
+
+    /// <summary>
+    /// The name of the organization this plugin belongs to.
+    /// </summary>
+    public string OrganizationCode => _pluginData.Organization.Code!;
+
+    /// <summary>
+    /// The name of the plugin.
+    /// </summary>
+    public string Name => _pluginData.Name;
+
+    /// <summary>
+    /// The code that identifies this plugin. This can be used in directory
+    /// names.
+    /// </summary>
+    public string Code => _pluginData.Name.Replace( " ", string.Empty );
+
     #endregion
+
+    /// <summary>
+    /// Creates a new instance of a plugin installation in the environment.
+    /// </summary>
+    /// <param name="pluginPath">The absolute path to the plugin.</param>
+    /// <param name="data">The data that describes the plugin.</param>
+    /// <param name="pluginData">The data from the plugin.json file.</param>
+    /// <param name="fs">The object that will provide access to the file system.</param>
+    /// <param name="logger">The object that will log diagnostic information.</param>
+    private PluginInstallation( string pluginPath, PluginReferenceData data, PluginData pluginData, IFileSystem fs, ILogger logger )
+    {
+        _pluginPath = pluginPath;
+        _pluginData = pluginData;
+        _data = data;
+        _fs = fs;
+        _logger = logger;
+    }
 
     /// <summary>
     /// Creates a new instance of a plugin installation in the environment.
@@ -51,12 +95,31 @@ class PluginInstallation
     /// <param name="data">The data that describes the plugin.</param>
     /// <param name="fileSystem">The object that will provide access to the file system.</param>
     /// <param name="logger">The object that will log diagnostic information.</param>
-    public PluginInstallation( string pluginPath, PluginReferenceData data, IFileSystem fs, ILogger logger )
+    public static PluginInstallation Open( string pluginPath, PluginReferenceData data, IFileSystem fs, ILogger logger )
     {
-        _pluginPath = pluginPath;
-        _data = data;
-        _fs = fs;
-        _logger = logger;
+        var pluginFile = fs.Path.Combine( pluginPath, PluginData.Filename );
+        var friendlyPluginFile = fs.Path.GetFriendlyPath( pluginFile );
+
+        if ( !fs.File.Exists( pluginFile ) )
+        {
+            throw new InvalidPluginException( $"No plugin file was found at {friendlyPluginFile}." );
+        }
+
+        var json = fs.File.ReadAllText( pluginFile );
+        var pluginData = JsonSerializer.Deserialize<PluginData>( json )
+            ?? throw new InvalidPluginException( $"Invalid plugin configuration found in {friendlyPluginFile}." );
+
+        if ( pluginData.Organization == null || pluginData.Organization.Name == null || pluginData.Organization.Code == null )
+        {
+            throw new InvalidPluginException( $"Invalid organization data found in plugin file {friendlyPluginFile}" );
+        }
+
+        if ( pluginData.Name == null )
+        {
+            throw new InvalidPluginException( $"No name specified in plugin file {friendlyPluginFile}." );
+        }
+
+        return new PluginInstallation( pluginPath, data, pluginData, fs, logger );
     }
 
     /// <summary>
@@ -145,7 +208,7 @@ class PluginInstallation
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
     public PluginStatusItem GetStatus()
     {
-        if ( string.IsNullOrWhiteSpace(_data.Url ) || string.IsNullOrWhiteSpace( _data.Branch ) )
+        if ( string.IsNullOrWhiteSpace( _data.Url ) || string.IsNullOrWhiteSpace( _data.Branch ) )
         {
             return new PluginStatusItem( _data.Path, _data );
         }

@@ -154,6 +154,9 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         AddPluginToGitIgnore();
         AddPluginToSolutionFile();
 
+        var environmentPlugin = _environment.GetPlugins().First( p => p.Path == pluginRelativePath );
+        _environment.SetupPlugin( environmentPlugin );
+
         return 0;
     }
 
@@ -166,11 +169,13 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     {
         var sdkProjectDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
         var obsidianProjectDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
+        var webFormsDirectory = "WebForms";
 
         await CopyTemplateAsync( "plugin.plugin.json.template", [outputDirectory, "plugin.json"] );
 
         sdkProjectDirectory = _fs.Path.Combine( outputDirectory, sdkProjectDirectory );
         obsidianProjectDirectory = _fs.Path.Combine( outputDirectory, obsidianProjectDirectory );
+        webFormsDirectory = _fs.Path.Combine( outputDirectory, webFormsDirectory );
 
         if ( ExecuteOptions.DllProject == true )
         {
@@ -190,6 +195,12 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             {
                 return result;
             }
+        }
+
+        if ( ExecuteOptions.LegacyWebForms == true )
+        {
+            CreateDirectory( webFormsDirectory );
+            WriteFile( _fs.Path.Combine( webFormsDirectory, ".gitkeep" ), string.Empty );
         }
 
         return ValidationResult.Success();
@@ -490,6 +501,13 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             .Show( Console );
 
         ExecuteOptions.ObsidianProject = new ConfirmationPrompt( "Create Obsidian Project?" )
+            .DefaultValueStyle( "blue" )
+            .Show( Console );
+
+        ExecuteOptions.LegacyWebForms = new ConfirmationPrompt( "Create Legacy WebForms Directory?" )
+        {
+            DefaultValue = false
+        }
             .DefaultValueStyle( "blue" )
             .Show( Console );
 

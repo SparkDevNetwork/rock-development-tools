@@ -56,6 +56,11 @@ class NewCommandOptions : Abstractions.BaseModifyCommandOptions
     public bool? ObsidianProject { get; set; }
 
     /// <summary>
+    /// Determines if the legacy WebForms folder will be created.
+    /// </summary>
+    public bool? LegacyWebForms { get; set; }
+
+    /// <summary>
     /// Determines if the build artifacts will be copied to <see cref="RockWebPath" />.
     /// </summary>
     public bool? Copy { get; set; }
