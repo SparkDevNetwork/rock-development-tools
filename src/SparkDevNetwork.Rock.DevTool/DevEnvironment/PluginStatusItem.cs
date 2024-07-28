@@ -13,7 +13,7 @@ class PluginStatusItem : StatusItem
     /// The plugin data if this item represents a plugin or <c>null</c> if
     /// this item represents the Rock instance.
     /// </summary>
-    public PluginData? Plugin { get; }
+    public PluginReferenceData? Plugin { get; }
 
     #endregion
 
@@ -22,7 +22,7 @@ class PluginStatusItem : StatusItem
     /// </summary>
     /// <param name="name">The name of the item.</param>
     /// <param name="plugin">The plugin definition or <c>null</c> if this is the Rock instance.</param>
-    public PluginStatusItem( string name, PluginData? plugin )
+    public PluginStatusItem( string name, PluginReferenceData? plugin )
         : base( name )
     {
         Plugin = plugin;
@@ -34,7 +34,7 @@ class PluginStatusItem : StatusItem
     /// <param name="name">The name of the item.</param>
     /// <param name="message">The message to be displayed after the name.</param>
     /// <param name="plugin">The plugin definition or <c>null</c> if this is the Rock instance.</param>
-    public PluginStatusItem( string name, string message, PluginData? plugin )
+    public PluginStatusItem( string name, string message, PluginReferenceData? plugin )
         : base( name, message )
     {
         Plugin = plugin;

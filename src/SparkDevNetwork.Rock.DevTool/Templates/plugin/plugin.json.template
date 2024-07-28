@@ -1,0 +1,7 @@
+{
+    "organization": {
+        "name": "{{ Organization }}",
+        "code": "{{ OrganizationCode }}"
+    },
+    "name": "{{ PluginName }}"
+}

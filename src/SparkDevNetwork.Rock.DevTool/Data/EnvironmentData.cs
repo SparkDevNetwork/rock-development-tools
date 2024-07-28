@@ -28,7 +28,7 @@ class EnvironmentData
     /// The plugins that should be installed in the environment.
     /// </summary>
     [JsonPropertyName( "plugins" )]
-    public List<PluginData> Plugins { get; set; } = [];
+    public List<PluginReferenceData> Plugins { get; set; } = [];
 
     /// <summary>
     /// Additional data in the JSON stream that we don't know about.

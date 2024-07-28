@@ -111,7 +111,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             }
         }
 
-        var result = await GenerateProjectsAsync( outputDirectory );
+        var result = await GeneratePluginAsync( outputDirectory );
 
         if ( !result.Successful )
         {
@@ -162,17 +162,20 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// </summary>
     /// <param name="outputDirectory">The directory to output all the new content into.
     /// <returns>The validation error or <c>null</c>.</returns>
-    private async Task<ValidationResult> GenerateProjectsAsync( string outputDirectory )
+    private async Task<ValidationResult> GeneratePluginAsync( string outputDirectory )
     {
-        var csharpDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
-        var obsidianDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
+        var sdkProjectDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
+        var obsidianProjectDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
 
-        csharpDirectory = _fs.Path.Combine( outputDirectory, csharpDirectory );
-        obsidianDirectory = _fs.Path.Combine( outputDirectory, obsidianDirectory );
+        GetType().Assembly.GetManifestResourceNames().ToList().ForEach( n => Console.WriteLine(n));
+        await CopyTemplateAsync( "plugin.plugin.json.template", [outputDirectory, "plugin.json"] );
+
+        sdkProjectDirectory = _fs.Path.Combine( outputDirectory, sdkProjectDirectory );
+        obsidianProjectDirectory = _fs.Path.Combine( outputDirectory, obsidianProjectDirectory );
 
         if ( ExecuteOptions.DllProject == true )
         {
-            var result = await CreateSdkProject( csharpDirectory );
+            var result = await CreateSdkProject( sdkProjectDirectory );
 
             if ( !result.Successful )
             {
@@ -182,7 +185,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         if ( ExecuteOptions.ObsidianProject == true )
         {
-            var result = await CreateObsidianProject( obsidianDirectory );
+            var result = await CreateObsidianProject( obsidianProjectDirectory );
 
             if ( !result.Successful )
             {
@@ -203,9 +206,9 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         CreateDirectory( directory );
 
-        await CopyTemplateAsync( "sdk-project.project.csproj.template", [directory, projectFilename] );
-        await CopyTemplateAsync( "sdk-project.Class1.cs.template", [directory, "Class1.cs"] );
-        await CopyTemplateAsync( "sdk-project.gitignore.template", [directory, ".gitignore"] );
+        await CopyTemplateAsync( "sdk_project.project.csproj.template", [directory, projectFilename] );
+        await CopyTemplateAsync( "sdk_project.Class1.cs.template", [directory, "Class1.cs"] );
+        await CopyTemplateAsync( "sdk_project.gitignore.template", [directory, ".gitignore"] );
 
         return ValidationResult.Success();
     }
@@ -220,18 +223,18 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         CreateDirectory( directory );
 
-        await CopyTemplateAsync( "obsidian-project.eslintrc.json", [directory, ".eslintrc.json"] );
-        await CopyTemplateAsync( "obsidian-project.gitignore", [directory, ".gitignore"] );
-        await CopyTemplateAsync( "obsidian-project.package.json", [directory, "package.json"] );
-        await CopyTemplateAsync( "obsidian-project.obsidian.config.json", [directory, "obsidian.config.json"] );
-        await CopyTemplateAsync( "obsidian-project.project.esproj", [directory, projectFilename] );
-        await CopyTemplateAsync( "obsidian-project.tsconfig.base.json", [directory, "tsconfig.base.json"] );
+        await CopyTemplateAsync( "obsidian_project.eslintrc.json.template", [directory, ".eslintrc.json"] );
+        await CopyTemplateAsync( "obsidian_project.gitignore.template", [directory, ".gitignore"] );
+        await CopyTemplateAsync( "obsidian_project.package.json.template", [directory, "package.json"] );
+        await CopyTemplateAsync( "obsidian_project.obsidian.config.json.template", [directory, "obsidian.config.json"] );
+        await CopyTemplateAsync( "obsidian_project.project.esproj.template", [directory, projectFilename] );
+        await CopyTemplateAsync( "obsidian_project.tsconfig.base.json.template", [directory, "tsconfig.base.json"] );
 
-        await CopyTemplateAsync( "obsidian-project.src.shims-obs.d.ts", [directory, "src", "shims-obs.d.ts"] );
-        await CopyTemplateAsync( "obsidian-project.src.tsconfig.json", [directory, "src", "tsconfig.json"] );
+        await CopyTemplateAsync( "obsidian_project.src.shims-obs.d.ts.template", [directory, "src", "shims-obs.d.ts"] );
+        await CopyTemplateAsync( "obsidian_project.src.tsconfig.json.template", [directory, "src", "tsconfig.json"] );
 
-        await CopyTemplateAsync( "obsidian-project.tests.sample.spec.ts", [directory, "tests", "sample.spec.ts"] );
-        await CopyTemplateAsync( "obsidian-project.tests.tsconfig.json", [directory, "tests", "tsconfig.json"] );
+        await CopyTemplateAsync( "obsidian_project.tests.sample.spec.ts.template", [directory, "tests", "sample.spec.ts"] );
+        await CopyTemplateAsync( "obsidian_project.tests.tsconfig.json.template", [directory, "tests", "tsconfig.json"] );
 
         return ValidationResult.Success();
     }

@@ -23,7 +23,7 @@ class PluginInstallation
     /// <summary>
     /// The data that represents the plugin configuration.
     /// </summary>
-    private readonly PluginData _data;
+    private readonly PluginReferenceData _data;
 
     /// <summary>
     /// The object that provides access to the file system.
@@ -39,7 +39,7 @@ class PluginInstallation
 
     #region Properties
 
-    /// <inheritdoc cref="PluginData.Path"/>
+    /// <inheritdoc cref="PluginReferenceData.Path"/>
     public string Path => _data.Path;
 
     #endregion
@@ -51,7 +51,7 @@ class PluginInstallation
     /// <param name="data">The data that describes the plugin.</param>
     /// <param name="fileSystem">The object that will provide access to the file system.</param>
     /// <param name="logger">The object that will log diagnostic information.</param>
-    public PluginInstallation( string pluginPath, PluginData data, IFileSystem fs, ILogger logger )
+    public PluginInstallation( string pluginPath, PluginReferenceData data, IFileSystem fs, ILogger logger )
     {
         _pluginPath = pluginPath;
         _data = data;

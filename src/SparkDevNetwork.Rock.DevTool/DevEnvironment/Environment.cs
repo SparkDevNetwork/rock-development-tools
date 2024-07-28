@@ -165,8 +165,8 @@ class Environment
     /// be used to modify the plugin definition in the environment.
     /// </summary>
     /// <param name="path">The relative path to the plugin.</param>
-    /// <returns>A <see cref="PluginData"/> instance or <c>null</c>.</returns>
-    public PluginData? GetPluginData( string path )
+    /// <returns>A <see cref="PluginReferenceData"/> instance or <c>null</c>.</returns>
+    public PluginReferenceData? GetPluginData( string path )
     {
         return _data.Plugins.FirstOrDefault( p => p.Path == path );
     }
@@ -178,7 +178,7 @@ class Environment
     /// <param name="relativePath">The path, relative to the environment.</param>
     public void AddPlugin( string relativePath )
     {
-        _data.Plugins.Add( new PluginData
+        _data.Plugins.Add( new PluginReferenceData
         {
             Path = relativePath.Replace( '\\', '/' )
         } );

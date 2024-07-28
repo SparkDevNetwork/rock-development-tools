@@ -3,28 +3,26 @@ using System.Text.Json.Serialization;
 namespace SparkDevNetwork.Rock.DevTool.Data;
 
 /// <summary>
-/// The data that describes a plugin that should be installed in the
-/// environment.
+/// The structure of the plugin file.
 /// </summary>
 class PluginData
 {
     /// <summary>
-    /// The path to install the plugin into.
+    /// The filename to use for plugin data.
     /// </summary>
-    [JsonPropertyName( "path" )]
-    public string Path { get; set; } = string.Empty;
+    public const string Filename = "plugin.json";
 
     /// <summary>
-    /// The URL to the git repository to install the plugin from.
+    /// The details about the organization this plugin belongs to.
     /// </summary>
-    [JsonPropertyName( "url" )]
-    public string? Url { get; set; }
+    [JsonPropertyName( "organization" )]
+    public OrganizationData Organization { get; set; } = new OrganizationData();
 
     /// <summary>
-    /// The branch name to checkout in the plugin repository.
+    /// The name name of this plugin.
     /// </summary>
-    [JsonPropertyName( "branch" )]
-    public string? Branch { get; set; }
+    [JsonPropertyName( "name" )]
+    public string Name { get; set; } = string.Empty;
 
     /// <summary>
     /// Additional data in the JSON stream that we don't know about.
