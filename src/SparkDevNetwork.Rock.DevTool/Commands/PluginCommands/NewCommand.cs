@@ -328,6 +328,13 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         var content = _fs.File.ReadAllText( path );
         var lineEnding = content.Contains( "\r\n" ) ? "\r\n" : "\n";
 
+        // If the gitignore file already contains this item then skip it. This
+        // most often happens when the force option is used.
+        if ( content.Split( ['\r', '\n'] ).Contains( $"/{ExecuteOptions.PluginCode}" ) )
+        {
+            return;
+        }
+
         if ( !content.EndsWith( lineEnding ) )
         {
             content = $"{content}{lineEnding}/{ExecuteOptions.PluginCode}{lineEnding}";
