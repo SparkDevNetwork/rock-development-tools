@@ -199,8 +199,10 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         if ( ExecuteOptions.LegacyWebForms == true )
         {
+            var webFormsIgnore = $"*.obs.js{System.Environment.NewLine}";
+
             CreateDirectory( webFormsDirectory );
-            WriteFile( _fs.Path.Combine( webFormsDirectory, ".gitkeep" ), string.Empty );
+            WriteFile( _fs.Path.Combine( webFormsDirectory, ".gitignore" ), webFormsIgnore );
         }
 
         return ValidationResult.Success();

@@ -292,19 +292,38 @@ class Environment
             return false;
         }
 
-        if ( IsDryRun )
+        var d = _fs.DirectoryInfo.New( junctionDirectory );
+
+        if ( d.LinkTarget == targetDirectory )
         {
+            // Junction is already setup correctly.
             return true;
+        }
+        else if ( IsDryRun )
+        {
+            _console.MarkupLineInterpolated( $"Remove directory [cyan]{_fs.Path.GetFriendlyPath( junctionDirectory )}[/]." );
+        }
+        else
+        {
+            _fs.Directory.Delete( junctionDirectory );
         }
 
         if ( junctionParentDirectory != null )
         {
-            _fs.Directory.CreateDirectory( junctionParentDirectory );
+            if ( IsDryRun )
+            {
+                _console.MarkupLineInterpolated( $"Create directory [cyan]{_fs.Path.GetFriendlyPath( junctionParentDirectory )}[/c]." );
+            }
+            else
+            {
+                _fs.Directory.CreateDirectory( junctionParentDirectory );
+            }
         }
 
-        if ( _fs.Directory.Exists( junctionDirectory ) )
+        if ( IsDryRun )
         {
-            _fs.Directory.Delete( junctionDirectory );
+            _console.MarkupLineInterpolated( $"Create junction [cyan]{_fs.Path.GetFriendlyPath( junctionDirectory )}[/c]." );
+            return true;
         }
 
         var info = new ProcessStartInfo
