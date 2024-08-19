@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Semver;
 
 using SparkDevNetwork.Rock.DevTool.DevEnvironment;
+using SparkDevNetwork.Rock.DevTool.DevEnvironment.Sln;
 
 using Spectre.Console;
 
@@ -374,69 +375,30 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         }
 
         var content = _fs.File.ReadAllText( path );
-        var lineEnding = content.Contains( "\r\n" ) ? "\r\n" : "\n";
-        var csprojGuid = Guid.NewGuid().ToString().ToUpper();
-        var tsprojGuid = Guid.NewGuid().ToString().ToUpper();
-        string? csprojName = null;
-        string? csprojPath = null;
-        string? tsprojName = null;
-        string? tsprojPath = null;
+        var sln = new SlnReader().ParseString( content );
+        var rockWebProject = sln.Projects.FirstOrDefault( p => p.Name == "RockWeb" );
 
         if ( ExecuteOptions.DllProject == true )
         {
-            csprojName = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
-            csprojPath = $"{ExecuteOptions.PluginCode}\\{csprojName}\\{csprojName}.csproj";
+            var csprojName = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
+            var csprojPath = $"{ExecuteOptions.PluginCode}\\{csprojName}\\{csprojName}.csproj";
+
+            var project = sln.AddProject( csprojName, csprojPath, Project.ProjectTypeCSharp );
+            
+            rockWebProject?.AddProjectDependency( project.ProjectGuid );
         }
 
         if ( ExecuteOptions.ObsidianProject == true )
         {
-            tsprojName = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
-            tsprojPath = $"{ExecuteOptions.PluginCode}\\{tsprojName}\\{tsprojName}.esproj";
+            var tsprojName = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
+            var tsprojPath = $"{ExecuteOptions.PluginCode}\\{tsprojName}\\{tsprojName}.esproj";
+
+            var project = sln.AddProject( tsprojName, tsprojPath, Project.ProjectTypeJavaScript );
+
+            rockWebProject?.AddProjectDependency( project.ProjectGuid );
         }
 
-        content = GlobalSectionRegex().Replace( content, m =>
-        {
-            var text = string.Empty;
-
-            if ( csprojName != null && csprojPath != null )
-            {
-                text += $"Project(\"{{9A19103F-16F7-4668-BE54-9A1E7A4F7556}}\") = \"{csprojName}\", \"{csprojPath}\", \"{{{csprojGuid}}}\"{lineEnding}";
-                text += $"EndProject{lineEnding}";
-            }
-
-            if ( tsprojName != null && tsprojPath != null )
-            {
-                text += $"Project(\"{{54A90642-561A-4BB1-A94E-469ADEE60C69}}\") = \"{tsprojName}\", \"{tsprojPath}\", \"{{{tsprojGuid}}}\"{lineEnding}";
-                text += $"EndProject{lineEnding}";
-            }
-
-            return text + m.Value;
-        } );
-
-        content = ProjectConfigurationRegex().Replace( content, m =>
-        {
-            var text = string.Empty;
-
-            if ( csprojName != null )
-            {
-                text += $"\t\t{{{csprojGuid}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU{lineEnding}";
-                text += $"\t\t{{{csprojGuid}}}.Debug|Any CPU.Build.0 = Debug|Any CPU{lineEnding}";
-                text += $"\t\t{{{csprojGuid}}}.Release|Any CPU.ActiveCfg = Release|Any CPU{lineEnding}";
-                text += $"\t\t{{{csprojGuid}}}.Release|Any CPU.Build.0 = Release|Any CPU{lineEnding}";
-            }
-
-            if ( tsprojName != null )
-            {
-                text += $"\t\t{{{tsprojGuid}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU{lineEnding}";
-                text += $"\t\t{{{tsprojGuid}}}.Debug|Any CPU.Build.0 = Debug|Any CPU{lineEnding}";
-                text += $"\t\t{{{tsprojGuid}}}.Debug|Any CPU.Deploy.0 = Debug|Any CPU{lineEnding}";
-                text += $"\t\t{{{tsprojGuid}}}.Release|Any CPU.ActiveCfg = Release|Any CPU{lineEnding}";
-                text += $"\t\t{{{tsprojGuid}}}.Release|Any CPU.Build.0 = Release|Any CPU{lineEnding}";
-                text += $"\t\t{{{tsprojGuid}}}.Release|Any CPU.Deploy.0 = Release|Any CPU{lineEnding}";
-            }
-
-            return m.Groups[1].Value + text + m.Groups[2].Value;
-        } );
+        content = new SlnWriter().WriteToString( sln );
 
         WriteFile( path, content );
     }

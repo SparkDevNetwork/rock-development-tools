@@ -11,6 +11,7 @@ using Semver;
 
 using SparkDevNetwork.Rock.DevTool.Data;
 using SparkDevNetwork.Rock.DevTool.DevEnvironment;
+using SparkDevNetwork.Rock.DevTool.DevEnvironment.Sln;
 
 using Spectre.Console;
 
@@ -231,83 +232,43 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <returns>The text content to put in the solution file.</returns>
     private static string GetSolutionFileContent( bool hasRockWeb )
     {
-        var solutionGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
+        var sln = new Solution();
+
+        var solutionConfiguration = sln.Global.GetOrAddSection( "SolutionConfigurationPlatforms", GlobalSection.PreSolution );
+        solutionConfiguration.SetProperty( "Debug|Any CPU", "Debug|Any CPU" );
+        solutionConfiguration.SetProperty( "Release|Any CPU", "Release|Any CPU" );
+
+        var solutionProperties = sln.Global.GetOrAddSection( "SolutionProperties", GlobalSection.PreSolution );
+        solutionProperties.SetProperty( "HideSolutionNode", "FALSE" );
+
+        var extensibilityGlobals = sln.Global.GetOrAddSection( "ExtensibilityGlobals", GlobalSection.PostSolution );
+        extensibilityGlobals.SetProperty( "SolutionGuid", Guid.NewGuid().ToSolution() );
 
         if ( hasRockWeb )
         {
-            var rockWebGuid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
+            var project = sln.AddProject( "RockWeb", "Rock\\RockWeb\\", Project.ProjectTypeWebSite );
+            var websiteProperties = project.GetOrAddSection( "WebsiteProperties", ProjectSection.PreProject );
 
-            return
-            $$"""
-            Microsoft Visual Studio Solution File, Format Version 12.00
-            # Visual Studio Version 17
-            VisualStudioVersion = 17.0.31903.59
-            MinimumVisualStudioVersion = 10.0.40219.1
-            Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "RockWeb", "Rock\RockWeb\", "{{rockWebGuid}}"
-                    ProjectSection(WebsiteProperties) = preProject
-                            TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.7.2"
-                            Debug.AspNetCompiler.VirtualPath = "/localhost_64706"
-                            Debug.AspNetCompiler.PhysicalPath = "Rock\RockWeb\"
-                            Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_64706\"
-                            Debug.AspNetCompiler.Updateable = "true"
-                            Debug.AspNetCompiler.ForceOverwrite = "true"
-                            Debug.AspNetCompiler.FixedNames = "false"
-                            Debug.AspNetCompiler.Debug = "True"
-                            Release.AspNetCompiler.VirtualPath = "/localhost_64706"
-                            Release.AspNetCompiler.PhysicalPath = "Rock\RockWeb\"
-                            Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_64706\"
-                            Release.AspNetCompiler.Updateable = "true"
-                            Release.AspNetCompiler.ForceOverwrite = "true"
-                            Release.AspNetCompiler.FixedNames = "false"
-                            Release.AspNetCompiler.Debug = "False"
-                            VWDPort = "64706"
-                            SlnRelativePath = "Rock\RockWeb\"
-                    EndProjectSection
-            EndProject
-            Global
-                    GlobalSection(SolutionConfigurationPlatforms) = preSolution
-                            Debug|Any CPU = Debug|Any CPU
-                            Release|Any CPU = Release|Any CPU
-                    EndGlobalSection
-                    GlobalSection(ProjectConfigurationPlatforms) = postSolution
-                            {{rockWebGuid}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-                            {{rockWebGuid}}.Debug|Any CPU.Build.0 = Debug|Any CPU
-                            {{rockWebGuid}}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-                            {{rockWebGuid}}.Release|Any CPU.Build.0 = Debug|Any CPU
-                    EndGlobalSection
-                    GlobalSection(SolutionProperties) = preSolution
-                            HideSolutionNode = FALSE
-                    EndGlobalSection
-                    GlobalSection(ExtensibilityGlobals) = postSolution
-                            SolutionGuid = {{solutionGuid}}
-                    EndGlobalSection
-            EndGlobal
-
-            """.Replace( "        ", "\t" );
+            websiteProperties.SetProperty( "TargetFrameworkMoniker", ".NETFramework,Version%3D4.7.2" );
+            websiteProperties.SetProperty( "Debug.AspNetCompiler.VirtualPath", "/localhost_64706" );
+            websiteProperties.SetProperty( "Debug.AspNetCompiler.PhysicalPath", "Rock\\RockWeb\\" );
+            websiteProperties.SetProperty( "Debug.AspNetCompiler.TargetPath", "Rock\\PrecompiledWeb\\localhost_64706\\" );
+            websiteProperties.SetProperty( "Debug.AspNetCompiler.Updateable", "true" );
+            websiteProperties.SetProperty( "Debug.AspNetCompiler.ForceOverwrite", "true" );
+            websiteProperties.SetProperty( "Debug.AspNetCompiler.FixedNames", "false" );
+            websiteProperties.SetProperty( "Debug.AspNetCompiler.Debug", "True" );
+            websiteProperties.SetProperty( "Release.AspNetCompiler.VirtualPath", "/localhost_64706" );
+            websiteProperties.SetProperty( "Release.AspNetCompiler.PhysicalPath", "Rock\\RockWeb\\" );
+            websiteProperties.SetProperty( "Release.AspNetCompiler.TargetPath", "Rock\\PrecompiledWeb\\localhost_64706\\" );
+            websiteProperties.SetProperty( "Release.AspNetCompiler.Updateable", "true" );
+            websiteProperties.SetProperty( "Release.AspNetCompiler.ForceOverwrite", "true" );
+            websiteProperties.SetProperty( "Release.AspNetCompiler.FixedNames", "false" );
+            websiteProperties.SetProperty( "Release.AspNetCompiler.Debug", "False" );
+            websiteProperties.SetProperty( "VWDPort", "64706" );
+            websiteProperties.SetProperty( "SlnRelativePath", "Rock\\RockWeb\\" );
         }
-        else
-        {
-            return
-            $$"""
-            Microsoft Visual Studio Solution File, Format Version 12.00
-            # Visual Studio Version 17
-            VisualStudioVersion = 17.0.31903.59
-            MinimumVisualStudioVersion = 10.0.40219.1
-            Global
-                    GlobalSection(SolutionConfigurationPlatforms) = preSolution
-                            Debug|Any CPU = Debug|Any CPU
-                            Release|Any CPU = Release|Any CPU
-                    EndGlobalSection
-                    GlobalSection(SolutionProperties) = preSolution
-                            HideSolutionNode = FALSE
-                    EndGlobalSection
-                    GlobalSection(ExtensibilityGlobals) = postSolution
-                            SolutionGuid = {{solutionGuid}}
-                    EndGlobalSection
-            EndGlobal
 
-            """.Replace( "        ", "\t" );
-        }
+        return new SlnWriter().WriteToString( sln );
     }
 
     /// <summary>

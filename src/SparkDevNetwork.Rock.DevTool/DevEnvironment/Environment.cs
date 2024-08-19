@@ -294,18 +294,21 @@ class Environment
 
         var d = _fs.DirectoryInfo.New( junctionDirectory );
 
-        if ( d.LinkTarget == targetDirectory )
+        if ( d.Exists )
         {
-            // Junction is already setup correctly.
-            return true;
-        }
-        else if ( IsDryRun )
-        {
-            _console.MarkupLineInterpolated( $"Remove directory [cyan]{_fs.Path.GetFriendlyPath( junctionDirectory )}[/]." );
-        }
-        else
-        {
-            _fs.Directory.Delete( junctionDirectory );
+            if ( d.LinkTarget == targetDirectory )
+            {
+                // Junction is already setup correctly.
+                return true;
+            }
+            else if ( IsDryRun )
+            {
+                _console.MarkupLineInterpolated( $"Remove directory [cyan]{_fs.Path.GetFriendlyPath( junctionDirectory )}[/]." );
+            }
+            else
+            {
+                _fs.Directory.Delete( junctionDirectory );
+            }
         }
 
         if ( junctionParentDirectory != null )

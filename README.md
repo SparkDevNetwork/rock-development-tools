@@ -7,7 +7,6 @@ This is primarily to help with plugin developers, but not necessarily restricted
 # TODO
 
 * Logic to add existing plugin to environment with "existing" command.
-* Move to MvsSln.
 * Detect when project already in solution.
 * Add RockWeb to sln if Rock version specified at env init time.
 * Rock install modification detection, ignore Rock/RockWeb/App_Data since it is always modified.

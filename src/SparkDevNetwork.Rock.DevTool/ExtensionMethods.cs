@@ -161,4 +161,15 @@ static class ExtensionMethods
 
         return pathObject.NormalizePathSeperator( relativePath );
     }
+
+    /// <summary>
+    /// Creates a string that represents the Guid in the format used by Visual
+    /// Studio Solution files.
+    /// </summary>
+    /// <param name="guid">The guid to be converted.</param>
+    /// <returns>A new string that represents the guid.</returns>
+    public static string ToSolution( this Guid guid )
+    {
+        return "{" + guid.ToString().ToUpper() + "}";
+    }
 }
