@@ -7,9 +7,6 @@ This is primarily to help with plugin developers, but not necessarily restricted
 # TODO
 
 * Logic to add existing plugin to environment with "existing" command.
-* Detect when project already in solution.
-* Add RockWeb to sln if Rock version specified at env init time.
-* Rock install modification detection, ignore Rock/RockWeb/App_Data since it is always modified.
 * Copy build task should probably ignore all DLLs except primary and additional specified. Too many to safely ignore I think.
 * C# project creation, also ask if it will contain REST apis. If so include:
   * Microsoft.AspNet.WebApi.Core Version="5.2.3"
@@ -17,4 +14,3 @@ This is primarily to help with plugin developers, but not necessarily restricted
   * Alternative, maybe have Rock(.Common?) reference Newtonsoft.Json in nuget.
   * Include `<Reference Include="System.Web" />`
   * Include `<Reference Include="System.Web.Extensions" />`
-* Update csproj template to include Version number of 1.0.0.

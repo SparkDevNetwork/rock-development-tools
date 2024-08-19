@@ -457,6 +457,12 @@ class RockInstallation
 
         foreach ( var file in rockInstallation.Files )
         {
+            // Files in App_Data are expected to change.
+            if ( file.Key.StartsWith( "RockWeb/App_Data/" ) )
+            {
+                continue;
+            }
+
             var filePath = file.Key.Replace( '/', Path.DirectorySeparatorChar );
 
             filePath = _fs.Path.Combine( _rockPath, filePath );
