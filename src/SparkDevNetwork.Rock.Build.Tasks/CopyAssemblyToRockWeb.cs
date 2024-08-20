@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,17 +11,22 @@ using Microsoft.Build.Utilities;
 namespace SparkDevNetwork.Rock.Build.Tasks
 {
     /// <summary>
-    /// Copies the specified assembly to the RockWeb bin folder. This will
-    /// also copy any dependencies unless they are Rock dependencies assemblies.
+    /// Copies the specified assembly to the RockWeb bin folder.
     /// </summary>
     public class CopyAssemblyToRockWeb : Task
     {
         /// <summary>
-        /// The primary DLL to be copied. All references not also referenced
-        /// by Rock.dll will also be copied.
+        /// The source directory that the files are in.
         /// </summary>
         [Required]
         public string Source { get; set; }
+
+        /// <summary>
+        /// The files to copy from the <see cref="Source"/> directory. Multiple
+        /// entries should be separated by semi-colon.
+        /// </summary>
+        [Required]
+        public string Files { get; set; }
 
         /// <summary>
         /// The destination directory to copy the files into.
@@ -32,18 +37,21 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         /// <inheritdoc/>
         public override bool Execute()
         {
-            var sourceDirectory = Path.GetDirectoryName( Source );
+            var sourceDirectory = Source;
+            var files = Files.Split( new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries )
+                .Select( f => f.Trim() )
+                .ToList();
 
             Log.LogMessage( MessageImportance.High, "Copying files to RockWeb." );
 
-            var rockAssemblies = GetAllReferences( Path.Combine( sourceDirectory, "Rock.dll" ), true );
-            var primaryReferences = GetAllReferences( Source, true );
-
-            foreach ( var asmName in primaryReferences )
+            foreach ( var file in files )
             {
-                if ( rockAssemblies.Contains( asmName ) )
+                var asmName = file;
+
+                if ( asmName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) )
                 {
-                    continue;
+                    // Remove the last four characters.
+                    asmName = asmName.Substring( 0, asmName.Length - 4 );
                 }
 
                 var dllFile = Path.Combine( sourceDirectory, $"{asmName}.dll" );
@@ -81,6 +89,10 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         /// <summary>
         /// Gets all references recursively for the DLL.
         /// </summary>
+        /// <remarks>
+        /// This method is not currently used but being left as it might be
+        /// used in the future.
+        /// </remarks>
         /// <param name="filename">The primary DLL to be checked.</param>
         /// <param name="includePrimary">If <c>true</c> then the primary DLL will be included in results.</param>
         /// <returns>A list of assembly names.</returns>

@@ -15,6 +15,7 @@
     <!-- Defined default property values. -->
     <PropertyGroup>
         <CopyToRockWeb>False</CopyToRockWeb>
+        <AdditionalAssembliesToCopy></AdditionalAssembliesToCopy>
         <RockWebPath></RockWebPath>
     </PropertyGroup>
 </Project>
