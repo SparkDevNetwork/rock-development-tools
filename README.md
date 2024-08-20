@@ -15,7 +15,3 @@ git config --global core.longpaths true
 # TODO
 
 * Logic to add existing plugin to environment with "existing" command.
-* C# project creation, also ask if it will contain REST apis. If so include:
-  * Microsoft.AspNet.WebApi.Core Version="5.2.3"
-  * Include `<Reference Include="System.Web" />`
-  * Include `<Reference Include="System.Web.Extensions" />`
