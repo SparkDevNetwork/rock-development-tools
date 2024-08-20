@@ -17,7 +17,7 @@ class RootAppCommand : RootCommand
     public RootAppCommand( IServiceProvider serviceProvider )
         : base( "Plugin development tool for RockRMS." )
     {
-        // Name = "rock-dev-tool";
+        Name = "rock-dev-tool";
 
         AddCommand( ActivatorUtilities.CreateInstance<EnvironmentCommand>( serviceProvider ) );
         AddCommand( ActivatorUtilities.CreateInstance<PluginCommand>( serviceProvider ) );
