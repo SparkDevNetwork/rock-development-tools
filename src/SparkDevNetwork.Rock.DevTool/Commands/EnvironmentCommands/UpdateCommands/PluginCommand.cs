@@ -81,6 +81,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
         if ( outOfDatePlugins.Count == 0 )
         {
             Console.WriteLine( "All plugins are up to date, nothing to do." );
+            return Task.FromResult( 0 );
         }
 
         var uncleanPlugins = outOfDatePlugins
