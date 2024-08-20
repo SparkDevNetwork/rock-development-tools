@@ -24,7 +24,7 @@ class PluginInstallation
     /// <summary>
     /// The data from the plugin.json file.
     /// </summary>
-    private readonly PluginData _pluginData;
+    private readonly PluginData? _pluginData;
 
     /// <summary>
     /// The data that represents the plugin configuration.
@@ -41,6 +41,11 @@ class PluginInstallation
     /// </summary>
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Any error message that describes this plugin when it was loaded.
+    /// </summary>
+    private readonly string? _pluginError;
+
     #endregion
 
     #region Properties
@@ -51,23 +56,23 @@ class PluginInstallation
     /// <summary>
     /// The name of the organization this plugin belongs to.
     /// </summary>
-    public string Organization => _pluginData.Organization.Name!;
+    public string Organization => _pluginData?.Organization?.Name ?? string.Empty;
 
     /// <summary>
     /// The name of the organization this plugin belongs to.
     /// </summary>
-    public string OrganizationCode => _pluginData.Organization.Code!;
+    public string OrganizationCode => _pluginData?.Organization?.Code ?? string.Empty;
 
     /// <summary>
     /// The name of the plugin.
     /// </summary>
-    public string Name => _pluginData.Name;
+    public string Name => _pluginData?.Name ?? string.Empty;
 
     /// <summary>
     /// The code that identifies this plugin. This can be used in directory
     /// names.
     /// </summary>
-    public string Code => _pluginData.Name.Replace( " ", string.Empty );
+    public string Code => _pluginData?.Name?.Replace( " ", string.Empty ) ?? string.Empty;
 
     #endregion
 
@@ -93,6 +98,23 @@ class PluginInstallation
     /// </summary>
     /// <param name="pluginPath">The absolute path to the plugin.</param>
     /// <param name="data">The data that describes the plugin.</param>
+    /// <param name="pluginError">The error that was encountered trying to open the plugin.</param>
+    /// <param name="fs">The object that will provide access to the file system.</param>
+    /// <param name="logger">The object that will log diagnostic information.</param>
+    private PluginInstallation( string pluginPath, PluginReferenceData data, string pluginError, IFileSystem fs, ILogger logger )
+    {
+        _pluginPath = pluginPath;
+        _pluginError = pluginError;
+        _data = data;
+        _fs = fs;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Creates a new instance of a plugin installation in the environment.
+    /// </summary>
+    /// <param name="pluginPath">The absolute path to the plugin.</param>
+    /// <param name="data">The data that describes the plugin.</param>
     /// <param name="fileSystem">The object that will provide access to the file system.</param>
     /// <param name="logger">The object that will log diagnostic information.</param>
     public static PluginInstallation Open( string pluginPath, PluginReferenceData data, IFileSystem fs, ILogger logger )
@@ -102,7 +124,8 @@ class PluginInstallation
 
         if ( !fs.File.Exists( pluginFile ) )
         {
-            throw new InvalidPluginException( $"No plugin file was found at {friendlyPluginFile}." );
+            var error = $"is missing.";
+            return new PluginInstallation( pluginPath, data, error, fs, logger );
         }
 
         var json = fs.File.ReadAllText( pluginFile );
@@ -211,6 +234,11 @@ class PluginInstallation
         if ( string.IsNullOrWhiteSpace( _data.Url ) || string.IsNullOrWhiteSpace( _data.Branch ) )
         {
             return new PluginStatusItem( _data.Path, _data );
+        }
+
+        if ( _pluginError != null )
+        {
+            return new PluginStatusItem( _data.Path, _pluginError, _data );
         }
 
         if ( !Repository.IsValid( _pluginPath ) )
