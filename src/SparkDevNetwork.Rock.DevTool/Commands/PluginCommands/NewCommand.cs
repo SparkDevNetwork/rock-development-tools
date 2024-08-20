@@ -463,6 +463,16 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         ExecuteOptions.DllProject = new ConfirmationPrompt( "Create DLL Project?" )
             .DefaultValueStyle( "blue" )
             .Show( Console );
+        
+        if ( ExecuteOptions.DllProject == true )
+        {
+            ExecuteOptions.RestApiSupport = new ConfirmationPrompt( "- Add support for REST endpoints?" )
+            {
+                DefaultValue = false
+            }
+                .DefaultValueStyle( "blue" )
+                .Show( Console );
+        }
 
         ExecuteOptions.ObsidianProject = new ConfirmationPrompt( "Create Obsidian Project?" )
             .DefaultValueStyle( "blue" )

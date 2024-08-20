@@ -51,6 +51,12 @@ class NewCommandOptions : Abstractions.BaseModifyCommandOptions
     public bool? DllProject { get; set; }
 
     /// <summary>
+    /// Determines if support for creating REST APIs will be included in the
+    /// DLL project.
+    /// </summary>
+    public bool? RestApiSupport { get; set; }
+
+    /// <summary>
     /// Determines if the Obsidian project will be created.
     /// </summary>
     public bool? ObsidianProject { get; set; }
@@ -87,6 +93,7 @@ class NewCommandOptions : Abstractions.BaseModifyCommandOptions
         RockVersion = source.RockVersion;
         RockWebPath = source.RockWebPath;
         DllProject = source.DllProject;
+        RestApiSupport = source.RestApiSupport;
         ObsidianProject = source.ObsidianProject;
         Copy = source.Copy;
     }
