@@ -75,7 +75,7 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
 
         var plugins = environment.GetPlugins();
         var outOfDatePlugins = plugins
-            .Where( p => !p.GetStatus().IsUpToDate )
+            .Where( p => !environment.GetPluginStatus( p ).IsUpToDate )
             .ToList();
 
         if ( outOfDatePlugins.Count == 0 )
@@ -109,7 +109,11 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
         {
             foreach ( var plugin in outOfDatePlugins )
             {
-                plugin.InstallOrUpdatePlugin( ctx );
+                if ( !string.IsNullOrWhiteSpace( plugin.Data.Url ) && !string.IsNullOrWhiteSpace( plugin.Data.Branch ) )
+                {
+                    plugin.InstallOrUpdatePlugin( ctx );
+                }
+                environment.SetupPlugin( plugin );
             }
         } );
 

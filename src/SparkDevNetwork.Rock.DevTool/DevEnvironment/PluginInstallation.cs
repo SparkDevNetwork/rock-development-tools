@@ -64,6 +64,11 @@ class PluginInstallation
     public string OrganizationCode => _pluginData?.Organization?.Code ?? string.Empty;
 
     /// <summary>
+    /// The path component for the organization in the RockWeb\Plugins folder.
+    /// </summary>
+    public string OrganizationPluginPath => _pluginData?.Organization?.Code?.Replace( '.', '_' ) ?? string.Empty;
+
+    /// <summary>
     /// The name of the plugin.
     /// </summary>
     public string Name => _pluginData?.Name ?? string.Empty;
@@ -73,6 +78,11 @@ class PluginInstallation
     /// names.
     /// </summary>
     public string Code => _pluginData?.Name?.Replace( " ", string.Empty ) ?? string.Empty;
+
+    /// <summary>
+    /// The data that represents the plugin configuration.
+    /// </summary>
+    public PluginReferenceData Data => _data;
 
     #endregion
 

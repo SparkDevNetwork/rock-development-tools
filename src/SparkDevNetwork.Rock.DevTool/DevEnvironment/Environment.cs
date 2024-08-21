@@ -195,7 +195,7 @@ class Environment
     public bool SetupPlugin( PluginInstallation plugin )
     {
         var webFormsDirectory = _fs.Path.Combine( _environmentDirectory, plugin.Path, "WebForms" );
-        var junctionDirectory = _fs.Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Plugins", plugin.OrganizationCode, plugin.Code );
+        var junctionDirectory = _fs.Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Plugins", plugin.OrganizationPluginPath, plugin.Code );
 
         if ( _fs.Directory.Exists( webFormsDirectory ) )
         {
@@ -222,10 +222,49 @@ class Environment
 
         foreach ( var plugin in GetPlugins() )
         {
-            statuses.Add( plugin.GetStatus() );
+            statuses.Add( GetPluginStatus( plugin ) );
         }
 
         return statuses;
+    }
+
+    /// <summary>
+    /// Gets the status of a plugin in the environment. This calls the plugin
+    /// <see cref="PluginInstallation.GetStatus"/> method and then performs
+    /// additional checks related to the plugin in the environment.
+    /// </summary>
+    /// <param name="plugin">The plugin to be checked.</param>
+    /// <returns>A status item that represents the status of the plugin.</returns>
+    public StatusItem GetPluginStatus( PluginInstallation plugin )
+    {
+        var status = plugin.GetStatus();
+
+        if ( !status.IsUpToDate )
+        {
+            return status;
+        }
+
+        var webFormsDirectory = _fs.Path.Combine( _environmentDirectory, plugin.Path, "WebForms" );
+        var junctionDirectory = _fs.Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Plugins", plugin.OrganizationPluginPath, plugin.Code );
+
+        if ( _fs.Directory.Exists( webFormsDirectory ) )
+        {
+            var d = _fs.DirectoryInfo.New( junctionDirectory );
+
+            if ( !d.Exists )
+            {
+                return new PluginStatusItem( plugin.Name, "is missing WebForms junction directory.", plugin.Data );
+            }
+            else
+            {
+                if ( d.LinkTarget != webFormsDirectory )
+                {
+                    return new PluginStatusItem( plugin.Name, "has incorrect WebForms junction directory.", plugin.Data );
+                }
+            }
+        }
+
+        return status;
     }
 
     /// <summary>
@@ -307,7 +346,7 @@ class Environment
             }
             else
             {
-                _fs.Directory.Delete( junctionDirectory );
+                _fs.Directory.Delete( junctionDirectory, true );
             }
         }
 
