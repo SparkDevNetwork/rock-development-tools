@@ -94,7 +94,7 @@ class Project : ISolutionItemWriter
     /// <param name="projectGuid">The project this project depends on.</param>
     public void AddProjectDependency( Guid projectGuid )
     {
-        var projectDependencies = GetOrAddSection( "Project Dependencies", ProjectSection.PostProject );
+        var projectDependencies = GetOrAddSection( "ProjectDependencies", ProjectSection.PostProject );
 
         if ( !projectDependencies.Properties.Any( d => d.Name == projectGuid.ToSolution() ) )
         {
@@ -112,7 +112,7 @@ class Project : ISolutionItemWriter
     /// <param name="projectGuid">The project this project no longer depends on.</param>
     public void RemoveProjectDependency( Guid projectGuid )
     {
-        var projectDependencies = GetOrAddSection( "Project Dependencies", ProjectSection.PostProject );
+        var projectDependencies = GetOrAddSection( "ProjectDependencies", ProjectSection.PostProject );
 
         projectDependencies.Properties.RemoveAll( d => d.Name == projectGuid.ToSolution() );
     }
