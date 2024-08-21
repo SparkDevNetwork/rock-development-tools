@@ -23,7 +23,15 @@ fs.readFileSync = (...args) => {
 		tryReplace(/function createProgram\(.+\) {/, s => s + ` return require(${JSON.stringify(proxyApiPath)}).createProgram(...arguments);`);
 
 		// patches logic for checking root file extension in build program for incremental builds
-		if (semver.gt(tsPkg.version, '5.0.0')) {
+		if (semver.gte(tsPkg.version, '5.5.0')) {
+			tryReplace(
+					`  buildInfoVersionMap.roots,`,
+					`  buildInfoVersionMap.roots
+							.filter(file => !file.toLowerCase().includes('__vls_'))
+							.map(file => file.replace(/\.obs\.(j|t)sx?$/i, '.obs')),`
+			);
+		}
+		else if (semver.gt(tsPkg.version, '5.0.0')) {
 			tryReplace(
 				`for (const existingRoot of buildInfoVersionMap.roots) {`,
 				`for (const existingRoot of buildInfoVersionMap.roots
