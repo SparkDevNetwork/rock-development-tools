@@ -10,6 +10,8 @@
     <description>The base REST controllers for plugin development.</description>
     <repository type="git" url="https://github.com/SparkDevNetwork/Rock" />
     <dependencies>
+      <dependency id="Microsoft.AspNet.WebApi.Core" version="5.2.3" />
+      <dependency id="Newtonsoft.Json" version="13.0.1" />
       <dependency id="RockRMS.Rock" version="{{ rockVersion }}" />
       <dependency id="RockRMS.Rock.Common" version="{{ rockVersion }}" />
       <dependency id="RockRMS.Rock.Enums" version="{{ rockVersion }}" />
