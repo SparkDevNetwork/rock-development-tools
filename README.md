@@ -15,3 +15,8 @@ git config --global core.longpaths true
 # TODO
 
 * Logic to add existing plugin to environment with "existing" command.
+* Merge env update command from rock/plugin into one command.
+    * Add --no-git parameter to disable git changes.
+    * Add --no-rock parameter to disable Rock installation changes (except for WebForms junctions).
+    * Add --no-plugins parameter to disable plugin installation changes.
+* Add --no-git paramter to disable git checks in env status
