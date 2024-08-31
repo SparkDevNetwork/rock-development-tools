@@ -19,5 +19,4 @@ git config --global core.longpaths true
     * Add --no-git parameter to disable git changes.
     * Add --no-rock parameter to disable Rock installation changes (except for WebForms junctions).
     * Add --no-plugins parameter to disable plugin installation changes.
-* Add --no-git paramter to disable git checks in env status
-* Need to add .vscode folder to environment with default extensions.json and default settings.json.
+* Add --no-git parameter to disable git checks in env status
