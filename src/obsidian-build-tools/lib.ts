@@ -262,6 +262,17 @@ export function green(text: string): string {
 }
 
 /**
+ * Wraps the text in ANSI sequence to make the foreground color yellow.
+ * 
+ * @param text The text that should be made yellow.
+ * 
+ * @returns A new string with the text wrapped in ANSI sequences.
+ */
+export function yellow(text: string): string {
+    return `\u001b[33m${text}\u001b[39m`;
+}
+
+/**
  * Wraps the text in ANSI sequence to make the foreground color dim.
  * 
  * @param text The text that should be made dim.

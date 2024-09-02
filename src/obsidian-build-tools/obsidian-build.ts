@@ -3,7 +3,7 @@
 import { existsSync } from "fs";
 import path from "path";
 import process from "process";
-import { Bundle, BundleBuilder, BundleError, clearScreen, defineBuilders, green, red, Watcher } from "./lib";
+import { Bundle, BundleBuilder, BundleError, clearScreen, defineBuilders, green, red, Watcher, yellow } from "./lib";
 
 /**
  * The configuration options from the config file.
@@ -151,6 +151,8 @@ async function watch(builders: BundleBuilder[]): Promise<void> {
 async function build(builders: BundleBuilder[]): Promise<{ bundle: Bundle, builder: BundleBuilder }[]> {
     const results: { bundle: Bundle, builder: BundleBuilder }[] = [];
 
+    process.stdout.write(`[${datestamp()}] Starting build.\n\n`);
+
     // Each bundle is an element of the array, loop through each one and
     // compile/bundle.
     for (let i = 0; i < builders.length; i++) {
@@ -175,7 +177,26 @@ async function build(builders: BundleBuilder[]): Promise<{ bundle: Bundle, build
         }
     }
 
+    process.stdout.write(`\n[${datestamp()}] Build complete.\n`);
+
     return results;
+}
+
+function findEnvironmentPath(startingPath: string): string | undefined {
+    let checkPath = startingPath;
+
+    while (true) {
+        if (existsSync(path.join(checkPath, "environment.json"))) {
+            return path.relative(process.cwd(), checkPath).replace(/\\/g, '/');
+        }
+
+        const nextPath = path.dirname(checkPath);
+        if (nextPath === checkPath) {
+            return undefined;
+        }
+
+        checkPath = nextPath;
+    }
 }
 
 async function main(): Promise<void> {
@@ -206,6 +227,18 @@ async function main(): Promise<void> {
         process.exit(1);
     }
 
+    if (config.destination && config.destination.includes("$(Environment)") && config.copy) {
+        const environmentPath = findEnvironmentPath(path.dirname(configFilePath));
+
+        if (!environmentPath) {
+            process.stdout.write(yellow("Note: Environment not found, skipping copy phase.") + "\n");
+            config.copy = false;
+        }
+        else {
+            config.destination = config.destination.replace("$(Environment)", environmentPath);
+        }
+    }
+
     const builders = defineBuilders(path.resolve(path.dirname(configFilePath), config.source), path.resolve(path.dirname(configFilePath), "dist"), {
         copy: config.copy === true ? config.destination : undefined
     });
@@ -214,11 +247,7 @@ async function main(): Promise<void> {
         watch(builders);
     }
     else {
-        process.stdout.write(`[${datestamp()}] Starting build.\n\n`);
-
         await build(builders);
-
-        process.stdout.write(`\n[${datestamp()}] Build complete.\n`);
     }
 }
 
