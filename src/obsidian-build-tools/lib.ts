@@ -1,6 +1,6 @@
 import { sync as globSync } from "glob";
 import { statSync, readdirSync } from "fs";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, readFile, writeFile } from "fs/promises";
 import * as path from "path";
 import chokidar from "chokidar";
 import { defineConfig as defineRollupConfig, OutputOptions, Plugin, rollup } from "rollup";
@@ -112,7 +112,6 @@ export interface BundleBuilder {
     build(): Promise<Bundle>;
 }
 
-
 /**
  * The internal configuration for a stylesheet builder.
  */
@@ -125,6 +124,20 @@ interface StylesheetConfiguration {
 
     /** If `true` then the output will be minified. */
     minify: boolean;
+
+    /** If set then this contains the absolute path to copy the output to. */
+    copy?: string;
+}
+
+/**
+ * The internal configuration for an image builder.
+ */
+interface ImageConfiguration {
+    /** The absolute path to the file that will be compiled. */
+    source: string;
+
+    /** The absolute path to the output file. */
+    destination: string;
 
     /** If set then this contains the absolute path to copy the output to. */
     copy?: string;
@@ -260,7 +273,7 @@ export function dim(text: string): string {
 }
 
 /**
- * Defines the configuration for all the valid source files, including those
+ * Defines the builders for all the valid source files, including those
  * in sub directories, for a given directory.
  *
  * @param sourcePath The base path to use when searching for files to compile.
@@ -269,18 +282,19 @@ export function dim(text: string): string {
  * compiled to this location.
  * @param options The options that define how the files are compiled.
  *
- * @returns An array of rollup configuration objects.
+ * @returns An array of {@link BundleBuilder} objects.
  */
-export function defineConfigs(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
+export function defineBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
     return [
         ...defineScriptBuilders(sourcePath, outputPath, options),
-        ...defineStylesheetBuilders(sourcePath, outputPath, options)
+        ...defineStylesheetBuilders(sourcePath, outputPath, options),
+        ...defineImageBuilders(sourcePath, outputPath, options)
     ];
 }
 
 // #endregion
 
-// #region Rollup Configs
+// #region Script Builders
 
 /**
  * Defines the builders for all the TypeScript and Obsidian files,
@@ -336,7 +350,7 @@ export function defineScriptBuilders(sourcePath: string, outputPath: string, opt
 }
 
 /**
- * Defines the rollup configuration object for a single script file.
+ * Defines the builder object for a single script file.
  *
  * @param input The path to the input file or directory to be built.
  * @param output The path to the output file or directory to write compiled files.
@@ -505,7 +519,7 @@ export function defineScriptFileBuilder(input: string, output: string, options: 
 
 // #endregion
 
-// #region Stylesheet Configs
+// #region Stylesheet Builders
 
 /**
  * Defines the configuration for all the stylesheet files that need to be
@@ -609,6 +623,106 @@ export async function buildStylesheet(configuration: StylesheetConfiguration): P
         destination: configuration.destination,
         duration,
         watchFiles: output.watchFiles
+    };
+}
+
+// #endregion
+
+// #region Image Builders
+
+/**
+ * Defines the configuration for all the images files that need to be
+ * "compiled", including those in sub directories, for a given directory. Any
+ * filename ending with .css, .less, .scss or .sass will be included.
+ * 
+ * @param sourcePath The base path to use when searching for files to compile.
+ * @param outputPath The base output path to use when writing the compiled
+ * files. The relative paths to the source files will be maintained when
+ * compiled to this location.
+ * @param options The options that define how the files are compiled.
+ * 
+ * @returns An array of {@link BundleBuilder} objects.
+ */
+export function defineImageBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
+    options = options || {};
+
+    const extensions: string[] = [
+        "jpg",
+        "jpeg",
+        "png",
+        "apng",
+        "gif",
+        "svg",
+        "webp",
+    ];
+
+    const files = globSync(sourcePath.replace(/\\/g, "/") + `/**/*.@(${extensions.join("|")})`)
+        .map(f => path.normalize(f).substring(sourcePath.length + 1));
+
+    return files.map(file => {
+        let outFile = file;
+
+        const configuration: ImageConfiguration = {
+            source: path.join(sourcePath, file),
+            destination: path.join(outputPath, outFile)
+        };
+
+        // If the caller requested a copy operation, append the path to the
+        // source file to the copy destination. If sourcePath is "/src" and
+        // outputPath is "/dist" and file is "/src/a/b/c.jpg" then the new
+        // copy path becomes "/dist/a/b".
+        if (options.copy) {
+            configuration.copy = path.join(options.copy, path.dirname(file));
+        }
+
+        const builder: BundleBuilder = {
+            source: configuration.source,
+            build(): Promise<Bundle> {
+                return buildImage(configuration);
+            }
+        };
+
+        return builder;
+    });
+}
+
+/**
+ * Builds a single image from the configuration.
+ * 
+ * @param configuration The configuration that defines the image to build.
+ * 
+ * @returns An instance of {@link Bundle} describing the output.
+ */
+export async function buildImage(configuration: ImageConfiguration): Promise<Bundle> {
+    const start = Date.now();
+    let data: Buffer;
+
+    try {
+        data = await readFile(configuration.source);
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            throw new BundleError(error.message, configuration.source, 0, 0);
+        }
+
+        throw error;
+    }
+
+    await mkdir(path.dirname(configuration.destination), { recursive: true });
+    await writeFile(configuration.destination, data);
+
+    if (configuration.copy) {
+        await mkdir(path.dirname(configuration.copy), { recursive: true });
+        await writeFile(configuration.copy, data);
+    }
+
+    const duration = Math.floor((Date.now() - start) / 1000);
+
+    return {
+        source: configuration.source,
+        destination: configuration.destination,
+        duration,
+        watchFiles: [configuration.source]
     };
 }
 

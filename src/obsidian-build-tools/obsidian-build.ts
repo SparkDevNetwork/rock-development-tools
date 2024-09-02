@@ -3,7 +3,7 @@
 import { existsSync } from "fs";
 import path from "path";
 import process from "process";
-import { Bundle, BundleBuilder, BundleError, clearScreen, defineConfigs, green, red, Watcher } from "./lib";
+import { Bundle, BundleBuilder, BundleError, clearScreen, defineBuilders, green, red, Watcher } from "./lib";
 
 /**
  * The configuration options from the config file.
@@ -199,7 +199,7 @@ if (!config.source) {
     process.exit(1);
 }
 
-const builders = defineConfigs(path.resolve(path.dirname(configFilePath), config.source), path.resolve(path.dirname(configFilePath), "dist"), {
+const builders = defineBuilders(path.resolve(path.dirname(configFilePath), config.source), path.resolve(path.dirname(configFilePath), "dist"), {
     copy: config.copy === true ? config.destination : undefined
 });
 
