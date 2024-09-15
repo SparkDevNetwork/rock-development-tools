@@ -130,9 +130,9 @@ interface StylesheetConfiguration {
 }
 
 /**
- * The internal configuration for an image builder.
+ * The internal configuration for an static file builder.
  */
-interface ImageConfiguration {
+interface StaticFileConfiguration {
     /** The absolute path to the file that will be compiled. */
     source: string;
 
@@ -299,7 +299,7 @@ export function defineBuilders(sourcePath: string, outputPath: string, options: 
     return [
         ...defineScriptBuilders(sourcePath, outputPath, options),
         ...defineStylesheetBuilders(sourcePath, outputPath, options),
-        ...defineImageBuilders(sourcePath, outputPath, options)
+        ...defineStaticFileBuilders(sourcePath, outputPath, options)
     ];
 }
 
@@ -623,8 +623,8 @@ export async function buildStylesheet(configuration: StylesheetConfiguration): P
     await writeFile(configuration.destination, css);
 
     if (configuration.copy) {
-        await mkdir(path.dirname(configuration.copy), { recursive: true });
-        await writeFile(configuration.copy, css);
+        await mkdir(configuration.copy, { recursive: true });
+        await writeFile(path.join(configuration.copy, path.basename(configuration.source)), css);
     }
 
     const duration = Math.floor((Date.now() - start) / 1000);
@@ -639,10 +639,10 @@ export async function buildStylesheet(configuration: StylesheetConfiguration): P
 
 // #endregion
 
-// #region Image Builders
+// #region Static File Builders
 
 /**
- * Defines the configuration for all the images files that need to be
+ * Defines the configuration for all the static files that need to be
  * "compiled", including those in sub directories, for a given directory. Any
  * filename ending with .css, .less, .scss or .sass will be included.
  * 
@@ -654,7 +654,7 @@ export async function buildStylesheet(configuration: StylesheetConfiguration): P
  * 
  * @returns An array of {@link BundleBuilder} objects.
  */
-export function defineImageBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
+export function defineStaticFileBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
     options = options || {};
 
     const extensions: string[] = [
@@ -665,6 +665,7 @@ export function defineImageBuilders(sourcePath: string, outputPath: string, opti
         "gif",
         "svg",
         "webp",
+        "lava",
     ];
 
     const files = globSync(sourcePath.replace(/\\/g, "/") + `/**/*.@(${extensions.join("|")})`)
@@ -673,7 +674,7 @@ export function defineImageBuilders(sourcePath: string, outputPath: string, opti
     return files.map(file => {
         let outFile = file;
 
-        const configuration: ImageConfiguration = {
+        const configuration: StaticFileConfiguration = {
             source: path.join(sourcePath, file),
             destination: path.join(outputPath, outFile)
         };
@@ -689,7 +690,7 @@ export function defineImageBuilders(sourcePath: string, outputPath: string, opti
         const builder: BundleBuilder = {
             source: configuration.source,
             build(): Promise<Bundle> {
-                return buildImage(configuration);
+                return buildStaticFile(configuration);
             }
         };
 
@@ -698,13 +699,13 @@ export function defineImageBuilders(sourcePath: string, outputPath: string, opti
 }
 
 /**
- * Builds a single image from the configuration.
+ * Builds a single static from the configuration.
  * 
- * @param configuration The configuration that defines the image to build.
+ * @param configuration The configuration that defines the static file to copy.
  * 
  * @returns An instance of {@link Bundle} describing the output.
  */
-export async function buildImage(configuration: ImageConfiguration): Promise<Bundle> {
+export async function buildStaticFile(configuration: StaticFileConfiguration): Promise<Bundle> {
     const start = Date.now();
     let data: Buffer;
 
@@ -723,8 +724,8 @@ export async function buildImage(configuration: ImageConfiguration): Promise<Bun
     await writeFile(configuration.destination, data);
 
     if (configuration.copy) {
-        await mkdir(path.dirname(configuration.copy), { recursive: true });
-        await writeFile(configuration.copy, data);
+        await mkdir(configuration.copy, { recursive: true });
+        await writeFile(path.join(configuration.copy, path.basename(configuration.source)), data);
     }
 
     const duration = Math.floor((Date.now() - start) / 1000);
