@@ -161,7 +161,8 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
                 "css.format.spaceAroundSelectorSeparator": true,
                 "css.lint.duplicateProperties": "warning",
                 "css.lint.zeroUnits": "warning",
-                "css.lint.propertyIgnoredDueToDisplay": "warning"
+                "css.lint.propertyIgnoredDueToDisplay": "warning",
+                "dotnet.preferCSharpExtension": true
             }
 
             """ );
