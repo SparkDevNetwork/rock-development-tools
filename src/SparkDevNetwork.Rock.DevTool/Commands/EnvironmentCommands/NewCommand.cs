@@ -138,8 +138,6 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
                 "files.associations": {
                     "*.obs": "vue"
                 },
-                "vue.format.template.initialIndent": true,
-                "vue.format.script.initialIndent": true,
                 "vue.complete.casing.props": "camel",
                 "vue.complete.casing.tags": "pascal",
                 "files.trimTrailingWhitespace": true,
