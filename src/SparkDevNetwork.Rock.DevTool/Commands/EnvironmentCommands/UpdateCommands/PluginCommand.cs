@@ -104,19 +104,34 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
         }
 
         var progress = Console.Progress();
+        var anyPluginFailed = false;
 
         progress.Start( ctx =>
         {
             foreach ( var plugin in outOfDatePlugins )
             {
+                var pluginToSetup = plugin;
+
                 if ( !string.IsNullOrWhiteSpace( plugin.Data.Url ) && !string.IsNullOrWhiteSpace( plugin.Data.Branch ) )
                 {
                     plugin.InstallOrUpdatePlugin( ctx );
+
+                    if ( string.IsNullOrWhiteSpace( plugin.OrganizationPluginPath ) )
+                    {
+                        pluginToSetup = environment.GetPlugin( plugin.Path );
+                    }
+
+                    if ( pluginToSetup == null || pluginToSetup.OrganizationPluginPath == null )
+                    {
+                        Console.MarkupLineInterpolated( $"[red]Plugin {plugin.Path} could not be loaded after install.");
+                        return;
+                    }
                 }
-                environment.SetupPlugin( plugin );
+
+                environment.SetupPlugin( pluginToSetup );
             }
         } );
 
-        return Task.FromResult( 0 );
+        return Task.FromResult( anyPluginFailed ? 1 : 0 );
     }
 }

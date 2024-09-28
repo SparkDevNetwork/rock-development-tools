@@ -162,6 +162,24 @@ class Environment
     }
 
     /// <summary>
+    /// Gets all the plugin defined for the specified plugin path.
+    /// </summary>
+    /// <param name="path">The relative path to the plugin.</param>
+    /// <returns>A <see cref="PluginInstallation"/> instance or <c>null</c>.</returns>
+    public PluginInstallation? GetPlugin( string path )
+    {
+        var data = GetPluginData( path );
+
+        if ( data == null )
+        {
+            return null;
+        }
+
+        var pluginPath = _fs.Path.Combine( _environmentDirectory, data.Path.Replace( '/', Path.PathSeparator ) );
+        return PluginInstallation.Open( path, data, _fs, _logger );
+    }
+
+    /// <summary>
     /// Gets the data that defines the plugin at the specified path. This can
     /// be used to modify the plugin definition in the environment.
     /// </summary>
@@ -195,9 +213,10 @@ class Environment
     public bool SetupPlugin( PluginInstallation plugin )
     {
         var webFormsDirectory = _fs.Path.Combine( _environmentDirectory, plugin.Path, "WebForms" );
-        var junctionDirectory = _fs.Path.Combine( _environmentDirectory, "Rock", "RockWeb", "Plugins", plugin.OrganizationPluginPath, plugin.Code );
+        var rockWebPath = _fs.Path.Combine( _environmentDirectory, "Rock", "RockWeb" );
+        var junctionDirectory = _fs.Path.Combine( rockWebPath, "Plugins", plugin.OrganizationPluginPath, plugin.Code );
 
-        if ( _fs.Directory.Exists( webFormsDirectory ) )
+        if ( _fs.Directory.Exists( rockWebPath ) && _fs.Directory.Exists( webFormsDirectory ) )
         {
             if ( !CreateJunction( junctionDirectory, webFormsDirectory ) )
             {
@@ -354,7 +373,7 @@ class Environment
         {
             if ( IsDryRun )
             {
-                _console.MarkupLineInterpolated( $"Create directory [cyan]{_fs.Path.GetFriendlyPath( junctionParentDirectory )}[/c]." );
+                _console.MarkupLineInterpolated( $"Create directory [cyan]{_fs.Path.GetFriendlyPath( junctionParentDirectory )}[/]." );
             }
             else
             {
@@ -364,7 +383,7 @@ class Environment
 
         if ( IsDryRun )
         {
-            _console.MarkupLineInterpolated( $"Create junction [cyan]{_fs.Path.GetFriendlyPath( junctionDirectory )}[/c]." );
+            _console.MarkupLineInterpolated( $"Create junction [cyan]{_fs.Path.GetFriendlyPath( junctionDirectory )}[/]." );
             return true;
         }
 
