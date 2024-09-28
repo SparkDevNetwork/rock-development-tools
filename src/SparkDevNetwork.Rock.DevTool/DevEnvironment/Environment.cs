@@ -55,6 +55,12 @@ class Environment
     /// </summary>
     public bool IsDryRun { get; set; }
 
+    /// <summary>
+    /// Determines if this operation will force through potential issues by
+    /// making possibly destructive changes.
+    /// </summary>
+    public bool IsForce { get; set; }
+
     #endregion
 
     /// <summary>
@@ -225,6 +231,133 @@ class Environment
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Update the Rock installation in the environment.
+    /// </summary>
+    /// <param name="source">An optional source URL to use when updating Rock.</param>
+    /// <returns><c>true</c> if Rock was either updated or already up to date; otherwise <c>false</c> if an error occurs.</returns>
+    public async Task<bool> UpdateRockAsync( string? source )
+    {
+        var rock = GetRockInstallation();
+        rock.IsDryRun = IsDryRun;
+
+        if ( !string.IsNullOrEmpty( source ) )
+        {
+            rock.RockEnvironmentSourceUrl = source;
+        }
+
+        var rockStatus = rock.GetRockStatus();
+
+        if ( rockStatus.IsUpToDate )
+        {
+            if ( IsForce )
+            {
+                Console.WriteLine( "Rock is up to date, but '--force' option was specified so re-installing." );
+            }
+            else
+            {
+                Console.WriteLine( "Rock is up to date." );
+                return true;
+            }
+        }
+
+        // If we aren't forcing the update then check if everything is clean
+        // before we make any changes.
+        if ( !IsForce && !rock.IsRockClean() )
+        {
+            _console.MarkupLine( "[red]Rock installation is not clean.[/]" );
+            _console.WriteLine();
+            _console.WriteLine( "To update Rock anyway, run the command with '--force' option." );
+            _console.WriteLine();
+
+            return false;
+        }
+
+        _console.WriteLine( "Removing Rock..." );
+
+        if ( IsForce )
+        {
+            rock.ForceRemoveRock();
+        }
+        else
+        {
+            rock.RemoveRock();
+        }
+
+        await rock.InstallRockAsync();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Updates all plugins in the environment. This will install any missing
+    /// plugins as well as ensure they are in sync with the environment.
+    /// </summary>
+    /// <returns><c>true</c> if everything was already up to date or successfully updated; otherwise <c>false</c>.</returns>
+    public bool UpdatePlugins()
+    {
+        var plugins = GetPlugins();
+        var outOfDatePlugins = plugins
+            .Where( p => !GetPluginStatus( p ).IsUpToDate )
+            .ToList();
+
+        if ( outOfDatePlugins.Count == 0 )
+        {
+            Console.WriteLine( "All plugins are up to date, nothing to do." );
+            return true;
+        }
+
+        var uncleanPlugins = outOfDatePlugins
+            .Where( p => !p.IsClean() )
+            .ToList();
+
+        // If we aren't forcing the update then check if everything is clean
+        // before we make any changes.
+        if ( !IsForce && uncleanPlugins.Count > 0 )
+        {
+            foreach ( var plugin in uncleanPlugins )
+            {
+                _console.MarkupLineInterpolated( $"[red]Plugin {plugin.Path} is not clean.[/]" );
+            }
+
+            Console.WriteLine();
+            Console.WriteLine( "To update anyway, run the command with '--force' option." );
+
+            return false;
+        }
+
+        var progress = _console.Progress();
+        var anyPluginFailed = false;
+
+        progress.Start( ctx =>
+        {
+            foreach ( var plugin in outOfDatePlugins )
+            {
+                var pluginToSetup = plugin;
+
+                if ( !string.IsNullOrWhiteSpace( plugin.Data.Url ) && !string.IsNullOrWhiteSpace( plugin.Data.Branch ) )
+                {
+                    plugin.InstallOrUpdatePlugin( ctx );
+
+                    if ( string.IsNullOrWhiteSpace( plugin.OrganizationPluginPath ) )
+                    {
+                        pluginToSetup = GetPlugin( plugin.Path );
+                    }
+
+                    if ( pluginToSetup == null || pluginToSetup.OrganizationPluginPath == null )
+                    {
+                        _console.MarkupLineInterpolated( $"[red]Plugin {plugin.Path} could not be loaded after install." );
+                        return;
+                    }
+                }
+
+                SetupPlugin( pluginToSetup );
+            }
+        } );
+
+        return !anyPluginFailed;
     }
 
     /// <summary>

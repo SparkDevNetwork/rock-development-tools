@@ -66,72 +66,11 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
             return Task.FromResult( 1 );
         }
 
-        if ( environment is null )
-        {
-            return Task.FromResult( 1 );
-        }
-
         environment.IsDryRun = ExecuteOptions.DryRun;
+        environment.IsForce = ExecuteOptions.Force;
 
-        var plugins = environment.GetPlugins();
-        var outOfDatePlugins = plugins
-            .Where( p => !environment.GetPluginStatus( p ).IsUpToDate )
-            .ToList();
+        var success = environment.UpdatePlugins();
 
-        if ( outOfDatePlugins.Count == 0 )
-        {
-            Console.WriteLine( "All plugins are up to date, nothing to do." );
-            return Task.FromResult( 0 );
-        }
-
-        var uncleanPlugins = outOfDatePlugins
-            .Where( p => !p.IsClean() )
-            .ToList();
-
-        // If we aren't forcing the update then check if everything is clean
-        // before we make any changes.
-        if ( !ExecuteOptions.Force && uncleanPlugins.Count > 0 )
-        {
-            foreach ( var plugin in uncleanPlugins )
-            {
-                Console.MarkupLineInterpolated( $"[red]Plugin {plugin.Path} is not clean.[/]" );
-            }
-
-            Console.WriteLine();
-            Console.WriteLine( "To update anyway, run the command with '--force' option." );
-
-            return Task.FromResult( 1 );
-        }
-
-        var progress = Console.Progress();
-        var anyPluginFailed = false;
-
-        progress.Start( ctx =>
-        {
-            foreach ( var plugin in outOfDatePlugins )
-            {
-                var pluginToSetup = plugin;
-
-                if ( !string.IsNullOrWhiteSpace( plugin.Data.Url ) && !string.IsNullOrWhiteSpace( plugin.Data.Branch ) )
-                {
-                    plugin.InstallOrUpdatePlugin( ctx );
-
-                    if ( string.IsNullOrWhiteSpace( plugin.OrganizationPluginPath ) )
-                    {
-                        pluginToSetup = environment.GetPlugin( plugin.Path );
-                    }
-
-                    if ( pluginToSetup == null || pluginToSetup.OrganizationPluginPath == null )
-                    {
-                        Console.MarkupLineInterpolated( $"[red]Plugin {plugin.Path} could not be loaded after install.");
-                        return;
-                    }
-                }
-
-                environment.SetupPlugin( pluginToSetup );
-            }
-        } );
-
-        return Task.FromResult( anyPluginFailed ? 1 : 0 );
+        return Task.FromResult( success ? 0 : 1 );
     }
 }

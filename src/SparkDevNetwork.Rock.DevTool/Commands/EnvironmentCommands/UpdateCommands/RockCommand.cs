@@ -75,54 +75,10 @@ class RockCommand : Abstractions.BaseModifyCommand<RockCommandOptions>
             return 1;
         }
 
-        var rock = environment.GetRockInstallation();
-        rock.IsDryRun = ExecuteOptions.DryRun;
+        environment.IsDryRun = ExecuteOptions.DryRun;
 
-        if ( !string.IsNullOrEmpty( ExecuteOptions.Source ) )
-        {
-            rock.RockEnvironmentSourceUrl = ExecuteOptions.Source;
-        }
+        var success = await environment.UpdateRockAsync( ExecuteOptions.Source );
 
-        var rockStatus = rock.GetRockStatus();
-
-        if ( rockStatus.IsUpToDate )
-        {
-            if ( ExecuteOptions.Force )
-            {
-                Console.WriteLine( "Rock is up to date, but '--force' option was specified so re-installing." );
-            }
-            else
-            {
-                Console.WriteLine( "Rock is up to date." );
-                return 0;
-            }
-        }
-
-        // If we aren't forcing the update then check if everything is clean
-        // before we make any changes.
-        if ( !ExecuteOptions.Force && !rock.IsRockClean() )
-        {
-            Console.MarkupLine( "[red]Rock installation is not clean.[/]" );
-            Console.WriteLine();
-            Console.WriteLine( "To update Rock anyway, run the command with '--force' option." );
-            Console.WriteLine();
-
-            return 1;
-        }
-
-        Console.WriteLine( "Removing Rock..." );
-
-        if ( ExecuteOptions.Force )
-        {
-            rock.ForceRemoveRock();
-        }
-        else
-        {
-            rock.RemoveRock();
-        }
-
-        await rock.InstallRockAsync();
-
-        return 0;
+        return success ? 0 : 1;
     }
 }
