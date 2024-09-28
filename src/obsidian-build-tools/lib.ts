@@ -807,8 +807,9 @@ export class Watcher {
      * @param files The new list of files to be watched.
      */
     public updateWatchFiles(files: string[]): void {
-        const filesToUnwatch = this.watchedFiles.filter(f => !files.includes(f));
-        const filesToWatch = files.filter(f => !this.watchedFiles.includes(f));
+        const validFiles = files.filter(f => !f.includes("\0"));
+        const filesToUnwatch = this.watchedFiles.filter(f => !validFiles.includes(f));
+        const filesToWatch = validFiles.filter(f => !this.watchedFiles.includes(f));
 
         this.watcher.unwatch(filesToUnwatch);
         this.watcher.add(filesToWatch);

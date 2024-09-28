@@ -1,6 +1,6 @@
 {
     "name": "@sparkdevnetwork/obsidian-build-tools",
-    "version": "1.0.0-rc.5",
+    "version": "1.0.0-rc.6",
     "description": "Tools to help with building Obsidian plugins for Rock.",
     "scripts": {
         "build": "tsc -b"
