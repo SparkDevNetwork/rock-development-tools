@@ -21,5 +21,6 @@ class RootAppCommand : RootCommand
 
         AddCommand( ActivatorUtilities.CreateInstance<EnvironmentCommand>( serviceProvider ) );
         AddCommand( ActivatorUtilities.CreateInstance<PluginCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<GenerateCommand>( serviceProvider ) );
     }
 }
