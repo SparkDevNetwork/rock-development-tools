@@ -3,20 +3,10 @@ using System.CommandLine.Invocation;
 using System.IO.Abstractions;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Text.RegularExpressions;
-
-using Fluid;
-
-using LibGit2Sharp;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Semver;
-
 using SparkDevNetwork.Rock.CodeGenerator;
-using SparkDevNetwork.Rock.DevTool.DevEnvironment;
-using SparkDevNetwork.Rock.DevTool.DevEnvironment.Sln;
 
 using Spectre.Console;
 
@@ -29,12 +19,15 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
 {
     private readonly IFileSystem _fs;
 
-    private readonly IServiceProvider _serviceProvider;
-
     /// <summary>
     /// The option that defines the assemblies to read.
     /// </summary>
-    private readonly Option<List<string>> _assembliesOption;
+    private readonly Argument<List<string>> _assembliesArgument;
+
+    /// <summary>
+    /// The option that defines the namespaces to read.
+    /// </summary>
+    private readonly Option<List<string>> _namespacesOption;
 
     /// <summary>
     /// The option that defines the output directory of the generated files.
@@ -48,15 +41,18 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
         : base( "enums", "Generates TypeScript enum definitions.", serviceProvider )
     {
         _fs = serviceProvider.GetRequiredService<IFileSystem>();
-        _serviceProvider = serviceProvider;
 
-        _assembliesOption = new Option<List<string>>( "--assembly", "The assembly to read C# enums from." );
-        _assembliesOption.AddAlias( "--asm" );
+        _assembliesArgument = new Argument<List<string>>( "assembly", "The assembly to read C# enums from." );
+
+        _namespacesOption = new Option<List<string>>( "--namespace", "The root namespace to scan for enums." );
+        _namespacesOption.AddAlias( "--ns" );
 
         _outputOption = new Option<string?>( "--output", "Location to place the generated output." );
         _outputOption.AddAlias( "-o" );
+        _outputOption.IsRequired = true;
 
-        AddOption( _assembliesOption );
+        AddArgument( _assembliesArgument );
+        AddOption( _namespacesOption );
         AddOption( _outputOption );
     }
 
@@ -65,8 +61,9 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
     {
         var options = base.GetOptions( context );
 
-        options.Assemblies = context.ParseResult.GetValueForOption( _assembliesOption ) ?? [];
-        options.Output = context.ParseResult.GetValueForOption( _outputOption );
+        options.Assemblies = context.ParseResult.GetValueForArgument( _assembliesArgument ) ?? [];
+        options.Namespaces = context.ParseResult.GetValueForOption( _namespacesOption ) ?? [];
+        options.Output = context.ParseResult.GetValueForOption( _outputOption ) ?? throw new Exception( "Output is required." );
 
         return options;
     }
@@ -103,6 +100,8 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
         var resolver = new PathAssemblyResolver( paths );
         using var mlc = new MetadataLoadContext( resolver );
 
+        var outputComponents = ExecuteOptions.Output.Split( [_fs.Path.DirectorySeparatorChar, _fs.Path.AltDirectorySeparatorChar] );
+
         foreach ( var assemblyPath in ExecuteOptions.Assemblies )
         {
             var assembly = mlc.LoadFromAssemblyPath( assemblyPath );
@@ -111,18 +110,42 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
             {
                 if ( t.IsEnum )
                 {
+                    var typeNamespace = t.Namespace ?? string.Empty;
+
+                    if ( ExecuteOptions.Namespaces.Count > 0 )
+                    {
+                        var ns = ExecuteOptions.Namespaces.FirstOrDefault( ns => typeNamespace.StartsWith( ns ) );
+
+                        if ( ns == null )
+                        {
+                            continue;
+                        }
+
+                        typeNamespace = typeNamespace[ns.Length..].TrimStart( '.' );
+                    }
+
                     var gen = new TypeScriptViewModelGenerator( new GeneratorStrings(), new TypeProvider(), xml );
                     var content = gen.GenerateEnumViewModel( t );
 
-                    Console.Write( content );
-                }
-                else if ( t.Name.EndsWith( "Bag" ) )
-                {
-                    var gen = new TypeScriptViewModelGenerator( new GeneratorStrings(), new TypeProvider(), xml );
-                    var content = gen.GenerateTypeViewModel( t );
+                    var components = typeNamespace.Split( '.' );
 
+                    if ( ExecuteOptions.Namespaces.Count == 0 && components.Contains( "Enums" ) )
+                    {
+                        components = components.SkipWhile( c => c != "Enums" ).Skip( 1 ).ToArray();
+                    }
+
+                    var path = _fs.Path.Combine( [.. outputComponents, .. components, $"{t.Name.ToCamelCase()}.partial.ts"] );
+
+                    Console.WriteLine( $"{path}:" );
                     Console.Write( content );
                 }
+                // else if ( t.Name.EndsWith( "Bag" ) )
+                // {
+                //     var gen = new TypeScriptViewModelGenerator( new GeneratorStrings(), new TypeProvider(), xml );
+                //     var content = gen.GenerateTypeViewModel( t );
+
+                //     Console.Write( content );
+                // }
             }
         }
 

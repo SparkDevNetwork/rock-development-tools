@@ -8,9 +8,11 @@ class EnumsCommandOptions : Abstractions.BaseModifyCommandOptions
     /// <summary>
     /// The path to create the TypeScript files in.
     /// </summary>
-    public string? Output { get; set; }
+    public string Output { get; set; } = string.Empty;
 
     public List<string> Assemblies { get; set; } = [];
+
+    public List<string> Namespaces { get; set; } = [];
 
     /// <summary>
     /// Creates a new options instance with default values.

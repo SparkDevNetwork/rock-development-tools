@@ -249,7 +249,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
                     if ( field.GetCustomAttributeData( "System.ComponentModel.DescriptionAttribute" ) is CustomAttributeData fieldDescriptionAttribute )
                     {
-                        var description = obsoleteFieldAttribute.ConstructorArguments[0].Value.ToString();
+                        var description = fieldDescriptionAttribute.ConstructorArguments[0].Value.ToString();
 
                         sb.Append( $"    {fieldName}: \"{description}\"" );
                     }
