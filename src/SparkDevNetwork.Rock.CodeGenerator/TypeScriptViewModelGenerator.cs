@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -10,38 +9,23 @@ using SparkDevNetwork.Rock.CodeGenerator.Documentation;
 
 namespace SparkDevNetwork.Rock.CodeGenerator
 {
-    public interface ITypeScriptTypeProvider
-    {
-        TypeScriptTypeDefinition GetTypeScriptTypeDefinition( Type type, bool isRequired );
-    }
     /// <summary>
     /// Contains methods for generating specific TypeScript files.
     /// </summary>
     public sealed class TypeScriptViewModelGenerator : Generator
     {
-        #region Fields
+        #region Properties
 
         /// <summary>
         /// The provider for documentation text on types and methods.
         /// </summary>
-        private readonly IDocumentationProvider _documentationProvider;
-
-        private readonly ITypeScriptTypeProvider _typeProvider;
-
-        #endregion
-
-        #region Constructors
+        public IDocumentationProvider DocumentationProvider { get; set; }
 
         /// <summary>
-        /// Creates a new instance of <see cref="TypeScriptViewModelGenerator"/>.
+        /// The provider for additional type lookups beyond the standard
+        /// provider.
         /// </summary>
-        /// <param name="xmlDoc">The XML document reader that has been configured to read XML documentation for the types that will be generated.</param>
-        public TypeScriptViewModelGenerator( IGeneratorStringsProvider stringsProvider, ITypeScriptTypeProvider typeProvider, IDocumentationProvider documentationProvider )
-            : base( stringsProvider )
-        {
-            _typeProvider = typeProvider;
-            _documentationProvider = documentationProvider;
-        }
+        public ITypeScriptTypeProvider TypeProvider { get; set; }
 
         #endregion
 
@@ -54,7 +38,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <returns>A string that contains the contents of the file.</returns>
         public string GenerateTypeViewModel( Type type )
         {
-            var typeComment = _documentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+            var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
 
             return GenerateTypeViewModel( GetClassNameForType( type ), typeComment, type.GetProperties().ToList(), type );
         }
@@ -121,7 +105,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <returns>A string that contains the contents of the file.</returns>
         public string GenerateEnumViewModel( Type type )
         {
-            var typeComment = _documentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+            var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
             var typeName = GetClassNameForType( type );
             var isFlagType = type.GetCustomAttributeData( "System.FlagsAttribute" ) != null;
 
@@ -153,7 +137,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <returns>A string that contains the contents of the file.</returns>
         private string GenerateEnumViewModel( Type type, bool isDescription )
         {
-            var typeComment = _documentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+            var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
             var typeName = GetClassNameForType( type );
             var fields = type.GetFields( BindingFlags.Static | BindingFlags.Public ).ToList();
 
@@ -298,7 +282,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                 } );
 
             var camelName = $"{type.Name.Substring( 0, 1 ).ToLower()}{type.Name.Substring( 1 )}";
-            var typeComment = _documentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+            var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
 
             var sb = new StringBuilder();
 
@@ -430,7 +414,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <param name="indentationSize">Size of the indentation for the comment block.</param>
         private void AppendCommentBlock( StringBuilder sb, MemberInfo memberInfo, int indentationSize )
         {
-            var xdoc = _documentationProvider?.GetMemberComments( memberInfo )?.Summary?.PlainText;
+            var xdoc = DocumentationProvider?.GetMemberComments( memberInfo )?.Summary?.PlainText;
 
             AppendCommentBlock( sb, xdoc, indentationSize, memberInfo.DeclaringType );
         }
@@ -525,7 +509,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <returns>A string that contains the definition, such as "boolean | null".</returns>
         private TypeScriptTypeDefinition GetTypeScriptTypeDefinition( Type type, bool isRequired )
         {
-            var providerType = _typeProvider?.GetTypeScriptTypeDefinition( type, isRequired );
+            var providerType = TypeProvider?.GetTypeScriptTypeDefinition( type, isRequired );
 
             if ( providerType != null )
             {

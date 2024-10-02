@@ -124,7 +124,12 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
                         typeNamespace = typeNamespace[ns.Length..].TrimStart( '.' );
                     }
 
-                    var gen = new TypeScriptViewModelGenerator( new GeneratorStrings(), new TypeProvider(), xml );
+                    var gen = new TypeScriptViewModelGenerator
+                    {
+                        StringsProvider = new GeneratorStrings(),
+                        TypeProvider = new TypeProvider(),
+                        DocumentationProvider = xml
+                    };
                     var content = gen.GenerateEnumViewModel( t );
 
                     var components = typeNamespace.Split( '.' );

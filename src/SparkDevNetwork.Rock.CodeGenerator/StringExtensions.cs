@@ -15,6 +15,17 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         }
 
         /// <summary>
+        /// Indicates whether a specified string is not null, empty, or
+        /// consists only of white-space characters.
+        /// </summary>
+        /// <param name="str">The string to test.</param>
+        /// <returns>true if the string is not null, not empty, or consists of any non white-space characters.</returns>
+        public static bool IsNotNullOrWhiteSpace( this string str )
+        {
+            return !string.IsNullOrWhiteSpace( str );
+        }
+
+        /// <summary>
         /// Splits a Camel or Pascal cased identifier into separate words.
         /// </summary>
         /// <param name="str">The identifier.</param>
