@@ -16,7 +16,7 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.GenerateCommands;
 /// <summary>
 /// Command to generate enum TypeScript files from one or more C# assemblies.
 /// </summary>
-partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
+partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsCommandOptions>
 {
     private readonly IFileSystem _fs;
 
@@ -38,8 +38,8 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
     /// <summary>
     /// Creates a command that will handle creating a new Rock plugin.
     /// </summary>
-    public EnumsCommand( IServiceProvider serviceProvider )
-        : base( "enums", "Generates TypeScript enum definitions.", serviceProvider )
+    public ViewModelsCommand( IServiceProvider serviceProvider )
+        : base( "viewmodels", "Generates TypeScript enum definitions.", serviceProvider )
     {
         _fs = serviceProvider.GetRequiredService<IFileSystem>();
 
@@ -58,7 +58,7 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
     }
 
     /// <inheritdoc/>
-    protected override EnumsCommandOptions GetOptions( InvocationContext context )
+    protected override ViewModelsCommandOptions GetOptions( InvocationContext context )
     {
         var options = base.GetOptions( context );
 
@@ -109,18 +109,23 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
 
             foreach ( var t in assembly.GetTypes() )
             {
-                if ( t.IsEnum && !t.IsNested )
+                if ( t.IsClass && !t.IsNested )
                 {
                     var components = !string.IsNullOrWhiteSpace( t.Namespace )
                         ? t.Namespace.Split( '.' )
                         : [];
 
-                    if ( !components.Contains( "Enums" ) )
+                    if ( !components.Contains( "ViewModels" ) )
                     {
                         continue;
                     }
 
-                    components = components.SkipWhile( c => c != "Enums" ).ToArray();
+                    if ( !t.Name.EndsWith( "Bag" ) && !t.Name.EndsWith( "Box" ) )
+                    {
+                        continue;
+                    }
+
+                    components = components.SkipWhile( c => c != "ViewModels" ).ToArray();
 
                     var gen = new PluginTypeScriptGenerator( components )
                     {
@@ -128,8 +133,9 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
                         DocumentationProvider = xml
                     };
 
-                    var content = gen.GenerateEnumViewModel( t );
-                    var path = _fs.Path.Combine( [.. outputComponents, .. components.Skip( 1 ), $"{t.Name.ToCamelCase()}.partial.ts"] );
+                    var content = gen.GenerateClassViewModel( t );
+
+                    var path = _fs.Path.Combine( [.. outputComponents, .. components.Skip( 1 ), $"{t.Name.ToCamelCase()}.d.ts"] );
 
                     Console.WriteLine( $"{path}:" );
                     Console.Write( content );
