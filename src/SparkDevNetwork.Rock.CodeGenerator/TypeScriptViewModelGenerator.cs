@@ -12,7 +12,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
     /// <summary>
     /// Contains methods for generating specific TypeScript files.
     /// </summary>
-    public sealed class TypeScriptViewModelGenerator : Generator
+    public class TypeScriptViewModelGenerator : Generator
     {
         #region Properties
 
@@ -21,38 +21,32 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// </summary>
         public IDocumentationProvider DocumentationProvider { get; set; }
 
-        /// <summary>
-        /// The provider for additional type lookups beyond the standard
-        /// provider.
-        /// </summary>
-        public ITypeScriptTypeProvider TypeProvider { get; set; }
-
         #endregion
 
         #region Methods
 
         /// <summary>
-        /// Generates a view model file for the given type.
+        /// Generates a class view model file for the C# runtime type.
         /// </summary>
         /// <param name="type">The type to be generated.</param>
         /// <returns>A string that contains the contents of the file.</returns>
-        public string GenerateTypeViewModel( Type type )
+        public string GenerateClassViewModel( Type type )
         {
             var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
 
-            return GenerateTypeViewModel( GetClassNameForType( type ), typeComment, type.GetProperties().ToList(), type );
+            return GenerateClassViewModel( GetClassNameForType( type ), typeComment, type.GetProperties().ToList(), type );
         }
 
         /// <summary>
-        /// Generates the type view model.
+        /// Generates the class view model for the C# runtime type.
         /// </summary>
         /// <param name="typeName">Name of the type.</param>
         /// <param name="typeComment">The type comment.</param>
         /// <param name="properties">The properties.</param>
         /// <param name="type">The type being generated.</param>
-        /// <param name="isAutoGen">if set to <c>true</c> [is automatic gen].</param>
-        /// <returns>System.String.</returns>
-        public string GenerateTypeViewModel( string typeName, string typeComment, IList<PropertyInfo> properties, Type type, bool isAutoGen = true )
+        /// <param name="isAutoGen">if set to <c>true</c> the auto generated comment will be included.</param>
+        /// <returns>A string that contains the contents of the file.</returns>
+        public string GenerateClassViewModel( string typeName, string typeComment, IList<PropertyInfo> properties, Type type, bool isAutoGen = true )
         {
             var imports = new List<TypeScriptImport>();
 
@@ -507,15 +501,8 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// </summary>
         /// <param name="type">The type.</param>
         /// <returns>A string that contains the definition, such as "boolean | null".</returns>
-        private TypeScriptTypeDefinition GetTypeScriptTypeDefinition( Type type, bool isRequired )
+        protected virtual TypeScriptTypeDefinition GetTypeScriptTypeDefinition( Type type, bool isRequired )
         {
-            var providerType = TypeProvider?.GetTypeScriptTypeDefinition( type, isRequired );
-
-            if ( providerType != null )
-            {
-                return providerType;
-            }
-
             var imports = new List<TypeScriptImport>();
             var underlyingType = Nullable.GetUnderlyingType( type );
             var isNullable = underlyingType != null;

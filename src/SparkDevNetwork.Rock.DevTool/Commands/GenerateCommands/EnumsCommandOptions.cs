@@ -10,8 +10,14 @@ class EnumsCommandOptions : Abstractions.BaseModifyCommandOptions
     /// </summary>
     public string Output { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The assemblies that will be scanned for enums.
+    /// </summary>
     public List<string> Assemblies { get; set; } = [];
 
+    /// <summary>
+    /// The namespaces that will be scanned for enums.
+    /// </summary>
     public List<string> Namespaces { get; set; } = [];
 
     /// <summary>
@@ -30,5 +36,6 @@ class EnumsCommandOptions : Abstractions.BaseModifyCommandOptions
     {
         Output = source.Output;
         Assemblies = source.Assemblies;
+        Namespaces = source.Namespaces;
     }
 }
