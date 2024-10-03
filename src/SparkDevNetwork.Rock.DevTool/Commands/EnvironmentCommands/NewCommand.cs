@@ -143,6 +143,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
                 "files.trimTrailingWhitespace": true,
                 "html.format.wrapAttributes": "preserve-aligned",
                 "html.format.wrapLineLength": 0,
+                "javascript.preferences.importModuleSpecifier": "project-relative",
                 "editor.codeActionsOnSave": {
                     "source.fixAll.eslint": "explicit"
                 },
