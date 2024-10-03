@@ -1,7 +1,7 @@
 namespace SparkDevNetwork.Rock.DevTool.Commands.GenerateCommands;
 
 /// <summary>
-/// The options that are used by <see cref="NewCommand"/>.
+/// The options that are used by <see cref="EnumsCommand"/>.
 /// </summary>
 class EnumsCommandOptions : Abstractions.BaseModifyCommandOptions
 {
@@ -13,12 +13,7 @@ class EnumsCommandOptions : Abstractions.BaseModifyCommandOptions
     /// <summary>
     /// The assemblies that will be scanned for enums.
     /// </summary>
-    public List<string> Assemblies { get; set; } = [];
-
-    /// <summary>
-    /// The namespaces that will be scanned for enums.
-    /// </summary>
-    public List<string> Namespaces { get; set; } = [];
+    public string Assembly { get; set; } = string.Empty;
 
     /// <summary>
     /// Creates a new options instance with default values.
@@ -35,7 +30,6 @@ class EnumsCommandOptions : Abstractions.BaseModifyCommandOptions
         : base( source )
     {
         Output = source.Output;
-        Assemblies = source.Assemblies;
-        Namespaces = source.Namespaces;
+        Assembly = source.Assembly;
     }
 }

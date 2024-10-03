@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 
 using SparkDevNetwork.Rock.CodeGenerator;
+using SparkDevNetwork.Rock.CodeGenerator.Documentation;
 using SparkDevNetwork.Rock.DevTool.Generators;
 
 using Spectre.Console;
@@ -21,14 +22,9 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
     private readonly IFileSystem _fs;
 
     /// <summary>
-    /// The option that defines the assemblies to read.
+    /// The option that defines the assembly to read.
     /// </summary>
-    private readonly Argument<List<string>> _assembliesArgument;
-
-    /// <summary>
-    /// The option that defines the namespaces to read.
-    /// </summary>
-    private readonly Option<List<string>> _namespacesOption;
+    private readonly Argument<string> _assemblyArgument;
 
     /// <summary>
     /// The option that defines the output directory of the generated files.
@@ -43,17 +39,13 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
     {
         _fs = serviceProvider.GetRequiredService<IFileSystem>();
 
-        _assembliesArgument = new Argument<List<string>>( "assembly", "The assembly to read C# enums from." );
-
-        _namespacesOption = new Option<List<string>>( "--namespace", "The root namespace to scan for enums." );
-        _namespacesOption.AddAlias( "--ns" );
+        _assemblyArgument = new Argument<string>( "assembly", "The assembly to read C# enums from." );
 
         _outputOption = new Option<string?>( "--output", "Location to place the generated output." );
         _outputOption.AddAlias( "-o" );
         _outputOption.IsRequired = true;
 
-        AddArgument( _assembliesArgument );
-        AddOption( _namespacesOption );
+        AddArgument( _assemblyArgument );
         AddOption( _outputOption );
     }
 
@@ -62,8 +54,7 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
     {
         var options = base.GetOptions( context );
 
-        options.Assemblies = context.ParseResult.GetValueForArgument( _assembliesArgument ) ?? [];
-        options.Namespaces = context.ParseResult.GetValueForOption( _namespacesOption ) ?? [];
+        options.Assembly = context.ParseResult.GetValueForArgument( _assemblyArgument ) ?? throw new Exception( "Assembly is required." );
         options.Output = context.ParseResult.GetValueForOption( _outputOption ) ?? throw new Exception( "Output is required." );
 
         return options;
@@ -72,30 +63,25 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
     /// <inheritdoc/>
     protected override Task<int> ExecuteAsync()
     {
-        var xml = new CodeGenerator.Documentation.XmlDocReader();
+        var documentationProvider = new CodeGenerator.Documentation.XmlDocReader();
         var runtimeAssemblies = _fs.Directory.GetFiles( RuntimeEnvironment.GetRuntimeDirectory(), "*.dll" );
         var paths = new List<string>( runtimeAssemblies );
 
-        foreach ( var assemblyPath in ExecuteOptions.Assemblies )
+        var xmlPath = ExecuteOptions.Assembly[..^4] + ".xml";
+
+        if ( _fs.File.Exists( xmlPath ) )
         {
-            var xmlPath = assemblyPath[..^4] + ".xml";
-
-            if ( _fs.File.Exists( xmlPath ) )
-            {
-                xml.ReadCommentsFrom( xmlPath );
-            }
-
-            paths.Add( assemblyPath );
-
-            var assemblyDirectory = _fs.Path.GetDirectoryName( assemblyPath );
-
-            if ( assemblyDirectory != null )
-            {
-                paths.AddRange( _fs.Directory.GetFiles( assemblyDirectory, "*.dll" ) );
-            }
+            documentationProvider.ReadCommentsFrom( xmlPath );
         }
 
-        paths.AddRange( ExecuteOptions.Assemblies );
+        paths.Add( ExecuteOptions.Assembly );
+
+        var assemblyDirectory = _fs.Path.GetDirectoryName( ExecuteOptions.Assembly );
+
+        if ( assemblyDirectory != null )
+        {
+            paths.AddRange( _fs.Directory.GetFiles( assemblyDirectory, "*.dll" ) );
+        }
 
         // Create PathAssemblyResolver that can resolve assemblies using the created list.
         var resolver = new PathAssemblyResolver( paths );
@@ -103,40 +89,74 @@ partial class EnumsCommand : Abstractions.BaseModifyCommand<EnumsCommandOptions>
 
         var outputComponents = ExecuteOptions.Output.Split( [_fs.Path.DirectorySeparatorChar, _fs.Path.AltDirectorySeparatorChar] );
 
-        foreach ( var assemblyPath in ExecuteOptions.Assemblies )
+        var assembly = mlc.LoadFromAssemblyPath( ExecuteOptions.Assembly );
+        var types = assembly.GetTypes()
+            .Where( t => t.IsEnum && !t.IsNested );
+
+        foreach ( var type in types )
         {
-            var assembly = mlc.LoadFromAssemblyPath( assemblyPath );
-
-            foreach ( var t in assembly.GetTypes() )
-            {
-                if ( t.IsEnum && !t.IsNested )
-                {
-                    var components = !string.IsNullOrWhiteSpace( t.Namespace )
-                        ? t.Namespace.Split( '.' )
-                        : [];
-
-                    if ( !components.Contains( "Enums" ) )
-                    {
-                        continue;
-                    }
-
-                    components = components.SkipWhile( c => c != "Enums" ).ToArray();
-
-                    var gen = new PluginTypeScriptGenerator( components )
-                    {
-                        StringsProvider = new GeneratorStrings(),
-                        DocumentationProvider = xml
-                    };
-
-                    var content = gen.GenerateEnumViewModel( t );
-                    var path = _fs.Path.Combine( [.. outputComponents, .. components.Skip( 1 ), $"{t.Name.ToCamelCase()}.partial.ts"] );
-
-                    Console.WriteLine( $"{path}:" );
-                    Console.Write( content );
-                }
-            }
+            ProcessType( type, outputComponents, documentationProvider );
         }
 
         return Task.FromResult( 0 );
+    }
+
+    /// <summary>
+    /// Process a single type by generating and writing to the file.
+    /// </summary>
+    /// <param name="type">The C# type to export.</param>
+    /// <param name="outputComponents">The path components that make up the root output path.</param>
+    /// <param name="documentationProvider">The provider of XML documentation.</param>
+    /// <returns><c>true</c> if the operation was successful; otherwise <c>false</c>.</returns>
+    private bool ProcessType( Type type, string[] outputComponents, IDocumentationProvider documentationProvider )
+    {
+        var components = !string.IsNullOrWhiteSpace( type.Namespace )
+            ? type.Namespace.Split( '.' )
+            : [];
+
+        if ( !components.Contains( "Enums" ) )
+        {
+            return true;
+        }
+
+        components = components.SkipWhile( c => c != "Enums" ).ToArray();
+
+        var gen = new PluginTypeScriptGenerator( components )
+        {
+            StringsProvider = new GeneratorStrings(),
+            DocumentationProvider = documentationProvider
+        };
+
+        var content = gen.GenerateEnumViewModel( type );
+        var path = _fs.Path.Combine( [.. outputComponents, .. components.Skip( 1 ), $"{type.Name.ToCamelCase()}.partial.ts"] );
+
+        if ( _fs.File.Exists( path ) )
+        {
+            if ( !ExecuteOptions.Force )
+            {
+                var oldContent = _fs.File.ReadAllText( path );
+
+                if ( !oldContent.StartsWith( gen.StringsProvider.AutoGeneratedComment ) )
+                {
+                    Console.MarkupLineInterpolated( $"[red]File '{path}' exists and may not be auto-generated, skipping. Run with --force to override.[/]" );
+                    return false;
+                }
+            }
+
+            WriteFile( path, content );
+        }
+        else
+        {
+            var directory = _fs.Path.GetDirectoryName( path );
+
+            if ( directory != null && !_fs.Directory.Exists( directory ) )
+            {
+                CreateDirectory( directory );
+            }
+
+            WriteFile( path, content );
+        }
+
+        return true;
     }
 }
