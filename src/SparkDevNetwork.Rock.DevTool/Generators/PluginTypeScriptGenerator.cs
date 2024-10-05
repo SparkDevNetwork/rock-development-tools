@@ -5,7 +5,7 @@ namespace SparkDevNetwork.Rock.DevTool.Generators;
 /// <summary>
 /// Handles plugin code generation for TypeScript files.
 /// </summary>
-class PluginTypeScriptGenerator : TypeScriptViewModelGenerator
+internal class PluginTypeScriptGenerator : TypeScriptViewModelGenerator
 {
     private readonly string[] _targetPathComponents;
 
@@ -26,37 +26,41 @@ class PluginTypeScriptGenerator : TypeScriptViewModelGenerator
 
         if ( type.IsClass && !type.IsNested && namespaceComponents.Contains( "ViewModels" ) && ( type.Name.EndsWith( "Bag" ) || type.Name.EndsWith( "Box" ) ) )
         {
+            var imports = new List<TypeScriptImport>();
+
             namespaceComponents = namespaceComponents.SkipWhile( c => c != "ViewModels" ).ToList();
 
-            var pathComponents = GetPathReferenceComponents( [.. _targetPathComponents], namespaceComponents );
-            var path = $"{string.Join( "/", pathComponents )}/{type.Name.ToCamelCase()}";
-
-            var imports = new List<TypeScriptImport>
+            if ( !namespaceComponents.SequenceEqual( _targetPathComponents ) )
             {
-                new TypeScriptImport
+                var pathComponents = GetPathReferenceComponents( [.. _targetPathComponents], [.. namespaceComponents] );
+                var path = string.Join( "/", pathComponents );
+
+                imports.Add( new TypeScriptImport
                 {
                     SourcePath = $"{path}",
                     NamedImport = type.Name
-                }
-            };
+                } );
+            }
 
-            return new TypeScriptTypeDefinition( type.Name, imports );
+            return new TypeScriptTypeDefinition( $"{type.Name} | null", imports );
         }
         else if ( namespaceComponents.Contains( "Enums" ) && type.IsEnum )
         {
+            var imports = new List<TypeScriptImport>();
+
             namespaceComponents = namespaceComponents.SkipWhile( c => c != "Enums" ).ToList();
 
-            var pathComponents = GetPathReferenceComponents( [.. _targetPathComponents], namespaceComponents );
-            var path = $"{string.Join( "/", pathComponents )}/{type.Name.ToCamelCase()}.partial";
+            if ( !namespaceComponents.SequenceEqual( _targetPathComponents ) )
+            {
+                var pathComponents = GetPathReferenceComponents( [.. _targetPathComponents], [.. namespaceComponents] );
+                var path = $"{string.Join( "/", pathComponents )}.partial";
 
-            var imports = new List<TypeScriptImport>
+                imports.Add( new TypeScriptImport
                 {
-                    new TypeScriptImport
-                    {
-                        SourcePath = $"{path}",
-                        NamedImport = type.Name
-                    }
-                };
+                    SourcePath = $"{path}",
+                    NamedImport = type.Name
+                } );
+            }
 
             return new TypeScriptTypeDefinition( type.Name, imports );
         }
@@ -71,50 +75,53 @@ class PluginTypeScriptGenerator : TypeScriptViewModelGenerator
     /// <param name="sourcePathComponents">The components from the output directory to the directory of the source file.</param>
     /// <param name="targetPathComponents">The components from the output directory to the directory of the target file.</param>
     /// <returns>A list of path components.</returns>
-    private static List<string> GetPathReferenceComponents( List<string> sourcePathComponents, List<string> targetPathComponents )
+    internal static List<string> GetPathReferenceComponents( List<string> sourcePathComponents, List<string> targetPathComponents )
     {
-        // The purpose of this is to remove common path components. Meaning
-        // if we have a source path of "ViewModels/Dir1/DirA" and a target
-        // of "ViewModels/Dir1/DirB" we want to ignore "ViewModels/Dir1".
-        //
-        // Then once we are past the common components, we need to move up
-        // a directory for each remaining source path. In this case, we are
-        // left with "DirA" so we need a single "..".
-        //
-        // Then just before we add the remaining target path components we
-        // check if there are no path components. If that is the case then
-        // we add a single ".".
-        //
-        // Finally, append any remaining target path components.
-        //
-        // Examples:
-        //
-        // Source: ViewModels/DetailBlock/Bags
-        // Target: ViewModels/DetailBlock
-        // Output: ../
-        //
-        // Source: ViewModels/DetailBlock
-        // Target: Viewmodels/DetailBlock/Bags
-        // Output: ./Bags
-        //
-        // Source: ViewModels/DetailBlock
-        // Target: Enums/DetailBlock
-        // Output: ../../Enums/DetailBlock
+        // Special case, if the two paths are the same, throw an exception
+        // because we should never be called this way.
+        if ( sourcePathComponents.SequenceEqual( targetPathComponents ) )
+        {
+            throw new ArgumentException( "Source and target paths must not be the same." );
+        }
 
         var pathComponents = new List<string>();
+        string? appendComponent = null;
 
-        for ( int i = 0; i < sourcePathComponents.Count && targetPathComponents.Count > 0; i++ )
+        while ( sourcePathComponents.Count > 0 )
         {
-            if ( sourcePathComponents[i] == targetPathComponents[0] )
+            if ( targetPathComponents.Count > 0 && sourcePathComponents[0] == targetPathComponents[0] )
             {
+                if ( targetPathComponents.Count == 1 )
+                {
+                    appendComponent = targetPathComponents[0].ToCamelCase();
+                }
+
+                var isViewModelsPrependRequired = sourcePathComponents.Count == 1
+                    && sourcePathComponents[0] == "ViewModels"
+                    && targetPathComponents[0] == "ViewModels";
+
+                // Because of our slightly wonky folder structure, references
+                // from the root ViewModels namespace to a child namespace need
+                // an additional "./ViewModels/" in the path.
+                if ( isViewModelsPrependRequired )
+                {
+                    pathComponents.Add( "." );
+                    pathComponents.Add( "ViewModels" );
+                }
+
+                sourcePathComponents.RemoveAt( 0 );
                 targetPathComponents.RemoveAt( 0 );
             }
             else
             {
-                while ( i < sourcePathComponents.Count )
+                for ( int i = 0; i < sourcePathComponents.Count - 1; i++ )
                 {
                     pathComponents.Add( ".." );
-                    i++;
+                }
+
+                if ( targetPathComponents.Count == 0 )
+                {
+                    pathComponents.Add( ".." );
                 }
 
                 break;
@@ -126,7 +133,20 @@ class PluginTypeScriptGenerator : TypeScriptViewModelGenerator
             pathComponents.Add( "." );
         }
 
-        pathComponents.AddRange( targetPathComponents );
+        if ( appendComponent != null )
+        {
+            pathComponents.Add( appendComponent );
+        }
+
+        if ( targetPathComponents.Count > 1 )
+        {
+            pathComponents.AddRange( targetPathComponents[..^1] );
+        }
+
+        if ( targetPathComponents.Count > 0 )
+        {
+            pathComponents.Add( targetPathComponents.Last().ToCamelCase() );
+        }
 
         return pathComponents;
     }

@@ -33,8 +33,46 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         public string GenerateClassViewModel( Type type )
         {
             var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+            var typeName = GetClassNameForType( type );
+            var properties = type.GetProperties().ToList();
 
-            return GenerateClassViewModel( GetClassNameForType( type ), typeComment, type.GetProperties().ToList(), type );
+            var (content, imports) = GenerateClassViewModelContent( typeName, typeComment, properties, type );
+
+            // Remove recursive references to self.
+            imports = imports.Where( i => i.DefaultImport != typeName && i.NamedImport != typeName ).ToList();
+
+            return GenerateTypeScriptFile( imports, content, true );
+        }
+
+        /// <summary>
+        /// Generates a single view model file for the C# runtime types.
+        /// </summary>
+        /// <param name="types">The types to be generated.</param>
+        /// <returns>A string that contains the contents of the file.</returns>
+        public string GenerateClassesViewModel( List<Type> types )
+        {
+            var sb = new StringBuilder();
+            var imports = new List<TypeScriptImport>();
+
+            foreach ( var type in types )
+            {
+                var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+                var typeName = GetClassNameForType( type );
+                var properties = type.GetProperties().ToList();
+
+                var (content, classImports) = GenerateClassViewModelContent( typeName, typeComment, properties, type );
+
+                // Remove recursive references to self.
+                classImports = classImports.Where( i => i.DefaultImport != typeName && i.NamedImport != typeName ).ToList();
+
+                sb.Append( content );
+                sb.AppendLine();
+
+                imports.AddRange( classImports );
+            }
+
+
+            return GenerateTypeScriptFile( imports, sb.ToString(), true );
         }
 
         /// <summary>
@@ -46,7 +84,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <param name="type">The type being generated.</param>
         /// <param name="isAutoGen">if set to <c>true</c> the auto generated comment will be included.</param>
         /// <returns>A string that contains the contents of the file.</returns>
-        public string GenerateClassViewModel( string typeName, string typeComment, IList<PropertyInfo> properties, Type type, bool isAutoGen = true )
+        private (string Content, List<TypeScriptImport> Imports) GenerateClassViewModelContent( string typeName, string typeComment, IList<PropertyInfo> properties, Type type )
         {
             var imports = new List<TypeScriptImport>();
 
@@ -86,10 +124,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
             sb.AppendLine( "};" );
 
-            // Remove recursive references to self.
-            imports = imports.Where( i => i.DefaultImport != typeName && i.NamedImport != typeName ).ToList();
-
-            return GenerateTypeScriptFile( imports, sb.ToString(), isAutoGen );
+            return (sb.ToString(), imports);
         }
 
         /// <summary>
@@ -99,15 +134,47 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <returns>A string that contains the contents of the file.</returns>
         public string GenerateEnumViewModel( Type type )
         {
+            var content = GenerateEnumViewModelContent( type );
+
+            return GenerateTypeScriptFile( new List<TypeScriptImport>(), content );
+        }
+
+        /// <summary>
+        /// Generates the view model file for a set of enums.
+        /// </summary>
+        /// <param name="types">The enumeration types.</param>
+        /// <returns>A string that contains the contents of the file.</returns>
+        public string GenerateEnumsViewModel( List<Type> types )
+        {
+            var sb = new StringBuilder();
+
+            foreach ( var type in types )
+            {
+                sb.Append( GenerateEnumViewModelContent( type ) );
+                sb.AppendLine();
+            }
+
+            return GenerateTypeScriptFile( new List<TypeScriptImport>(), sb.ToString() );
+        }
+
+        /// <summary>
+        /// Generates the content for a single enum type. This only includes
+        /// the content of the enum itself, not any additional file content
+        /// such as copyright text.
+        /// </summary>
+        /// <param name="type">The enum type to generate.</param>
+        /// <returns>A string that contains the TypeScript code for this enum type.</returns>
+        private string GenerateEnumViewModelContent( Type type )
+        {
             var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
             var typeName = GetClassNameForType( type );
             var isFlagType = type.GetCustomAttributeData( "System.FlagsAttribute" ) != null;
 
             var sb = new StringBuilder();
 
-            sb.Append( GenerateEnumViewModel( type, false ) );
+            sb.Append( GenerateEnumViewModelContent( type, false ) );
             sb.AppendLine();
-            sb.Append( GenerateEnumViewModel( type, true ) );
+            sb.Append( GenerateEnumViewModelContent( type, true ) );
             sb.AppendLine();
 
             AppendCommentBlock( sb, typeComment, 0, type );
@@ -121,7 +188,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                 sb.AppendLine( $"export type {typeName} = number;" );
             }
 
-            return GenerateTypeScriptFile( new List<TypeScriptImport>(), sb.ToString() );
+            return sb.ToString();
         }
 
         /// <summary>
@@ -129,7 +196,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// </summary>
         /// <param name="type">The enumeration type.</param>
         /// <returns>A string that contains the contents of the file.</returns>
-        private string GenerateEnumViewModel( Type type, bool isDescription )
+        private string GenerateEnumViewModelContent( Type type, bool isDescription )
         {
             var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
             var typeName = GetClassNameForType( type );

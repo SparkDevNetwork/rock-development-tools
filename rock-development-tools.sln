@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -13,6 +13,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.CodeGenerator", "src\SparkDevNetwork.Rock.CodeGenerator\SparkDevNetwork.Rock.CodeGenerator.csproj", "{86F8E877-834C-4518-8276-5F3BFD87E418}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.CodeGenerator.Tests.Sample", "src\SparkDevNetwork.Rock.CodeGenerator.Tests.Sample\SparkDevNetwork.Rock.CodeGenerator.Tests.Sample.csproj", "{0589D96A-1AFD-410C-8C38-9BF197BCC7CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SparkDevNetwork.Rock.Devtool.Tests", "src\SparkDevNetwork.Rock.DevTool.Tests\SparkDevNetwork.Rock.DevTool.Tests.csproj", "{715C2561-FA7D-4DAF-AE22-2F1E7EBB33A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,6 +48,10 @@ Global
 		{0589D96A-1AFD-410C-8C38-9BF197BCC7CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0589D96A-1AFD-410C-8C38-9BF197BCC7CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0589D96A-1AFD-410C-8C38-9BF197BCC7CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{715C2561-FA7D-4DAF-AE22-2F1E7EBB33A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{715C2561-FA7D-4DAF-AE22-2F1E7EBB33A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{715C2561-FA7D-4DAF-AE22-2F1E7EBB33A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{715C2561-FA7D-4DAF-AE22-2F1E7EBB33A6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C343A25A-36DC-4515-ABAB-A55945E95912} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
@@ -53,5 +59,6 @@ Global
 		{274F2048-D008-4B3A-9BF4-0E8D0E9AB007} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
 		{86F8E877-834C-4518-8276-5F3BFD87E418} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
 		{0589D96A-1AFD-410C-8C38-9BF197BCC7CA} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
+		{715C2561-FA7D-4DAF-AE22-2F1E7EBB33A6} = {A699A3A2-C641-4565-92F7-04151BC2D24E}
 	EndGlobalSection
 EndGlobal

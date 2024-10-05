@@ -1,0 +1,13 @@
+<Project Sdk="MSTest.Sdk/3.3.1">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SparkDevNetwork.Rock.CodeGenerator\SparkDevNetwork.Rock.CodeGenerator.csproj" />
+    <ProjectReference Include="..\SparkDevNetwork.Rock.CodeGenerator.Tests.Sample\SparkDevNetwork.Rock.CodeGenerator.Tests.Sample.csproj" />
+    <ProjectReference Include="..\SparkDevNetwork.Rock.DevTool\SparkDevNetwork.Rock.DevTool.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup> 
+      <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+</Project> 

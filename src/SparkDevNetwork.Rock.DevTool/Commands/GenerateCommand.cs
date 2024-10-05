@@ -17,7 +17,6 @@ class GenerateCommand : Command
     public GenerateCommand( IServiceProvider serviceProvider )
         : base( "generate", "Run commands related to code generation." )
     {
-        AddCommand( ActivatorUtilities.CreateInstance<EnumsCommand>( serviceProvider ) );
         AddCommand( ActivatorUtilities.CreateInstance<ViewModelsCommand>( serviceProvider ) );
     }
 }

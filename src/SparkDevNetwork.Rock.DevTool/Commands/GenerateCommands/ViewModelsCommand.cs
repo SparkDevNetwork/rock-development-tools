@@ -21,6 +21,10 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
 {
     private readonly IFileSystem _fs;
 
+    private readonly IGeneratorStringsProvider _stringsProvider = new GeneratorStrings();
+
+    #region Command Options
+
     /// <summary>
     /// The option that defines the assembly to read.
     /// </summary>
@@ -30,6 +34,18 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
     /// The option that defines the output directory of the generated files.
     /// </summary>
     private readonly Option<string?> _outputOption;
+
+    /// <summary>
+    /// The option that defines if we should skip bags when generating.
+    /// </summary>
+    private readonly Option<bool> _noBagsOption;
+
+    /// <summary>
+    /// The option that defines if we should skip enums when generating.
+    /// </summary>
+    private readonly Option<bool> _noEnumsOption;
+
+    #endregion
 
     /// <summary>
     /// Creates a command that will handle creating a new Rock plugin.
@@ -45,6 +61,9 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
         _outputOption.AddAlias( "-o" );
         _outputOption.IsRequired = true;
 
+        _noBagsOption = new Option<bool>( "--no-bags", "Skip generation of bags and boxes." );
+        _noEnumsOption = new Option<bool>( "--no-enums", "Skip generation of enums." );
+
         AddArgument( _assemblyArgument );
         AddOption( _outputOption );
     }
@@ -56,6 +75,8 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
 
         options.Assembly = context.ParseResult.GetValueForArgument( _assemblyArgument ) ?? throw new Exception( "Assembly is required" );
         options.Output = context.ParseResult.GetValueForOption( _outputOption ) ?? throw new Exception( "Output is required." );
+        options.NoBags = context.ParseResult.GetValueForOption( _noBagsOption );
+        options.NoEnums = context.ParseResult.GetValueForOption( _noEnumsOption );
 
         return options;
     }
@@ -63,10 +84,8 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
     /// <inheritdoc/>
     protected override Task<int> ExecuteAsync()
     {
-        var documentationProvider = new CodeGenerator.Documentation.XmlDocReader();
-        var runtimeAssemblies = _fs.Directory.GetFiles( RuntimeEnvironment.GetRuntimeDirectory(), "*.dll" );
-        var paths = new List<string>( runtimeAssemblies );
-
+        var documentationProvider = new XmlDocReader();
+        var outputComponents = ExecuteOptions.Output.Split( [_fs.Path.DirectorySeparatorChar, _fs.Path.AltDirectorySeparatorChar] );
         var xmlPath = ExecuteOptions.Assembly[..^4] + ".xml";
 
         if ( _fs.File.Exists( xmlPath ) )
@@ -74,9 +93,82 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
             documentationProvider.ReadCommentsFrom( xmlPath );
         }
 
-        paths.Add( ExecuteOptions.Assembly );
+        using var mlc = GetLoadContext();
+        var assembly = mlc.LoadFromAssemblyPath( ExecuteOptions.Assembly );
+        var possibleTypes = GetPossibleTypes( assembly );
+        var classTypeGroups = GetClassTypes( possibleTypes );
+        var enumTypeGroups = GetEnumTypes( possibleTypes );
 
+        var anyFileFailed = false;
+
+        if ( !ExecuteOptions.NoBags )
+        {
+            foreach ( var classGroup in classTypeGroups )
+            {
+                var pathComponents = classGroup.Namespace.SkipWhile( n => n != "ViewModels" ).ToArray();
+                var generator = new PluginTypeScriptGenerator( pathComponents )
+                {
+                    StringsProvider = _stringsProvider,
+                    DocumentationProvider = documentationProvider
+                };
+
+                var content = generator.GenerateClassesViewModel( classGroup.Types );
+
+                var path = _fs.Path.Combine( [
+                    .. outputComponents,
+                .. pathComponents[..^1],
+                $"{classGroup.Namespace.Last().ToCamelCase()}.d.ts"
+                    ] );
+
+                if ( !WriteGeneratedFile( path, content ) )
+                {
+                    anyFileFailed = true;
+                }
+            }
+        }
+
+        if ( !ExecuteOptions.NoEnums )
+        {
+            foreach ( var enumGroup in enumTypeGroups )
+            {
+                var pathComponents = enumGroup.Namespace.SkipWhile( n => n != "Enums" ).ToArray();
+                var generator = new PluginTypeScriptGenerator( pathComponents )
+                {
+                    StringsProvider = _stringsProvider,
+                    DocumentationProvider = documentationProvider
+                };
+
+                var content = generator.GenerateEnumsViewModel( enumGroup.Types );
+
+                var path = _fs.Path.Combine( [
+                    .. outputComponents,
+                .. pathComponents[..^1],
+                $"{enumGroup.Namespace.Last().ToCamelCase()}.partial.ts"
+                    ] );
+
+                if ( !WriteGeneratedFile( path, content ) )
+                {
+                    anyFileFailed = true;
+                }
+            }
+        }
+
+        return Task.FromResult( anyFileFailed ? 1 : 0 );
+    }
+
+    /// <summary>
+    /// Gets the context that will be used to load metadata from the assembly
+    /// specified on the command line arguments. The returned instance will be
+    /// configured for all runtime DLLs and other references.
+    /// </summary>
+    /// <returns>An instance of <see cref="MetadataLoadContext"/>.</returns>
+    private MetadataLoadContext GetLoadContext()
+    {
+        var runtimeAssemblies = _fs.Directory.GetFiles( RuntimeEnvironment.GetRuntimeDirectory(), "*.dll" );
+        var paths = new List<string>( runtimeAssemblies );
         var assemblyDirectory = _fs.Path.GetDirectoryName( ExecuteOptions.Assembly );
+
+        paths.Add( ExecuteOptions.Assembly );
 
         if ( assemblyDirectory != null )
         {
@@ -85,59 +177,90 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
 
         // Create PathAssemblyResolver that can resolve assemblies using the created list.
         var resolver = new PathAssemblyResolver( paths );
-        using var mlc = new MetadataLoadContext( resolver );
 
-        var outputComponents = ExecuteOptions.Output.Split( [_fs.Path.DirectorySeparatorChar, _fs.Path.AltDirectorySeparatorChar] );
-
-        var assembly = mlc.LoadFromAssemblyPath( ExecuteOptions.Assembly );
-        var types = assembly.GetTypes()
-            .Where( t => t.IsClass && !t.IsNested )
-            .Where( t => t.Name.EndsWith( "Bag" ) || t.Name.EndsWith( "Box" ) );
-
-        foreach ( var type in types )
-        {
-            ProcessType( type, outputComponents, documentationProvider );
-        }
-
-        return Task.FromResult( 0 );
+        return new MetadataLoadContext( resolver );
     }
 
     /// <summary>
-    /// Process a single type by generating and writing to the file.
+    /// Get the types that might possibly fir the pattern to be exported. This
+    /// will include lots of things that shouldn't be exported, but will exclude
+    /// a set of common things we always want to ignore.
     /// </summary>
-    /// <param name="type">The C# type to export.</param>
-    /// <param name="outputComponents">The path components that make up the root output path.</param>
-    /// <param name="documentationProvider">The provider of XML documentation.</param>
-    /// <returns><c>true</c> if the operation was successful; otherwise <c>false</c>.</returns>
-    private bool ProcessType( Type type, string[] outputComponents, IDocumentationProvider documentationProvider )
+    /// <param name="assembly">The assembly to load types from.</param>
+    /// <returns>A list of types grouped by namespace.</returns>
+    private static List<NamespaceTypes> GetPossibleTypes( Assembly assembly )
     {
-        var components = !string.IsNullOrWhiteSpace( type.Namespace )
-            ? type.Namespace.Split( '.' )
-            : [];
+        // Ignore types without a namespace, or nested in a class.
+        return assembly.GetTypes()
+            .Where( t => !string.IsNullOrEmpty( t.Namespace ) && !t.IsNested )
+            .GroupBy( t => t.Namespace! )
+            .Select( grp => new NamespaceTypes
+            {
+                Namespace = grp.Key.Split( '.' ),
+                Types = [.. grp]
+            } )
+            .ToList();
+    }
 
-        if ( !components.Contains( "ViewModels" ) )
-        {
-            return true;
-        }
+    /// <summary>
+    /// Gets the types that should be exported from the list of possible types.
+    /// This performs final filtering and only returns types that are
+    /// guaranteed good to export.
+    /// </summary>
+    /// <param name="possibleTypes">The list of types from <see cref="GetPossibleTypes"/>.</param>
+    /// <returns>The list of types to export grouped by namespace.</returns>
+    private static List<NamespaceTypes> GetClassTypes( List<NamespaceTypes> possibleTypes )
+    {
+        return possibleTypes
+            .Where( a => a.Namespace.Contains( "ViewModels" ) )
+            .Select( a => new NamespaceTypes
+            {
+                Namespace = a.Namespace,
+                Types = a.Types
+                    .Where( b => b.IsClass )
+                    .Where( b => b.Name.EndsWith( "Bag" ) || b.Name.EndsWith( "Box" ) )
+                    .ToList()
+            } )
+            .Where( a => a.Types.Count > 0 )
+            .ToList();
+    }
 
-        components = components.SkipWhile( c => c != "ViewModels" ).ToArray();
+    /// <summary>
+    /// Gets the enums that should be exported from the list of possible types.
+    /// This performs final filtering and only returns types that are
+    /// guaranteed good to export.
+    /// </summary>
+    /// <param name="possibleTypes">The list of types from <see cref="GetPossibleTypes"/>.</param>
+    /// <returns>The list of enum types to export grouped by namespace.</returns>
+    private static List<NamespaceTypes> GetEnumTypes( List<NamespaceTypes> possibleTypes )
+    {
+        return possibleTypes
+            .Where( a => a.Namespace.Contains( "Enums" ) )
+            .Select( a => new NamespaceTypes
+            {
+                Namespace = a.Namespace,
+                Types = a.Types.Where( b => b.IsEnum ).ToList()
+            } )
+            .Where( b => b.Types.Count > 0 )
+            .ToList();
+    }
 
-        var gen = new PluginTypeScriptGenerator( components )
-        {
-            StringsProvider = new GeneratorStrings(),
-            DocumentationProvider = documentationProvider
-        };
-
-        var content = gen.GenerateClassViewModel( type );
-        var path = _fs.Path.Combine( [.. outputComponents, .. components.Skip( 1 ), $"{type.Name.ToCamelCase()}.d.ts"] );
-
+    /// <summary>
+    /// Writes the generated file. This checks to ensure that any existing file
+    /// is only overwritten if it is also a code generated file.
+    /// </summary>
+    /// <param name="path">The path of the file to write.</param>
+    /// <param name="content">The content of the file.</param>
+    /// <returns><c>true</c> if the operation was successful; otherwise <c>false</c>.</returns>
+    private bool WriteGeneratedFile( string path, string content )
+    {
         if ( _fs.File.Exists( path ) )
         {
             if ( !ExecuteOptions.Force )
             {
                 var oldContent = _fs.File.ReadAllText( path );
 
-                if ( !oldContent.StartsWith( gen.StringsProvider.AutoGeneratedComment ) )
+                if ( !oldContent.StartsWith( _stringsProvider.AutoGeneratedComment ) )
                 {
                     Console.MarkupLineInterpolated( $"[red]File '{path}' exists and may not be auto-generated, skipping. Run with --force to override.[/]" );
                     return false;
@@ -159,5 +282,22 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Stores a list of types for a single namespace. The namespace will have
+    /// been broken out into individual components.
+    /// </summary>
+    private class NamespaceTypes
+    {
+        /// <summary>
+        /// The individual components of the namespace for these types.
+        /// </summary>
+        public required string[] Namespace { get; init; }
+
+        /// <summary>
+        /// The types in this namespace.
+        /// </summary>
+        public required List<Type> Types { get; init; }
     }
 }

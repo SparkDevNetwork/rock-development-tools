@@ -13,6 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="SparkDevNetwork.Rock.DevTool.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Remove="Templates\**\*" />
     <Compile Remove="Templates\**\*" />
     <EmbeddedResource Include="Templates\**\*" WithCulture="false" />
