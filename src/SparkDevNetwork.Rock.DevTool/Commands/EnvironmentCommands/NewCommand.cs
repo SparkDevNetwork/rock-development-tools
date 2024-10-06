@@ -141,6 +141,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
                 "vue.complete.casing.props": "camel",
                 "vue.complete.casing.tags": "pascal",
                 "files.trimTrailingWhitespace": true,
+                "vue.format.wrapAttributes": "preserve-aligned",
                 "html.format.wrapAttributes": "preserve-aligned",
                 "html.format.wrapLineLength": 0,
                 "javascript.preferences.importModuleSpecifier": "project-relative",
