@@ -672,7 +672,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                     isNullable = isNullable || !isRequired;
                 }
             }
-            else if ( type.Namespace.StartsWith( "Rock.ViewModels" ) && ( type.Name.EndsWith( "Bag" ) || type.Name.EndsWith( "Box" ) ) )
+            else if ( type.Namespace?.StartsWith( "Rock.ViewModels" ) == true && ( type.Name.EndsWith( "Bag" ) || type.Name.EndsWith( "Box" ) ) )
             {
                 var path = $"{type.Namespace.Substring( 15 ).Trim( '.' ).Replace( '.', '/' )}/{type.Name.ToCamelCase()}";
                 tsType = type.Name;
@@ -683,7 +683,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                 } );
                 isNullable = isNullable || !isRequired;
             }
-            else if ( type.IsEnum && type.Namespace.StartsWith( "Rock.Enums" ) )
+            else if ( type.IsEnum && type.Namespace?.StartsWith( "Rock.Enums" ) == true )
             {
                 var path = $"{type.Namespace.Substring( 10 ).Trim( '.' ).Replace( '.', '/' )}/{type.Name.ToCamelCase()}";
                 tsType = type.Name;
