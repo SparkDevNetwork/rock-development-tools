@@ -1,13 +1,32 @@
-<Project Sdk="MSTest.Sdk/3.3.1">
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SparkDevNetwork.Rock.CodeGenerator\SparkDevNetwork.Rock.CodeGenerator.csproj" />
+    <AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SparkDevNetwork.Rock.CodeGenerator.Tests.Sample\SparkDevNetwork.Rock.CodeGenerator.Tests.Sample.csproj" />
     <ProjectReference Include="..\SparkDevNetwork.Rock.DevTool\SparkDevNetwork.Rock.DevTool.csproj" />
   </ItemGroup>
 
-  <PropertyGroup> 
-      <TargetFramework>net8.0</TargetFramework>
-  </PropertyGroup>
-
-</Project> 
+</Project>

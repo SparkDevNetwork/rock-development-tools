@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 using SparkDevNetwork.Rock.CodeGenerator;
 
 namespace SparkDevNetwork.Rock.DevTool.Generators;
@@ -5,6 +7,7 @@ namespace SparkDevNetwork.Rock.DevTool.Generators;
 /// <summary>
 /// The strings that will be used by code generators for comments and such.
 /// </summary>
+[ExcludeFromCodeCoverage]
 class GeneratorStrings : IGeneratorStringsProvider
 {
     /// <inheritdoc/>
