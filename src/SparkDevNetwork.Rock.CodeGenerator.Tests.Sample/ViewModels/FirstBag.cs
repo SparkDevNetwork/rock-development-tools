@@ -1,9 +1,8 @@
-namespace SparkDevNetwork.Rock.CodeGenerator.Tests.Sample.ViewModels;
-
-using Enums;
-using Enums.Codes;
-
+using SparkDevNetwork.Rock.CodeGenerator.Tests.Sample.Enums;
+using SparkDevNetwork.Rock.CodeGenerator.Tests.Sample.Enums.Codes;
 using SparkDevNetwork.Rock.CodeGenerator.Tests.Sample.ViewModels.SubFolder;
+
+namespace SparkDevNetwork.Rock.CodeGenerator.Tests.Sample.ViewModels;
 
 public class FirstBag
 {
@@ -16,4 +15,6 @@ public class FirstBag
     public Response ResponseCode { get; set; }
 
     public ThirdBag? State { get; set; }
+
+    public List<ThirdBag>? States { get; set; }
 }
