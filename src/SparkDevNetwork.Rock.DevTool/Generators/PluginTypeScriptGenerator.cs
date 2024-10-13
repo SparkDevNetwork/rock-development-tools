@@ -37,12 +37,14 @@ internal class PluginTypeScriptGenerator : TypeScriptViewModelGenerator
 
                 imports.Add( new TypeScriptImport
                 {
-                    SourcePath = $"{path}",
+                    SourcePath = path,
                     NamedImport = type.Name
                 } );
             }
 
-            return new TypeScriptTypeDefinition( $"{type.Name} | null", imports );
+            var tsType = isRequired ? type.Name : $"{type.Name} | null";
+
+            return new TypeScriptTypeDefinition( tsType, imports );
         }
         else if ( namespaceComponents.Contains( "Enums" ) && type.IsEnum )
         {
@@ -57,7 +59,7 @@ internal class PluginTypeScriptGenerator : TypeScriptViewModelGenerator
 
                 imports.Add( new TypeScriptImport
                 {
-                    SourcePath = $"{path}",
+                    SourcePath = path,
                     NamedImport = type.Name
                 } );
             }
