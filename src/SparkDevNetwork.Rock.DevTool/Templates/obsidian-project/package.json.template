@@ -6,6 +6,7 @@
         "typecheck": "vue-tsc --noEmit -p src",
         "watch": "obsidian-build --watch",
         "clean": "rimraf dist",
+        "viewmodels": "rock-dev-tool generate viewmodels ../{{ OrganizationCode }}.{{ PluginCode }}/bin/Debug/net472/{{ OrganizationCode }}.{{ PluginCode }}.dll -o src",
         "test": "jest"
     },
     "dependencies": {
