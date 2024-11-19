@@ -235,6 +235,28 @@ public class PluginTypeScriptGeneratorTests
         Assert.Equal( "FirstBag[] | null", definition.Definition );
     }
 
+    [Fact]
+    public void GetTypeScriptTypeDefinition_WithRequiredGuid_DefinesTypeAsGuid()
+    {
+        var generator = new PluginTypeScriptGeneratorTester();
+
+        var definition = generator.CallGetTypeScriptTypeDefinition( typeof( Guid ), true );
+
+        Assert.NotNull( definition );
+        Assert.Equal( "Guid", definition.Definition );
+    }
+
+    [Fact]
+    public void GetTypeScriptTypeDefinition_WithOptionalGuid_DefinesTypeAsNullable()
+    {
+        var generator = new PluginTypeScriptGeneratorTester();
+
+        var definition = generator.CallGetTypeScriptTypeDefinition( typeof( Guid? ), false );
+
+        Assert.NotNull( definition );
+        Assert.Equal( "Guid | null", definition.Definition );
+    }
+
     private class PluginTypeScriptGeneratorTester : PluginTypeScriptGenerator
     {
         public PluginTypeScriptGeneratorTester()

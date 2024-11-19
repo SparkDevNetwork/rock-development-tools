@@ -571,12 +571,12 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         protected virtual TypeScriptTypeDefinition GetTypeScriptTypeDefinition( Type type, bool isRequired )
         {
             var imports = new List<TypeScriptImport>();
-            var underlyingType = Nullable.GetUnderlyingType( type );
-            var isNullable = underlyingType != null;
+            var isNullable = false;
 
-            if ( isNullable )
+            if ( type.IsGenericType && type.GetGenericTypeDefinition().FullName == typeof( Nullable<> ).FullName )
             {
-                type = underlyingType;
+                type = type.GetGenericArguments()[0];
+                isNullable = true;
             }
 
             // Default to "unknown" type

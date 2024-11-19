@@ -17,4 +17,8 @@ public class FirstBag
     public ThirdBag? State { get; set; }
 
     public List<ThirdBag>? States { get; set; }
+
+    public Guid GuidValue { get; set; }
+
+    public Guid? OptionalGuidValue { get; set; }
 }
