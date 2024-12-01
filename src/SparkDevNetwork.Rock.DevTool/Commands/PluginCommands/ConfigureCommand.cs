@@ -13,10 +13,18 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.PluginCommands;
 /// <summary>
 /// Configures a plugin in the environment.
 /// </summary>
-class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
+class ConfigureCommand : Abstractions.BaseModifyCommand
 {
+    #region Fields
+
+    /// <summary>
+    /// The object that will be used to access the filesystem.
+    /// </summary>
     private readonly IFileSystem _fs;
 
+    /// <summary>
+    /// The provider of services for this instance.
+    /// </summary>
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
@@ -38,6 +46,33 @@ class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
     /// The argument that defines which plugin to operate on.
     /// </summary>
     private readonly Argument<string> _pluginPathArgument;
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// The directory that contains the environment.
+    /// </summary>
+    public string? EnvironmentPath { get; set; }
+
+    /// <summary>
+    /// The URL to configure the plugin to use or <c>null</c> to leave unchanged.
+    /// </summary>
+    public string? Url { get; set; }
+
+    /// <summary>
+    /// The branch name to configure the plugin to use or <c>null</c> to leave
+    /// unchanged.
+    /// </summary>
+    public string? Branch { get; set; }
+
+    /// <summary>
+    /// The relative path to the plugin.
+    /// </summary>
+    public string PluginPath { get; set; } = null!;
+
+    #endregion
 
     /// <summary>
     /// Creates a command that will handle creating a new Rock plugin.
@@ -64,16 +99,14 @@ class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
     }
 
     /// <inheritdoc/>
-    protected override ConfigureCommandOptions GetOptions( InvocationContext context )
+    protected override void GetOptions( InvocationContext context )
     {
-        var options = base.GetOptions( context );
+        base.GetOptions( context );
 
-        options.EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
-        options.Url = context.ParseResult.GetValueForOption( _urlOption );
-        options.Branch = context.ParseResult.GetValueForOption( _branchOption );
-        options.PluginPath = context.ParseResult.GetValueForArgument( _pluginPathArgument );
-
-        return options;
+        EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
+        Url = context.ParseResult.GetValueForOption( _urlOption );
+        Branch = context.ParseResult.GetValueForOption( _branchOption );
+        PluginPath = context.ParseResult.GetValueForArgument( _pluginPathArgument );
     }
 
     /// <inheritdoc/>
@@ -86,22 +119,22 @@ class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
             return Task.FromResult( 1 );
         }
 
-        var plugin = env.GetPluginData( ExecuteOptions.PluginPath );
+        var plugin = env.GetPluginData( PluginPath );
 
         if ( plugin == null )
         {
-            Console.MarkupLineInterpolated( $"Plugin [cyan]{ExecuteOptions.PluginPath}[/] was not found in the environment." );
+            Console.MarkupLineInterpolated( $"Plugin [cyan]{PluginPath}[/] was not found in the environment." );
             return Task.FromResult( 1 );
         }
 
-        if ( ExecuteOptions.Url != null )
+        if ( Url != null )
         {
-            plugin.Url = ExecuteOptions.Url;
+            plugin.Url = Url;
         }
 
-        if ( ExecuteOptions.Branch != null )
+        if ( Branch != null )
         {
-            plugin.Branch = ExecuteOptions.Branch;
+            plugin.Branch = Branch;
         }
 
         env.Save();
@@ -115,7 +148,7 @@ class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
     /// <returns>An instance of <see cref="DevEnvironment.Environment"/> or <c>null</c>.</returns>
     private DevEnvironment.Environment? OpenEnvironment()
     {
-        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         DevEnvironment.Environment environment;
 
         environmentDirectory = _fs.Path.GetFullPath( environmentDirectory );
@@ -123,7 +156,7 @@ class ConfigureCommand : Abstractions.BaseModifyCommand<ConfigureCommandOptions>
         try
         {
             environment = DevEnvironment.Environment.Open( environmentDirectory, _serviceProvider );
-            environment.IsDryRun = ExecuteOptions.DryRun;
+            environment.IsDryRun = DryRun;
 
             return environment;
         }

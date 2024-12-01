@@ -20,8 +20,10 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.EnvironmentCommands;
 /// <summary>
 /// Container for sub-commands related to working with development environments.
 /// </summary>
-class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
+class NewCommand : Abstractions.BaseModifyCommand
 {
+    #region Fields
+
     /// <summary>
     /// The option that defines the output directory of the new environment.
     /// </summary>
@@ -32,9 +34,31 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// </summary>
     private readonly Option<string?> _sourceOption;
 
+    /// <summary>
+    /// The provider of services for this instance.
+    /// </summary>
     private readonly IServiceProvider _serviceProvider;
 
+    /// <summary>
+    /// The object that will be used to access the filesystem.
+    /// </summary>
     private readonly IFileSystem _fs;
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// The path to create the new environment in.
+    /// </summary>
+    public string? Output { get; set; }
+
+    /// <summary>
+    /// The base URL to use when downloading environment files.
+    /// </summary>
+    public string? Source { get; set; }
+
+    #endregion
 
     /// <summary>
     /// Creates a command that will handle creating a new development
@@ -56,20 +80,18 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     }
 
     /// <inheritdoc/>
-    protected override NewCommandOptions GetOptions( InvocationContext context )
+    protected override void GetOptions( InvocationContext context )
     {
-        var options = base.GetOptions( context );
+        base.GetOptions( context );
 
-        options.Output = context.ParseResult.GetValueForOption( _outputOption );
-        options.Source = context.ParseResult.GetValueForOption( _sourceOption );
-
-        return options;
+        Output = context.ParseResult.GetValueForOption( _outputOption );
+        Source = context.ParseResult.GetValueForOption( _sourceOption );
     }
 
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync()
     {
-        var outputDirectory = ExecuteOptions.Output ?? _fs.Directory.GetCurrentDirectory();
+        var outputDirectory = Output ?? _fs.Directory.GetCurrentDirectory();
 
         outputDirectory = _fs.Path.GetFullPath( outputDirectory );
 
@@ -198,11 +220,11 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
                 var environment = DevEnvironment.Environment.Open( outputDirectory, _serviceProvider );
                 var rockInstallation = environment.GetRockInstallation();
 
-                environment.IsDryRun = ExecuteOptions.DryRun;
+                environment.IsDryRun = DryRun;
 
-                if ( !string.IsNullOrEmpty( ExecuteOptions.Source ) )
+                if ( !string.IsNullOrEmpty( Source ) )
                 {
-                    rockInstallation.RockEnvironmentSourceUrl = ExecuteOptions.Source;
+                    rockInstallation.RockEnvironmentSourceUrl = Source;
                 }
 
                 await rockInstallation.InstallRockVersionAsync( rockVersion );
@@ -289,7 +311,7 @@ class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             return false;
         }
 
-        if ( ExecuteOptions.Force )
+        if ( Force )
         {
             return true;
         }

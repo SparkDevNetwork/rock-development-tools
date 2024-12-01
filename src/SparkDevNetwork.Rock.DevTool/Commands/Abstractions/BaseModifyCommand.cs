@@ -12,10 +12,14 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.Abstractions;
 /// <summary>
 /// Base implementation for commands that create or modify content and files.
 /// </summary>
-/// <typeparam name="TOptions">The type of options used by the command.</typeparam>
-abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
-    where TOptions : BaseModifyCommandOptions, new()
+abstract class BaseModifyCommand : BaseActionCommand
 {
+    #region Fields
+
+    /// <summary>
+    /// The file system object that will handle accessing the file system. This
+    /// is used so we can have a fake file system available during testing.
+    /// </summary>
     private readonly IFileSystem _fs;
 
     /// <summary>
@@ -30,6 +34,22 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
     /// </summary>
     private readonly Option<bool> _forceOption;
 
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// Will be <c>true</c> if the command should not actually make any
+    /// modifications but instead just report what would have been done.
+    /// </summary>
+    public bool DryRun { get; set; }
+
+    /// <summary>
+    /// Will be <c>true</c> if the command should overwrite anything that
+    /// would otherwise cause the command to abort without making changes.
+    /// </summary>
+    public bool Force { get; set; }
+
     /// <summary>
     /// The default serializer options that outputs with indentation.
     /// </summary>
@@ -37,6 +57,8 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
     {
         WriteIndented = true
     };
+
+    #endregion
 
     /// <summary>
     /// Creates a command that will perform some action to create or modify data.
@@ -56,14 +78,12 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
     }
 
     /// <inheritdoc/>
-    protected override TOptions GetOptions( InvocationContext context )
+    protected override void GetOptions( InvocationContext context )
     {
-        var options = base.GetOptions( context );
+        base.GetOptions( context );
 
-        options.DryRun = context.ParseResult.GetValueForOption( _dryRunOption );
-        options.Force = context.ParseResult.GetValueForOption( _forceOption );
-
-        return options;
+        DryRun = context.ParseResult.GetValueForOption( _dryRunOption );
+        Force = context.ParseResult.GetValueForOption( _forceOption );
     }
 
     /// <summary>
@@ -75,7 +95,7 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
     /// <param name="content">The new content for the file.</param>
     protected void WriteFile( string path, string content )
     {
-        if ( ExecuteOptions.DryRun )
+        if ( DryRun )
         {
             var relativePath = _fs.Path.GetFriendlyPath( path );
 
@@ -112,7 +132,7 @@ abstract class BaseModifyCommand<TOptions> : BaseActionCommand<TOptions>
             return;
         }
 
-        if ( !ExecuteOptions.DryRun )
+        if ( !DryRun )
         {
             _fs.Directory.CreateDirectory( path );
         }

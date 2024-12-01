@@ -21,10 +21,18 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.PluginCommands;
 /// <summary>
 /// Container for sub-commands related to working with plugins.
 /// </summary>
-partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
+partial class NewCommand : Abstractions.BaseModifyCommand
 {
+    #region Fields
+
+    /// <summary>
+    /// The object that will be used to access the filesystem.
+    /// </summary>
     private readonly IFileSystem _fs;
 
+    /// <summary>
+    /// The provider of services for this instance.
+    /// </summary>
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
@@ -37,7 +45,83 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// </summary>
     private readonly Option<string?> _outputOption;
 
+    /// <summary>
+    /// The environment for this command. This will be valid once execution
+    /// of the command has started.
+    /// </summary>
     private DevEnvironment.Environment _environment = null!;
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// The path to create the new environment in.
+    /// </summary>
+    public string? Output { get; set; }
+
+    /// <summary>
+    /// The directory that contains the environment.
+    /// </summary>
+    public string? EnvironmentPath { get; set; }
+
+    /// <summary>
+    /// The name of the organization such as <c>Rock Solid Church</c>.
+    /// </summary>
+    public string? Organization { get; set; }
+
+    /// <summary>
+    /// The namespace code of the organization such as <c>com.rocksolidchurch</c>.
+    /// </summary>
+    public string? OrganizationCode { get; set; }
+
+    /// <summary>
+    /// The name of the plugin such as <c>Sample Data</c>.
+    /// </summary>
+    public string? PluginName { get; set; }
+
+    /// <summary>
+    /// The namespace code to use for the plugin name such as <c>SampleData</c>.
+    /// </summary>
+    public string? PluginCode => PluginName?.Replace( " ", "" );
+
+    /// <summary>
+    /// The version number of Rock the plugin will target such as <c>1.16.0</c>.
+    /// </summary>
+    public SemVersion? RockVersion { get; set; }
+
+    /// <summary>
+    /// The relative path to the RockWeb folder such as <c>../RockWeb</c>.
+    /// </summary>
+    public string? RockWebPath { get; set; }
+
+    /// <summary>
+    /// Determines if the C# project will be created.
+    /// </summary>
+    public bool? DllProject { get; set; }
+
+    /// <summary>
+    /// Determines if support for creating REST APIs will be included in the
+    /// DLL project.
+    /// </summary>
+    public bool? RestApiSupport { get; set; }
+
+    /// <summary>
+    /// Determines if the Obsidian project will be created.
+    /// </summary>
+    public bool? ObsidianProject { get; set; }
+
+    /// <summary>
+    /// Determines if the legacy WebForms folder will be created.
+    /// </summary>
+    public bool? LegacyWebForms { get; set; }
+
+    /// <summary>
+    /// Determines if the build artifacts will be copied to <see cref="RockWebPath" />.
+    /// </summary>
+    public bool? Copy { get; set; }
+
+    #endregion
 
     /// <summary>
     /// Creates a command that will handle creating a new Rock plugin.
@@ -59,20 +143,18 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     }
 
     /// <inheritdoc/>
-    protected override NewCommandOptions GetOptions( InvocationContext context )
+    protected override void GetOptions( InvocationContext context )
     {
-        var options = base.GetOptions( context );
+        base.GetOptions( context );
 
-        options.EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
-        options.Output = context.ParseResult.GetValueForOption( _outputOption );
-
-        return options;
+        EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
+        Output = context.ParseResult.GetValueForOption( _outputOption );
     }
 
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync()
     {
-        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         var env = OpenEnvironment();
 
         if ( env == null )
@@ -86,11 +168,11 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         PromptForMissingOptions();
 
-        var outputDirectory = ExecuteOptions.Output ?? _fs.Path.Combine( environmentDirectory, ExecuteOptions.PluginCode! );
+        var outputDirectory = Output ?? _fs.Path.Combine( environmentDirectory, PluginCode! );
 
-        if ( !ExecuteOptions.Force )
+        if ( !Force )
         {
-            if ( env.GetPlugins().Any( p => p.Path == ExecuteOptions.PluginCode ) )
+            if ( env.GetPlugins().Any( p => p.Path == PluginCode ) )
             {
                 Console.MarkupLine( "[red]Plugin already exists in the environment.[/]" );
                 Console.WriteLine();
@@ -126,7 +208,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         if ( !Repository.IsValid( outputDirectory ) )
         {
-            if ( ExecuteOptions.DryRun )
+            if ( DryRun )
             {
                 var friendlyPath = _fs.Path.GetFriendlyPath( outputDirectory );
 
@@ -168,8 +250,8 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <returns>The validation error or <c>null</c>.</returns>
     private async Task<ValidationResult> GeneratePluginAsync( string outputDirectory )
     {
-        var sdkProjectDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
-        var obsidianProjectDirectory = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
+        var sdkProjectDirectory = $"{OrganizationCode}.{PluginCode}";
+        var obsidianProjectDirectory = $"{OrganizationCode}.{PluginCode}.Obsidian";
         var webFormsDirectory = "WebForms";
 
         await CopyTemplateAsync( "plugin.plugin.json.template", [outputDirectory, "plugin.json"] );
@@ -178,7 +260,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         obsidianProjectDirectory = _fs.Path.Combine( outputDirectory, obsidianProjectDirectory );
         webFormsDirectory = _fs.Path.Combine( outputDirectory, webFormsDirectory );
 
-        if ( ExecuteOptions.DllProject == true )
+        if ( DllProject == true )
         {
             var result = await CreateSdkProject( sdkProjectDirectory );
 
@@ -188,7 +270,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             }
         }
 
-        if ( ExecuteOptions.ObsidianProject == true )
+        if ( ObsidianProject == true )
         {
             var result = await CreateObsidianProject( obsidianProjectDirectory );
 
@@ -198,7 +280,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             }
         }
 
-        if ( ExecuteOptions.LegacyWebForms == true )
+        if ( LegacyWebForms == true )
         {
             var webFormsIgnore = $"*.*{System.Environment.NewLine}!*.ascx{System.Environment.NewLine}!*.ascx.cs{System.Environment.NewLine}!.gitignore{System.Environment.NewLine}";
 
@@ -215,7 +297,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <returns>The validation error or <c>null</c>.</returns>
     private async Task<ValidationResult> CreateSdkProject( string directory )
     {
-        var projectFilename = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.csproj";
+        var projectFilename = $"{OrganizationCode}.{PluginCode}.csproj";
 
         CreateDirectory( directory );
 
@@ -232,7 +314,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <returns>The validation error or <c>null</c>.</returns>
     private async Task<ValidationResult> CreateObsidianProject( string directory )
     {
-        var projectFilename = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian.esproj";
+        var projectFilename = $"{OrganizationCode}.{PluginCode}.Obsidian.esproj";
 
         CreateDirectory( directory );
 
@@ -271,7 +353,17 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
             throw new Exception( error );
         }
 
-        var options = new NewCommandOptions( ExecuteOptions );
+        var options = new TemplateMergeFields
+        {
+            Organization = Organization,
+            OrganizationCode = OrganizationCode,
+            PluginName = PluginName,
+            PluginCode = PluginCode,
+            RockVersion = RockVersion,
+            RockWebPath = RockWebPath,
+            Copy = Copy ?? false,
+            RestApiSupport = RestApiSupport ?? false
+        };
 
         if ( options.RockWebPath is not null )
         {
@@ -312,7 +404,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// <returns>An instance of <see cref="DevEnvironment.Environment"/> or <c>null</c>.</returns>
     private DevEnvironment.Environment? OpenEnvironment()
     {
-        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         DevEnvironment.Environment environment;
 
         environmentDirectory = _fs.Path.GetFullPath( environmentDirectory );
@@ -320,7 +412,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         try
         {
             environment = DevEnvironment.Environment.Open( environmentDirectory, _serviceProvider );
-            environment.IsDryRun = ExecuteOptions.DryRun;
+            environment.IsDryRun = DryRun;
 
             return environment;
         }
@@ -336,7 +428,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// </summary>
     private void AddPluginToGitIgnore()
     {
-        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         var path = _fs.Path.Combine( environmentDirectory, ".gitignore" );
 
         var content = _fs.File.ReadAllText( path );
@@ -344,18 +436,18 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
 
         // If the gitignore file already contains this item then skip it. This
         // most often happens when the force option is used.
-        if ( content.Split( ['\r', '\n'] ).Contains( $"/{ExecuteOptions.PluginCode}" ) )
+        if ( content.Split( ['\r', '\n'] ).Contains( $"/{PluginCode}" ) )
         {
             return;
         }
 
         if ( !content.EndsWith( lineEnding ) )
         {
-            content = $"{content}{lineEnding}/{ExecuteOptions.PluginCode}{lineEnding}";
+            content = $"{content}{lineEnding}/{PluginCode}{lineEnding}";
         }
         else
         {
-            content = $"{content}/{ExecuteOptions.PluginCode}{lineEnding}";
+            content = $"{content}/{PluginCode}{lineEnding}";
         }
 
         WriteFile( path, content );
@@ -366,7 +458,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// </summary>
     private void AddPluginToSolutionFile()
     {
-        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         var path = _fs.Path.Combine( environmentDirectory, $"{_environment.GetOrganizationName()?.Replace( " ", "" )}.sln" );
 
         if ( !_fs.File.Exists( path ) )
@@ -378,20 +470,20 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         var sln = new SlnReader().ParseString( content );
         var rockWebProject = sln.Projects.FirstOrDefault( p => p.Name == "RockWeb" );
 
-        if ( ExecuteOptions.DllProject == true )
+        if ( DllProject == true )
         {
-            var csprojName = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}";
-            var csprojPath = $"{ExecuteOptions.PluginCode}\\{csprojName}\\{csprojName}.csproj";
+            var csprojName = $"{OrganizationCode}.{PluginCode}";
+            var csprojPath = $"{PluginCode}\\{csprojName}\\{csprojName}.csproj";
 
             var project = sln.AddProject( csprojName, csprojPath, Project.ProjectTypeCSharp );
-            
+
             rockWebProject?.AddProjectDependency( project.ProjectGuid );
         }
 
-        if ( ExecuteOptions.ObsidianProject == true )
+        if ( ObsidianProject == true )
         {
-            var tsprojName = $"{ExecuteOptions.OrganizationCode}.{ExecuteOptions.PluginCode}.Obsidian";
-            var tsprojPath = $"{ExecuteOptions.PluginCode}\\{tsprojName}\\{tsprojName}.esproj";
+            var tsprojName = $"{OrganizationCode}.{PluginCode}.Obsidian";
+            var tsprojPath = $"{PluginCode}\\{tsprojName}\\{tsprojName}.esproj";
 
             var project = sln.AddProject( tsprojName, tsprojPath, Project.ProjectTypeJavaScript );
 
@@ -408,24 +500,24 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// </summary>
     private void PopulateOptionsFromEnvironment()
     {
-        if ( ExecuteOptions.RockVersion == null )
+        if ( RockVersion == null )
         {
-            ExecuteOptions.RockVersion = _environment.GetRockVersion();
+            RockVersion = _environment.GetRockVersion();
         }
 
-        if ( ExecuteOptions.Organization == null )
+        if ( Organization == null )
         {
-            ExecuteOptions.Organization = _environment.GetOrganizationName();
+            Organization = _environment.GetOrganizationName();
         }
 
-        if ( ExecuteOptions.OrganizationCode == null )
+        if ( OrganizationCode == null )
         {
-            ExecuteOptions.OrganizationCode = _environment.GetOrganizationCode();
+            OrganizationCode = _environment.GetOrganizationCode();
         }
 
-        if ( ExecuteOptions.RockWebPath == null && _environment.GetRockVersion() != null )
+        if ( RockWebPath == null && _environment.GetRockVersion() != null )
         {
-            ExecuteOptions.RockWebPath = "Rock/RockWeb";
+            RockWebPath = "Rock/RockWeb";
         }
     }
 
@@ -434,39 +526,39 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
     /// </summary>
     private void PromptForMissingOptions()
     {
-        ExecuteOptions.Organization = new TextPrompt<string?>( "Organization?" )
-            .DefaultValue( ExecuteOptions.Organization )
+        Organization = new TextPrompt<string?>( "Organization?" )
+            .DefaultValue( Organization )
             .DefaultValueStyle( "blue" )
             .Show( Console );
 
-        ExecuteOptions.OrganizationCode = new TextPrompt<string?>( "Organization Code?" )
-            .DefaultValue( ExecuteOptions.OrganizationCode )
+        OrganizationCode = new TextPrompt<string?>( "Organization Code?" )
+            .DefaultValue( OrganizationCode )
             .DefaultValueStyle( "blue" )
             .Show( Console );
 
-        ExecuteOptions.PluginName = new TextPrompt<string?>( "Plugin Name?" )
+        PluginName = new TextPrompt<string?>( "Plugin Name?" )
             .Show( Console );
 
         var rockVersionString = new TextPrompt<string?>( "Rock Version?" )
-            .DefaultValue( ExecuteOptions.RockVersion?.ToString() )
+            .DefaultValue( RockVersion?.ToString() )
             .DefaultValueStyle( "blue" )
             .Validate( VersionStringValidator )
             .Show( Console );
 
-        ExecuteOptions.RockVersion = SemVersion.Parse( rockVersionString, SemVersionStyles.Strict );
+        RockVersion = SemVersion.Parse( rockVersionString, SemVersionStyles.Strict );
 
-        ExecuteOptions.RockWebPath = new TextPrompt<string?>( "Path to RockWeb?" )
-            .DefaultValue( ExecuteOptions.RockWebPath )
+        RockWebPath = new TextPrompt<string?>( "Path to RockWeb?" )
+            .DefaultValue( RockWebPath )
             .DefaultValueStyle( "blue" )
             .Show( Console );
 
-        ExecuteOptions.DllProject = new ConfirmationPrompt( "Create DLL Project?" )
+        DllProject = new ConfirmationPrompt( "Create DLL Project?" )
             .DefaultValueStyle( "blue" )
             .Show( Console );
-        
-        if ( ExecuteOptions.DllProject == true )
+
+        if ( DllProject == true )
         {
-            ExecuteOptions.RestApiSupport = new ConfirmationPrompt( "- Add support for REST endpoints?" )
+            RestApiSupport = new ConfirmationPrompt( "- Add support for REST endpoints?" )
             {
                 DefaultValue = false
             }
@@ -474,18 +566,18 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
                 .Show( Console );
         }
 
-        ExecuteOptions.ObsidianProject = new ConfirmationPrompt( "Create Obsidian Project?" )
+        ObsidianProject = new ConfirmationPrompt( "Create Obsidian Project?" )
             .DefaultValueStyle( "blue" )
             .Show( Console );
 
-        ExecuteOptions.LegacyWebForms = new ConfirmationPrompt( "Create Legacy WebForms Directory?" )
+        LegacyWebForms = new ConfirmationPrompt( "Create Legacy WebForms Directory?" )
         {
             DefaultValue = false
         }
             .DefaultValueStyle( "blue" )
             .Show( Console );
 
-        ExecuteOptions.Copy = new ConfirmationPrompt( "Copy artifacts to RockWeb?" )
+        Copy = new ConfirmationPrompt( "Copy artifacts to RockWeb?" )
             .DefaultValueStyle( "blue" )
             .Show( Console );
 
@@ -513,9 +605,51 @@ partial class NewCommand : Abstractions.BaseModifyCommand<NewCommandOptions>
         }
     }
 
-    [GeneratedRegex( "^Global", RegexOptions.Multiline )]
-    private static partial Regex GlobalSectionRegex();
+    /// <summary>
+    /// The merge fields that will be available when merging template source
+    /// files.
+    /// </summary>
+    private class TemplateMergeFields
+    {
+        /// <summary>
+        /// The name of the organization such as <c>Rock Solid Church</c>.
+        /// </summary>
+        public string? Organization { get; set; }
 
-    [GeneratedRegex( "(GlobalSection\\(ProjectConfigurationPlatforms\\).*?)([\\t ]+EndGlobalSection)", RegexOptions.Singleline )]
-    private static partial Regex ProjectConfigurationRegex();
+        /// <summary>
+        /// The namespace code of the organization such as <c>com.rocksolidchurch</c>.
+        /// </summary>
+        public string? OrganizationCode { get; set; }
+
+        /// <summary>
+        /// The name of the plugin such as <c>Sample Data</c>.
+        /// </summary>
+        public string? PluginName { get; set; }
+
+        /// <summary>
+        /// The namespace code to use for the plugin name such as <c>SampleData</c>.
+        /// </summary>
+        public string? PluginCode { get; set; }
+
+        /// <summary>
+        /// The version number of Rock the plugin will target such as <c>1.16.0</c>.
+        /// </summary>
+        public Semver.SemVersion? RockVersion { get; set; }
+
+        /// <summary>
+        /// The relative path to the RockWeb folder such as <c>../RockWeb</c>.
+        /// </summary>
+        public string? RockWebPath { get; set; }
+
+        /// <summary>
+        /// Determines if the build artifacts will be copied to <see cref="RockWebPath" />.
+        /// </summary>
+        public bool? Copy { get; set; }
+
+        /// <summary>
+        /// Determines if support for creating REST APIs will be included in the
+        /// DLL project.
+        /// </summary>
+        public bool? RestApiSupport { get; set; }
+    }
 }

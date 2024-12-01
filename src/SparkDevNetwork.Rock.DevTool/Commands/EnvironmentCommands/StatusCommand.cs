@@ -13,16 +13,35 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.EnvironmentCommands;
 /// <summary>
 /// Container for sub-commands related to working with development environments.
 /// </summary>
-class StatusCommand : Abstractions.BaseActionCommand<StatusCommandOptions>
+class StatusCommand : Abstractions.BaseActionCommand
 {
+    #region Fields
+
     /// <summary>
     /// The option that defines the directory of the environment.
     /// </summary>
     private readonly Option<string?> _environmentOption;
 
+    /// <summary>
+    /// The provider of services for this instance.
+    /// </summary>
     private readonly IServiceProvider _serviceProvider;
 
+    /// <summary>
+    /// The object that will be used to access the filesystem.
+    /// </summary>
     private readonly IFileSystem _fs;
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// The directory that contains the environment.
+    /// </summary>
+    public string? EnvironmentPath { get; set; }
+
+    #endregion
 
     /// <summary>
     /// Creates a command that will handle checking on the status of an
@@ -41,19 +60,17 @@ class StatusCommand : Abstractions.BaseActionCommand<StatusCommandOptions>
     }
 
     /// <inheritdoc/>
-    protected override StatusCommandOptions GetOptions( InvocationContext context )
+    protected override void GetOptions( InvocationContext context )
     {
-        var options = base.GetOptions( context );
+        base.GetOptions( context );
 
-        options.EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
-
-        return options;
+        EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
     }
 
     /// <inheritdoc/>
     protected override Task<int> ExecuteAsync()
     {
-        var targetDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var targetDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         DevEnvironment.Environment environment;
 
         targetDirectory = _fs.Path.GetFullPath( targetDirectory );

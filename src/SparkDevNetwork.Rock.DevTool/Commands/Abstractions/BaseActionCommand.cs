@@ -1,8 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 
-using Fluid.Values;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -14,26 +12,36 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.Abstractions;
 /// <summary>
 /// The base implementation for all commands that perform some action.
 /// </summary>
-/// <typeparam name="TOptions">The type of options used by the command.</typeparam>
-abstract class BaseActionCommand<TOptions> : Command
-    where TOptions : BaseActionCommandOptions, new()
+abstract class BaseActionCommand : Command
 {
+    #region Fields
+
     /// <summary>
     /// The option that describes if diagnostic details are logged.
     /// </summary>
     private readonly Option<bool> _diagOption;
 
-    /// <summary>
-    /// The options for the execution of the command.
-    /// </summary>
-    protected TOptions ExecuteOptions { get; private set; } = new();
+    #endregion
+
+    #region Properties
 
     /// <summary>
     /// The logger for this command instance.
     /// </summary>
     protected ILogger Logger { get; private set; } = NullLogger.Instance;
 
+    /// <summary>
+    /// The console object that should be used when reading or writing to
+    /// the console.
+    /// </summary>
     protected IAnsiConsole Console { get; }
+
+    /// <summary>
+    /// <c>true</c> if diagnostic output is enabled for this command.
+    /// </summary>
+    public bool Diagnostics { get; set; }
+
+    #endregion
 
     /// <summary>
     /// Creates a command that will perform some action.
@@ -51,11 +59,11 @@ abstract class BaseActionCommand<TOptions> : Command
 
         this.SetHandler( async ctx =>
         {
-            ExecuteOptions = GetOptions( ctx );
+            GetOptions( ctx );
 
             var factory = serviceProvider.GetRequiredService<ILoggerFactory>();
 
-            if ( ExecuteOptions.Diagnostics && factory is DynamicLoggerFactory dynamicFactory )
+            if ( Diagnostics && factory is DynamicLoggerFactory dynamicFactory )
             {
                 dynamicFactory.IsEnabled = true;
             }
@@ -69,7 +77,7 @@ abstract class BaseActionCommand<TOptions> : Command
     /// <summary>
     /// <para>
     /// Gets the options from the command line invocation that will be passed
-    /// to the <see cref="ExecuteAsync(TOptions)"/> method.
+    /// to the <see cref="ExecuteAsync()"/> method.
     /// </para>
     /// <para>
     /// Subclasses should call the base method and then set additional values
@@ -77,15 +85,9 @@ abstract class BaseActionCommand<TOptions> : Command
     /// </para>
     /// </summary>
     /// <param name="context">The context that describes the command line invocation.</param>
-    /// <returns>The options object.</returns>
-    protected virtual TOptions GetOptions( InvocationContext context )
+    protected virtual void GetOptions( InvocationContext context )
     {
-        var options = new TOptions
-        {
-            Diagnostics = context.ParseResult.GetValueForOption( _diagOption )
-        };
-
-        return options;
+        Diagnostics = context.ParseResult.GetValueForOption( _diagOption );
     }
 
     /// <summary>

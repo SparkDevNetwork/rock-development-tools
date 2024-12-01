@@ -17,11 +17,22 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.GenerateCommands;
 /// <summary>
 /// Command to generate enum TypeScript files from one or more C# assemblies.
 /// </summary>
-partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsCommandOptions>
+partial class ViewModelsCommand : Abstractions.BaseModifyCommand
 {
+    #region Fields
+
+    /// <summary>
+    /// The object that will be used to access the filesystem.
+    /// </summary>
     private readonly IFileSystem _fs;
 
-    private readonly IGeneratorStringsProvider _stringsProvider = new GeneratorStrings();
+    /// <summary>
+    /// The object that will handle special string generation for the
+    /// code generator.
+    /// </summary>
+    private readonly GeneratorStrings _stringsProvider = new();
+
+    #endregion
 
     #region Command Options
 
@@ -47,6 +58,30 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
 
     #endregion
 
+    #region Properties
+
+    /// <summary>
+    /// The path to create the TypeScript files in.
+    /// </summary>
+    public string Output { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The assemblies that will be scanned for enums.
+    /// </summary>
+    public string Assembly { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Determines if bags and boxes should be skipped when generating.
+    /// </summary>
+    public bool NoBags { get; set; }
+
+    /// <summary>
+    /// Determines if enums should be skipped when generating.
+    /// </summary>
+    public bool NoEnums { get; set; }
+
+    #endregion
+
     /// <summary>
     /// Creates a command that will handle creating a new Rock plugin.
     /// </summary>
@@ -69,24 +104,22 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
     }
 
     /// <inheritdoc/>
-    protected override ViewModelsCommandOptions GetOptions( InvocationContext context )
+    protected override void GetOptions( InvocationContext context )
     {
-        var options = base.GetOptions( context );
+        base.GetOptions( context );
 
-        options.Assembly = context.ParseResult.GetValueForArgument( _assemblyArgument ) ?? throw new Exception( "Assembly is required" );
-        options.Output = context.ParseResult.GetValueForOption( _outputOption ) ?? throw new Exception( "Output is required." );
-        options.NoBags = context.ParseResult.GetValueForOption( _noBagsOption );
-        options.NoEnums = context.ParseResult.GetValueForOption( _noEnumsOption );
-
-        return options;
+        Assembly = context.ParseResult.GetValueForArgument( _assemblyArgument ) ?? throw new Exception( "Assembly is required" );
+        Output = context.ParseResult.GetValueForOption( _outputOption ) ?? throw new Exception( "Output is required." );
+        NoBags = context.ParseResult.GetValueForOption( _noBagsOption );
+        NoEnums = context.ParseResult.GetValueForOption( _noEnumsOption );
     }
 
     /// <inheritdoc/>
     protected override Task<int> ExecuteAsync()
     {
         var documentationProvider = new XmlDocReader();
-        var outputComponents = ExecuteOptions.Output.Split( [_fs.Path.DirectorySeparatorChar, _fs.Path.AltDirectorySeparatorChar] );
-        var xmlPath = ExecuteOptions.Assembly[..^4] + ".xml";
+        var outputComponents = Output.Split( [_fs.Path.DirectorySeparatorChar, _fs.Path.AltDirectorySeparatorChar] );
+        var xmlPath = Assembly[..^4] + ".xml";
 
         if ( _fs.File.Exists( xmlPath ) )
         {
@@ -94,14 +127,14 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
         }
 
         using var mlc = GetLoadContext();
-        var assembly = mlc.LoadFromAssemblyPath( ExecuteOptions.Assembly );
+        var assembly = mlc.LoadFromAssemblyPath( Assembly );
         var possibleTypes = GetPossibleTypes( assembly );
         var classTypeGroups = GetClassTypes( possibleTypes );
         var enumTypeGroups = GetEnumTypes( possibleTypes );
 
         var anyFileFailed = false;
 
-        if ( !ExecuteOptions.NoBags )
+        if ( !NoBags )
         {
             foreach ( var classGroup in classTypeGroups )
             {
@@ -127,7 +160,7 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
             }
         }
 
-        if ( !ExecuteOptions.NoEnums )
+        if ( !NoEnums )
         {
             foreach ( var enumGroup in enumTypeGroups )
             {
@@ -166,9 +199,9 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
     {
         var runtimeAssemblies = _fs.Directory.GetFiles( RuntimeEnvironment.GetRuntimeDirectory(), "*.dll" );
         var paths = new List<string>( runtimeAssemblies );
-        var assemblyDirectory = _fs.Path.GetDirectoryName( ExecuteOptions.Assembly );
+        var assemblyDirectory = _fs.Path.GetDirectoryName( Assembly );
 
-        paths.Add( ExecuteOptions.Assembly );
+        paths.Add( Assembly );
 
         if ( assemblyDirectory != null )
         {
@@ -256,7 +289,7 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand<ViewModelsComma
     {
         if ( _fs.File.Exists( path ) )
         {
-            if ( !ExecuteOptions.Force )
+            if ( !Force )
             {
                 // Strip \r characters to account for EOL differences.
                 var oldContent = _fs.File.ReadAllText( path ).Replace( "\r", string.Empty );

@@ -14,16 +14,35 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.EnvironmentCommands.UpdateComman
 /// The command to update the plugins to match what is configured in the
 /// environment.
 /// </summary>
-class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
+class PluginCommand : Abstractions.BaseModifyCommand
 {
+    #region Fields
+
     /// <summary>
     /// The option that defines the directory of the environment.
     /// </summary>
     private readonly Option<string?> _environmentOption;
 
+    /// <summary>
+    /// The provider of services for this instance.
+    /// </summary>
     private readonly IServiceProvider _serviceProvider;
 
+    /// <summary>
+    /// The object that will be used to access the file system.
+    /// </summary>
     private readonly IFileSystem _fs;
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// The directory that contains the environment.
+    /// </summary>
+    public string? EnvironmentPath { get; set; }
+
+    #endregion
 
     /// <summary>
     /// Creates a command that will handle updating the Rock installation.
@@ -41,19 +60,17 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
     }
 
     /// <inheritdoc/>
-    protected override PluginCommandOptions GetOptions( InvocationContext context )
+    protected override void GetOptions( InvocationContext context )
     {
-        var options = base.GetOptions( context );
+        base.GetOptions( context );
 
-        options.EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
-
-        return options;
+        EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
     }
 
     /// <inheritdoc/>
     protected override Task<int> ExecuteAsync()
     {
-        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         DevEnvironment.Environment environment;
 
         try
@@ -66,8 +83,8 @@ class PluginCommand : Abstractions.BaseModifyCommand<PluginCommandOptions>
             return Task.FromResult( 1 );
         }
 
-        environment.IsDryRun = ExecuteOptions.DryRun;
-        environment.IsForce = ExecuteOptions.Force;
+        environment.IsDryRun = DryRun;
+        environment.IsForce = Force;
 
         var success = environment.UpdatePlugins();
 

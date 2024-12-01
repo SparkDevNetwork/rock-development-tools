@@ -14,10 +14,18 @@ namespace SparkDevNetwork.Rock.DevTool.Commands.EnvironmentCommands;
 /// The command to update the plugins and the Rock binary distribution to match
 /// what is configured in the environment.
 /// </summary>
-class UpdateCommand : Abstractions.BaseModifyCommand<UpdateCommandOptions>
+class UpdateCommand : Abstractions.BaseModifyCommand
 {
+    #region Fields
+
+    /// <summary>
+    /// The provider of services for this instance.
+    /// </summary>
     private readonly IServiceProvider _serviceProvider;
 
+    /// <summary>
+    /// The object that will be used to access the filesystem.
+    /// </summary>
     private readonly IFileSystem _fs;
 
     /// <summary>
@@ -29,6 +37,22 @@ class UpdateCommand : Abstractions.BaseModifyCommand<UpdateCommandOptions>
     /// The option that defines the directory of the environment.
     /// </summary>
     private readonly Option<string?> _environmentOption;
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// The base URL to use when downloading environment files.
+    /// </summary>
+    public string? Source { get; set; }
+
+    /// <summary>
+    /// The directory that contains the environment.
+    /// </summary>
+    public string? EnvironmentPath { get; set; }
+
+    #endregion
 
     /// <summary>
     /// Creates a command that will handle updating the environment.
@@ -52,20 +76,18 @@ class UpdateCommand : Abstractions.BaseModifyCommand<UpdateCommandOptions>
     }
 
     /// <inheritdoc/>
-    protected override UpdateCommandOptions GetOptions( InvocationContext context )
+    protected override void GetOptions( InvocationContext context )
     {
-        var options = base.GetOptions( context );
+        base.GetOptions( context );
 
-        options.Source = context.ParseResult.GetValueForOption( _sourceOption );
-        options.EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
-
-        return options;
+        Source = context.ParseResult.GetValueForOption( _sourceOption );
+        EnvironmentPath = context.ParseResult.GetValueForOption( _environmentOption );
     }
 
     /// <inheritdoc/>
     protected override async Task<int> ExecuteAsync()
     {
-        var environmentDirectory = ExecuteOptions.EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var environmentDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
         DevEnvironment.Environment environment;
 
         try
@@ -78,10 +100,10 @@ class UpdateCommand : Abstractions.BaseModifyCommand<UpdateCommandOptions>
             return 1;
         }
 
-        environment.IsDryRun = ExecuteOptions.DryRun;
-        environment.IsForce = ExecuteOptions.Force;
+        environment.IsDryRun = DryRun;
+        environment.IsForce = Force;
 
-        var success = await environment.UpdateRockAsync( ExecuteOptions.Source );
+        var success = await environment.UpdateRockAsync( Source );
 
         if ( !success )
         {
