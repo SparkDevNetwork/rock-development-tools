@@ -3,5 +3,11 @@
         "name": "{{ Organization }}",
         "code": "{{ OrganizationCode }}"
     },
-    "name": "{{ PluginName }}"
+    "name": "{{ PluginName }}",
+    "version": "1.0.0",
+    "include": {
+        "{{ OrganizationCode }}.{{ PluginCode }}/bin/Release/net472/{{ OrganizationCode }}.{{ PluginCode }}.dll": "Bin/",
+        "{{ OrganizationCode }}.{{ PluginCode }}.Obsidian/dist/**": "Plugins/{{ OrganizationCode | replace:'.','_' }}/{{ PluginCode }}"
+    },
+    "exclude": []
 }
