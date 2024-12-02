@@ -19,5 +19,7 @@ class PluginCommand : Command
     {
         AddCommand( ActivatorUtilities.CreateInstance<NewCommand>( serviceProvider ) );
         AddCommand( ActivatorUtilities.CreateInstance<ConfigureCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<PackCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<ImportCommand>( serviceProvider ) );
     }
 }

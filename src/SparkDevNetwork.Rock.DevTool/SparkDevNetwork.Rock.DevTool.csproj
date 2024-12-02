@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="Fluid.Core" Version="2.9.0" />
+    <PackageReference Include="Glob" Version="1.1.9" />
     <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
