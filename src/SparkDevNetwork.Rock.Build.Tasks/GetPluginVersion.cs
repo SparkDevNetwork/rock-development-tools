@@ -49,9 +49,15 @@ namespace SparkDevNetwork.Rock.Build.Tasks
                 var json = FileSystem.File.ReadAllText( Source );
                 var plugin = JsonSerializer.Deserialize<JsonObject>( json );
 
-                Version = plugin["version"] != null
-                    ? plugin["version"].ToString()
-                    : string.Empty;
+                if ( plugin["version"] != null )
+                {
+                    Log.LogMessage( MessageImportance.High, $"Setting version to '{plugin["version"]}'." );
+                    Version = plugin["version"].ToString();
+                }
+                else
+                {
+                    Version = string.Empty;
+                }
 
                 return true;
             }

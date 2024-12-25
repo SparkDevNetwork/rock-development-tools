@@ -4,7 +4,7 @@
     <GenerateDependencyFile>True</GenerateDependencyFile>
 
     <IsPackable>true</IsPackable>
-    <Version>1.0.0-rc.4</Version>
+    <Version>1.0.0-rc.5</Version>
     <Title>SparkDevNetwork.Rock.Build.Tasks</Title>
     <Authors>Spark Development Network</Authors>
     <Description>MSBuild tasks for Rock RMS projects.</Description>
@@ -36,6 +36,8 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="21.0.2" />
+    <!-- Marks all packages as 'local only' so they don't end up in the nuspec. -->
+    <PackageReference Update="@(PackageReference)" PrivateAssets="All"/>
   </ItemGroup>
 
   <!-- Update the paths that project references get copied to. -->
