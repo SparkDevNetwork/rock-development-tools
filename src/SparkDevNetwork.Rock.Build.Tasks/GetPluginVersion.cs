@@ -21,7 +21,7 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         /// The file path to use when loading the plugin configuration file.
         /// </summary>
         [Required]
-        public string Source { get; set; }
+        public string PluginConfigurationFile { get; set; }
 
         /// <summary>
         /// The detected version number from the plugin configuration file.
@@ -34,9 +34,9 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         {
             // Check if the plugin file exists, it's fine if it doesn't as
             // we will just skip processing.
-            if ( string.IsNullOrWhiteSpace( Source ) || !FileSystem.FileExists( Source ) )
+            if ( string.IsNullOrWhiteSpace( PluginConfigurationFile ) || !FileSystem.FileExists( PluginConfigurationFile ) )
             {
-                Log.LogMessage( MessageImportance.Normal, $"The file '{Source}' does not exist." );
+                Log.LogMessage( MessageImportance.Normal, $"The file '{PluginConfigurationFile}' does not exist." );
                 Version = string.Empty;
 
                 return true;
@@ -44,7 +44,7 @@ namespace SparkDevNetwork.Rock.Build.Tasks
 
             try
             {
-                var json = FileSystem.ReadAllText( Source );
+                var json = FileSystem.ReadAllText( PluginConfigurationFile );
                 var plugin = ( Dictionary<string, object> ) SimpleJson.DeserializeObject( json );
 
                 if ( plugin.TryGetValue( "version", out var version ) )

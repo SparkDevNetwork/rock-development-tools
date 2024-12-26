@@ -14,9 +14,7 @@
         BeforeTargets="BeforeCompile;CoreCompile;GetAssemblyVersion;GenerateNuspec;_GenerateRestoreProjectSpec;_GetOutputItemsFromPack;EnsureWixToolsetInstalled"
         Condition=" '$(PluginConfigurationFile)' != '' ">
         <SparkDevNetwork.Rock.Build.Tasks.GetPluginVersion
-            PluginConfigurationFile="$(PluginConfigurationFile)"
-            ProjectFile="$(MSBuildProjectFile)"
-            Version="$(AssemblyVersion)">
+            PluginConfigurationFile="$(PluginConfigurationFile)">
             <Output TaskParameter="Version" PropertyName="Plugin_Version" />
         </SparkDevNetwork.Rock.Build.Tasks.GetPluginVersion>
 

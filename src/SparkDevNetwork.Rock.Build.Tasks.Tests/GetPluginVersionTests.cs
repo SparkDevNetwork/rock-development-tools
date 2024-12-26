@@ -17,7 +17,7 @@ public sealed class GetPluginVersionTests
         {
             FileSystem = fileSystem.Object,
             BuildEngine = buildEngine.Object,
-            Source = ""
+            PluginConfigurationFile = ""
         };
 
         var success = buildTask.Execute();
@@ -38,7 +38,7 @@ public sealed class GetPluginVersionTests
         {
             FileSystem = fileSystem.Object,
             BuildEngine = buildEngine.Object,
-            Source = "/missing-plugin.json"
+            PluginConfigurationFile = "/missing-plugin.json"
         };
 
         var success = buildTask.Execute();
@@ -60,7 +60,7 @@ public sealed class GetPluginVersionTests
         {
             FileSystem = fileSystem.Object,
             BuildEngine = buildEngine.Object,
-            Source = "/plugin.json"
+            PluginConfigurationFile = "/plugin.json"
         };
 
         var success = buildTask.Execute();
@@ -84,7 +84,7 @@ public sealed class GetPluginVersionTests
         {
             FileSystem = fileSystem.Object,
             BuildEngine = buildEngine.Object,
-            Source = "/plugin.json"
+            PluginConfigurationFile = "/plugin.json"
         };
 
         var success = buildTask.Execute();
@@ -106,7 +106,7 @@ public sealed class GetPluginVersionTests
         {
             FileSystem = fileSystem.Object,
             BuildEngine = buildEngine.Object,
-            Source = "/plugin.json"
+            PluginConfigurationFile = "/plugin.json"
         };
 
         var success = buildTask.Execute();
