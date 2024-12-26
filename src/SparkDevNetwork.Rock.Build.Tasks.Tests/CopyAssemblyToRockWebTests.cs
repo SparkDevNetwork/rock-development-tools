@@ -4,10 +4,9 @@ using Moq;
 
 namespace SparkDevNetwork.Rock.Build.Tasks.Tests;
 
-[TestClass]
 public sealed class CopyAssemblyToRockWebTests
 {
-    [TestMethod]
+    [Fact]
     public void EmptySourceFails()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -26,12 +25,12 @@ public sealed class CopyAssemblyToRockWebTests
 
         var success = buildTask.Execute();
 
-        Assert.IsFalse( success );
-        Assert.AreEqual( 1, errors.Count );
-        Assert.AreEqual( "The Source property must be set.", errors[0] );
+        Assert.False( success );
+        Assert.Single( errors );
+        Assert.Equal( "The Source property must be set.", errors[0] );
     }
 
-    [TestMethod]
+    [Fact]
     public void EmptyDestinationFails()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -51,12 +50,12 @@ public sealed class CopyAssemblyToRockWebTests
 
         var success = buildTask.Execute();
 
-        Assert.IsFalse( success );
-        Assert.AreEqual( 1, errors.Count );
-        Assert.AreEqual( "The Destination property must be set.", errors[0] );
+        Assert.False( success );
+        Assert.Single( errors );
+        Assert.Equal( "The Destination property must be set.", errors[0] );
     }
 
-    [TestMethod]
+    [Fact]
     public void MissingAssemblyFileFails()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -81,12 +80,12 @@ public sealed class CopyAssemblyToRockWebTests
 
         var success = buildTask.Execute();
 
-        Assert.IsFalse( success );
-        Assert.AreEqual( 1, errors.Count );
-        Assert.AreEqual( "The file src/missing.dll does not exist.", errors[0] );
+        Assert.False( success );
+        Assert.Single( errors );
+        Assert.Equal( "The file src/missing.dll does not exist.", errors[0] );
     }
 
-    [TestMethod]
+    [Fact]
     public void CopiesAssemblyFile()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -112,11 +111,11 @@ public sealed class CopyAssemblyToRockWebTests
 
         var success = buildTask.Execute();
 
-        Assert.IsTrue( success );
+        Assert.True( success );
         fileSystem.VerifyAll();
     }
 
-    [TestMethod]
+    [Fact]
     public void CopiesPdbFile()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -144,11 +143,11 @@ public sealed class CopyAssemblyToRockWebTests
 
         var success = buildTask.Execute();
 
-        Assert.IsTrue( success );
+        Assert.True( success );
         fileSystem.VerifyAll();
     }
 
-    [TestMethod]
+    [Fact]
     public void CopiesAssemblyFileWithoutExtension()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -174,7 +173,7 @@ public sealed class CopyAssemblyToRockWebTests
 
         var success = buildTask.Execute();
 
-        Assert.IsTrue( success );
+        Assert.True( success );
         fileSystem.VerifyAll();
     }
 }

@@ -4,10 +4,9 @@ using Moq;
 
 namespace SparkDevNetwork.Rock.Build.Tasks.Tests;
 
-[TestClass]
 public sealed class GetPluginVersionTests
 {
-    [TestMethod]
+    [Fact]
     public void EmptySourceSucceeds()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -22,11 +21,11 @@ public sealed class GetPluginVersionTests
 
         var success = buildTask.Execute();
 
-        Assert.IsTrue( success );
-        Assert.AreEqual( string.Empty, buildTask.Version );
+        Assert.True( success );
+        Assert.Equal( string.Empty, buildTask.Version );
     }
 
-    [TestMethod]
+    [Fact]
     public void MissingSourceSucceeds()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -43,11 +42,11 @@ public sealed class GetPluginVersionTests
 
         var success = buildTask.Execute();
 
-        Assert.IsTrue( success );
-        Assert.AreEqual( string.Empty, buildTask.Version );
+        Assert.True( success );
+        Assert.Equal( string.Empty, buildTask.Version );
     }
 
-    [TestMethod]
+    [Fact]
     public void MissingVersionInSourceSucceeds()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -65,11 +64,11 @@ public sealed class GetPluginVersionTests
 
         var success = buildTask.Execute();
 
-        Assert.IsTrue( success );
-        Assert.AreEqual( string.Empty, buildTask.Version );
+        Assert.True( success );
+        Assert.Equal( string.Empty, buildTask.Version );
     }
 
-    [TestMethod]
+    [Fact]
     public void OutputVersionMatchesSource()
     {
         var expectedVersion = "1.2.3-alpha.4";
@@ -89,11 +88,11 @@ public sealed class GetPluginVersionTests
 
         var success = buildTask.Execute();
 
-        Assert.IsTrue( success );
-        Assert.AreEqual( expectedVersion, buildTask.Version );
+        Assert.True( success );
+        Assert.Equal( expectedVersion, buildTask.Version );
     }
 
-    [TestMethod]
+    [Fact]
     public void InvalidSourceFails()
     {
         var buildEngine = new Mock<IBuildEngine>();
@@ -111,7 +110,7 @@ public sealed class GetPluginVersionTests
 
         var success = buildTask.Execute();
 
-        Assert.IsFalse( success );
-        Assert.AreEqual( string.Empty, buildTask.Version );
+        Assert.False( success );
+        Assert.Equal( string.Empty, buildTask.Version );
     }
 }
