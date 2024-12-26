@@ -1,7 +1,5 @@
 using System;
-using System.IO.Abstractions;
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using System.Collections.Generic;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -17,8 +15,8 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         /// The object to use when interacting with the filesystem. Used to
         /// support unit testing.
         /// </summary>
-        internal IFileSystem FileSystem { get; set; } = new FileSystem();
-        
+        internal IFileSystem FileSystem { get; set; } = new DefaultFileSystem();
+
         /// <summary>
         /// The file path to use when loading the plugin configuration file.
         /// </summary>
@@ -36,7 +34,7 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         {
             // Check if the plugin file exists, it's fine if it doesn't as
             // we will just skip processing.
-            if ( string.IsNullOrWhiteSpace( Source ) || !FileSystem.File.Exists( Source ) )
+            if ( string.IsNullOrWhiteSpace( Source ) || !FileSystem.FileExists( Source ) )
             {
                 Log.LogMessage( MessageImportance.Normal, $"The file '{Source}' does not exist." );
                 Version = string.Empty;
@@ -46,13 +44,13 @@ namespace SparkDevNetwork.Rock.Build.Tasks
 
             try
             {
-                var json = FileSystem.File.ReadAllText( Source );
-                var plugin = JsonSerializer.Deserialize<JsonObject>( json );
+                var json = FileSystem.ReadAllText( Source );
+                var plugin = ( Dictionary<string, object> ) SimpleJson.DeserializeObject( json );
 
-                if ( plugin["version"] != null )
+                if ( plugin.TryGetValue( "version", out var version ) )
                 {
-                    Log.LogMessage( MessageImportance.High, $"Setting version to '{plugin["version"]}'." );
-                    Version = plugin["version"].ToString();
+                    Version = version.ToString();
+                    Log.LogMessage( MessageImportance.High, $"Setting version to '{Version}'." );
                 }
                 else
                 {

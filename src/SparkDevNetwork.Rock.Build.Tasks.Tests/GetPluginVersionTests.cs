@@ -1,6 +1,4 @@
-﻿using System.IO.Abstractions;
-
-using Microsoft.Build.Framework;
+﻿using Microsoft.Build.Framework;
 
 using Moq;
 
@@ -34,7 +32,7 @@ public sealed class GetPluginVersionTests
         var buildEngine = new Mock<IBuildEngine>();
         var fileSystem = new Mock<IFileSystem>( MockBehavior.Strict );
 
-        fileSystem.Setup( m => m.File.Exists( It.IsAny<string>() ) ).Returns( false );
+        fileSystem.Setup( m => m.FileExists( It.IsAny<string>() ) ).Returns( false );
 
         var buildTask = new GetPluginVersion
         {
@@ -55,8 +53,8 @@ public sealed class GetPluginVersionTests
         var buildEngine = new Mock<IBuildEngine>();
         var fileSystem = new Mock<IFileSystem>( MockBehavior.Strict );
 
-        fileSystem.Setup( m => m.File.Exists( It.IsAny<string>() ) ).Returns( true );
-        fileSystem.Setup( m => m.File.ReadAllText( "/plugin.json" ) ).Returns( "{}" );
+        fileSystem.Setup( m => m.FileExists( It.IsAny<string>() ) ).Returns( true );
+        fileSystem.Setup( m => m.ReadAllText( "/plugin.json" ) ).Returns( "{}" );
 
         var buildTask = new GetPluginVersion
         {
@@ -79,8 +77,8 @@ public sealed class GetPluginVersionTests
         var buildEngine = new Mock<IBuildEngine>();
         var fileSystem = new Mock<IFileSystem>( MockBehavior.Strict );
 
-        fileSystem.Setup( m => m.File.Exists( It.IsAny<string>() ) ).Returns( true );
-        fileSystem.Setup( m => m.File.ReadAllText( "/plugin.json" ) ).Returns( $"{{\"version\": \"{expectedVersion}\"}}" );
+        fileSystem.Setup( m => m.FileExists( It.IsAny<string>() ) ).Returns( true );
+        fileSystem.Setup( m => m.ReadAllText( "/plugin.json" ) ).Returns( $"{{\"version\": \"{expectedVersion}\"}}" );
 
         var buildTask = new GetPluginVersion
         {
@@ -101,8 +99,8 @@ public sealed class GetPluginVersionTests
         var buildEngine = new Mock<IBuildEngine>();
         var fileSystem = new Mock<IFileSystem>( MockBehavior.Strict );
 
-        fileSystem.Setup( m => m.File.Exists( It.IsAny<string>() ) ).Returns( true );
-        fileSystem.Setup( m => m.File.ReadAllText( "/plugin.json" ) ).Returns( "foobar" );
+        fileSystem.Setup( m => m.FileExists( It.IsAny<string>() ) ).Returns( true );
+        fileSystem.Setup( m => m.ReadAllText( "/plugin.json" ) ).Returns( "foobar" );
 
         var buildTask = new GetPluginVersion
         {

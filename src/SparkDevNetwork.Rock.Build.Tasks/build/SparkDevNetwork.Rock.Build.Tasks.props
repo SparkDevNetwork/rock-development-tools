@@ -25,6 +25,6 @@
 
     <PropertyGroup>
         <UpdateVersionFromPlugin>True</UpdateVersionFromPlugin>
-        <PluginConfigurationFile>$(MSBuildProjectDirectory)\plugin.json</PluginConfigurationFile>
+        <PluginConfigurationFile>$(MSBuildProjectDirectory)..\plugin.json</PluginConfigurationFile>
     </PropertyGroup>
 </Project>

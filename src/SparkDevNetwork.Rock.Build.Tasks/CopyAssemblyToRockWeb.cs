@@ -86,55 +86,55 @@ namespace SparkDevNetwork.Rock.Build.Tasks
             Log.LogMessage( MessageImportance.High, $"  {sourceFile} => {destFile}" );
         }
 
-        /// <summary>
-        /// Gets all references recursively for the DLL.
-        /// </summary>
-        /// <remarks>
-        /// This method is not currently used but being left as it might be
-        /// used in the future.
-        /// </remarks>
-        /// <param name="filename">The primary DLL to be checked.</param>
-        /// <param name="includePrimary">If <c>true</c> then the primary DLL will be included in results.</param>
-        /// <returns>A list of assembly names.</returns>
-        private static IEnumerable<string> GetAllReferences( string filename, bool includePrimary )
-        {
-            var runtimeAssemblies = Directory.GetFiles( RuntimeEnvironment.GetRuntimeDirectory(), "*.dll" );
-            var resolver = new PathAssemblyResolver( runtimeAssemblies );
-            var mlc = new MetadataLoadContext( resolver );
+        // /// <summary>
+        // /// Gets all references recursively for the DLL.
+        // /// </summary>
+        // /// <remarks>
+        // /// This method is not currently used but being left as it might be
+        // /// used in the future.
+        // /// </remarks>
+        // /// <param name="filename">The primary DLL to be checked.</param>
+        // /// <param name="includePrimary">If <c>true</c> then the primary DLL will be included in results.</param>
+        // /// <returns>A list of assembly names.</returns>
+        // private static IEnumerable<string> GetAllReferences( string filename, bool includePrimary )
+        // {
+        //     var runtimeAssemblies = Directory.GetFiles( RuntimeEnvironment.GetRuntimeDirectory(), "*.dll" );
+        //     var resolver = new PathAssemblyResolver( runtimeAssemblies );
+        //     var mlc = new MetadataLoadContext( resolver );
 
-            var references = new List<string>();
-            var stack = new List<string>( new[] { filename } );
+        //     var references = new List<string>();
+        //     var stack = new List<string>( new[] { filename } );
 
-            if ( includePrimary )
-            {
-                references.Add( Path.GetFileNameWithoutExtension( filename ) );
-            }
+        //     if ( includePrimary )
+        //     {
+        //         references.Add( Path.GetFileNameWithoutExtension( filename ) );
+        //     }
 
-            while ( stack.Count > 0 )
-            {
-                var name = stack[0];
+        //     while ( stack.Count > 0 )
+        //     {
+        //         var name = stack[0];
 
-                stack.RemoveAt( 0 );
+        //         stack.RemoveAt( 0 );
 
-                if ( !File.Exists( name ) )
-                {
-                    continue;
-                }
+        //         if ( !File.Exists( name ) )
+        //         {
+        //             continue;
+        //         }
 
-                var asm = mlc.LoadFromAssemblyPath( name );
-                var refs = asm.GetReferencedAssemblies().Select( r => r.Name );
+        //         var asm = mlc.LoadFromAssemblyPath( name );
+        //         var refs = asm.GetReferencedAssemblies().Select( r => r.Name );
 
-                foreach ( var reference in refs )
-                {
-                    if ( !references.Contains( reference ) )
-                    {
-                        references.Add( reference );
-                        stack.Add( Path.Combine( Path.GetDirectoryName( filename ), $"{reference}.dll" ) );
-                    }
-                }
-            }
+        //         foreach ( var reference in refs )
+        //         {
+        //             if ( !references.Contains( reference ) )
+        //             {
+        //                 references.Add( reference );
+        //                 stack.Add( Path.Combine( Path.GetDirectoryName( filename ), $"{reference}.dll" ) );
+        //             }
+        //         }
+        //     }
 
-            return references;
-        }
+        //     return references;
+        // }
     }
 }
