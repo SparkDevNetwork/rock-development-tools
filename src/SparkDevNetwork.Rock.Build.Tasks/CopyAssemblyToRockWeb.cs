@@ -1,9 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -15,6 +11,12 @@ namespace SparkDevNetwork.Rock.Build.Tasks
     /// </summary>
     public class CopyAssemblyToRockWeb : Task
     {
+        /// <summary>
+        /// The object to use when interacting with the filesystem. Used to
+        /// support unit testing.
+        /// </summary>
+        internal IFileSystem FileSystem { get; set; } = new FileSystemWrapper();
+
         /// <summary>
         /// The source directory that the files are in.
         /// </summary>
@@ -37,6 +39,18 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         /// <inheritdoc/>
         public override bool Execute()
         {
+            if ( string.IsNullOrWhiteSpace( Source ) )
+            {
+                Log.LogError( "The Source property must be set." );
+                return false;
+            }
+
+            if ( string.IsNullOrWhiteSpace( Destination ) )
+            {
+                Log.LogError( "The Destination property must be set." );
+                return false;
+            }
+
             var sourceDirectory = Source;
             var files = Files.Split( new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries )
                 .Select( f => f.Trim() )
@@ -54,17 +68,18 @@ namespace SparkDevNetwork.Rock.Build.Tasks
                     asmName = asmName.Substring( 0, asmName.Length - 4 );
                 }
 
-                var dllFile = Path.Combine( sourceDirectory, $"{asmName}.dll" );
-                var pdbFile = Path.Combine( sourceDirectory, $"{asmName}.pdb" );
+                var dllFile = FileSystem.PathCombine( sourceDirectory, $"{asmName}.dll" );
+                var pdbFile = FileSystem.PathCombine( sourceDirectory, $"{asmName}.pdb" );
 
-                if ( !File.Exists( dllFile ) )
+                if ( !FileSystem.FileExists( dllFile ) )
                 {
-                    continue;
+                    Log.LogError( $"The file {dllFile} does not exist." );
+                    return false;
                 }
 
                 CopyFile( dllFile );
 
-                if ( File.Exists( pdbFile ) )
+                if ( FileSystem.FileExists( pdbFile ) )
                 {
                     CopyFile( pdbFile );
                 }
@@ -79,9 +94,9 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         /// <param name="sourceFile">The file to be copied.</param>
         private void CopyFile( string sourceFile )
         {
-            var destFile = Path.Combine( Path.GetFullPath( Destination ), Path.GetFileName( sourceFile ) );
+            var destFile = FileSystem.PathCombine( FileSystem.GetFullPath( Destination ), FileSystem.GetFileName( sourceFile ) );
 
-            File.Copy( sourceFile, destFile, true );
+            FileSystem.FileCopy( sourceFile, destFile, true );
 
             Log.LogMessage( MessageImportance.High, $"  {sourceFile} => {destFile}" );
         }

@@ -15,7 +15,7 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         /// The object to use when interacting with the filesystem. Used to
         /// support unit testing.
         /// </summary>
-        internal IFileSystem FileSystem { get; set; } = new DefaultFileSystem();
+        internal IFileSystem FileSystem { get; set; } = new FileSystemWrapper();
 
         /// <summary>
         /// The file path to use when loading the plugin configuration file.
