@@ -531,7 +531,7 @@ public class XmlDocIdTests
     /// Create a mock of a type without a namespace or name set.
     /// </summary>
     /// <returns>A mocking object.</returns>
-    private static Mock<Type> GetTypeMock()
+    internal static Mock<Type> GetTypeMock()
     {
         var mock = new Mock<Type>( MockBehavior.Strict );
 
@@ -552,7 +552,7 @@ public class XmlDocIdTests
     /// <param name="namespace">The namespace of the type.</param>
     /// <param name="name">The name of the type.</param>
     /// <returns>A mocking object.</returns>
-    private static Mock<Type> GetTypeMock( string? @namespace, string name )
+    internal static Mock<Type> GetTypeMock( string? @namespace, string name )
     {
         var mock = GetTypeMock();
 

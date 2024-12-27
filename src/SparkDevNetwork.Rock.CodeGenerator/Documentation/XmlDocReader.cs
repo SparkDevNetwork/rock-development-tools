@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -33,10 +34,20 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
         /// Reads the comments from the file specified.
         /// </summary>
         /// <param name="filename">The path and name of the file to read.</param>
+        [ExcludeFromCodeCoverage]
         public void ReadCommentsFrom( string filename )
         {
             var document = XDocument.Load( filename, LoadOptions.PreserveWhitespace );
-            var navigator = document.CreateNavigator();
+            
+            ReadCommentsFrom( document.CreateNavigator() );
+        }
+
+        /// <summary>
+        /// Reads the comments from the XML navigator.
+        /// </summary>
+        /// <param name="navigator">The navigator that provides access to the XML document.</param>
+        internal void ReadCommentsFrom( XPathNavigator navigator )
+        {
             var commentsTable = new Dictionary<string, XmlCommentSet>( ( IDictionary<string, XmlCommentSet> ) _comments );
 
             // Find all documentation member nodes.
@@ -141,6 +152,11 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
         /// <returns>A new instance of <see cref="XmlCommentSet"/> with the merged information.</returns>
         private XmlCommentSet MergeComments( XmlCommentSet source, XmlCommentSet additional )
         {
+            if ( additional == null )
+            {
+                return source;
+            }
+
             return new XmlCommentSet(
                 source.Summary ?? additional.Summary,
                 null,
@@ -200,6 +216,16 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
             }
 
             return ResolveMemberComments( comments, memberInfo );
+        }
+
+        /// <summary>
+        /// Returns all type identifiers in their XML format that were read
+        /// from the XML documentation file.
+        /// </summary>
+        /// <returns>An enumeration of XML type identifier strings.</returns>
+        public IEnumerable<string> GetAllXmlTypesIds()
+        {
+            return _comments.Keys;
         }
 
         #endregion
