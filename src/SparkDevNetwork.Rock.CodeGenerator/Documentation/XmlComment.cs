@@ -47,14 +47,9 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
         /// </summary>
         /// <param name="node">The node that contains the comment.</param>
         /// <returns>The number of whitespace characters that should be trimmed from the start of all lines.</returns>
-        private static int GetIndentSize( XPathNavigator node )
+        internal static int GetIndentSize( XPathNavigator node )
         {
-            var outerText = node.OuterXml ?? string.Empty;
-
-            if ( outerText.IsNullOrWhiteSpace() )
-            {
-                return 0;
-            }
+            var outerText = node.OuterXml;
 
             // Determine the indentation size of the text.
             var endMarkIndex = outerText.LastIndexOf( "</" );
@@ -73,14 +68,9 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
         /// </summary>
         /// <param name="node">The node containing the comment.</param>
         /// <returns>A string that represents the inner content text.</returns>
-        private static string GetContent( XPathNavigator node )
+        internal static string GetContent( XPathNavigator node )
         {
-            var text = node.InnerXml ?? string.Empty;
-
-            if ( text.IsNullOrWhiteSpace() )
-            {
-                return string.Empty;
-            }
+            var text = node.InnerXml;
 
             // Determine the indentation size of the text.
             int indentSize = GetIndentSize( node );
@@ -89,11 +79,13 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
                 .Select( t => t.SubstringSafe( indentSize ) )
                 .ToList();
 
-            // Trim empty lines at start and end.
+            // Remove empty lines at start of content.
             while ( textLines.Any() && textLines.First().IsNullOrWhiteSpace() )
             {
                 textLines = textLines.Skip( 1 ).ToList();
             }
+
+            // Remove empty lines at end of content.
             while ( textLines.Any() && textLines.Last().IsNullOrWhiteSpace() )
             {
                 textLines = textLines.Take( textLines.Count - 1 ).ToList();
@@ -103,19 +95,14 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
         }
 
         /// <summary>
-        /// Gets the plain text comment string for the node.
+        /// Gets the plain text comment string for the node. 
         /// </summary>
         /// <param name="node">The node that contains the comment information.</param>
         /// <returns>A string that contains the plain text comment after removing any XML data.</returns>
-        private static string GetPlainText( XPathNavigator node )
+        internal static string GetPlainText( XPathNavigator node )
         {
             var children = node.Select( "node()" );
             var sb = new StringBuilder();
-
-            if ( children.Count == 0 )
-            {
-                return string.Empty;
-            }
 
             // Walk each child of the node and append the plain text
             // of any text nodes or child element nodes.
@@ -140,11 +127,6 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
 
             var text = sb.ToString();
 
-            if ( text.IsNullOrWhiteSpace() )
-            {
-                return string.Empty;
-            }
-
             // Determine the indentation size of the text.
             int indentSize = GetIndentSize( node );
 
@@ -152,11 +134,13 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
                 .Select( t => t.SubstringSafe( indentSize ) )
                 .ToList();
 
-            // Trim empty lines at start and end.
+            // Remove empty lines at start of content.
             while ( textLines.Any() && textLines.First().IsNullOrWhiteSpace() )
             {
                 textLines = textLines.Skip( 1 ).ToList();
             }
+
+            // Remove empty lines at end of content.
             while ( textLines.Any() && textLines.Last().IsNullOrWhiteSpace() )
             {
                 textLines = textLines.Take( textLines.Count - 1 ).ToList();

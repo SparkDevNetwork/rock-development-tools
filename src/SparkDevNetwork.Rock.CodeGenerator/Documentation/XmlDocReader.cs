@@ -46,20 +46,14 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
             {
                 var memberName = node.GetAttribute( "name", string.Empty );
 
-                // Read the comments from the node.
-                var comments = new XmlCommentSet
-                {
-                    Summary = GetDocComment( node.SelectSingleNode( "summary" ) ),
-                    Value = GetDocComment( node.SelectSingleNode( "value" ) )
-                };
-
                 // Read any inheritdoc node and store the reference for later.
                 var inheritDoc = node.SelectSingleNode( "inheritdoc" );
 
-                if ( inheritDoc != null )
-                {
-                    comments.InheritFrom = inheritDoc.GetAttribute( "cref", string.Empty );
-                }
+                // Read the comments from the node.
+                var comments = new XmlCommentSet(
+                    GetDocComment( node.SelectSingleNode( "summary" ) ),
+                    GetDocComment( node.SelectSingleNode( "value" ) ),
+                    inheritDoc?.GetAttribute( "cref", string.Empty ) );
 
                 if ( !commentsTable.ContainsKey( memberName ) )
                 {
@@ -147,11 +141,10 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
         /// <returns>A new instance of <see cref="XmlCommentSet"/> with the merged information.</returns>
         private XmlCommentSet MergeComments( XmlCommentSet source, XmlCommentSet additional )
         {
-            return new XmlCommentSet
-            {
-                Summary = source.Summary ?? additional.Summary,
-                InheritFrom = source.InheritFrom
-            };
+            return new XmlCommentSet(
+                source.Summary ?? additional.Summary,
+                null,
+                source.InheritFrom );
         }
 
         /// <summary>

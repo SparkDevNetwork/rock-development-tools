@@ -4,4 +4,8 @@
     <TargetFrameworks>net8.0;net472</TargetFrameworks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="SparkDevNetwork.Rock.CodeGenerator.Tests" />
+  </ItemGroup>
+
 </Project>

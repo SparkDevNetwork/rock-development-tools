@@ -168,7 +168,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
         /// <param name="isMethodParameter">If the type is being used has a method parameter.</param>
         /// <param name="genericClassParams">The names of the generic class parameters from the parent type.</param>
         /// <returns>The full name.</returns>
-        static string GetTypeXmlId( Type type, bool isOut = false, bool isMethodParameter = false, string[] genericClassParams = null )
+        internal static string GetTypeXmlId( Type type, bool isOut = false, bool isMethodParameter = false, string[] genericClassParams = null )
         {
             // Generic parameters of the class  are referred to as  `N where N is position of generic type.
             // Generic parameters of the method are referred to as ``N where N is position of generic type.

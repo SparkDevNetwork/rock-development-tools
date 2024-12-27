@@ -6,15 +6,13 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
     public interface ICommentSet
     {
         /// <summary>
-        /// Gets or sets the summary comment content.
+        /// The summary comment content.
         /// </summary>
-        /// <value>The summary comment content.</value>
-        IComment Summary { get; set; }
+        IComment Summary { get; }
 
         /// <summary>
-        /// Gets or sets the value comment content.
+        /// The value comment content.
         /// </summary>
-        /// <value>The value comment content.</value>
-        IComment Value { get; set; }
+        IComment Value { get; }
     }
 }
