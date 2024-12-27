@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace SparkDevNetwork.Rock.CodeGenerator
@@ -9,6 +10,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
     public static class StringExtensions
     {
         /// <inheritdoc cref="string.IsNullOrWhiteSpace(string)"/>
+        [ExcludeFromCodeCoverage]
         public static bool IsNullOrWhiteSpace( this string str )
         {
             return string.IsNullOrWhiteSpace( str );
@@ -20,6 +22,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// </summary>
         /// <param name="str">The string to test.</param>
         /// <returns>true if the string is not null, not empty, or consists of any non white-space characters.</returns>
+        [ExcludeFromCodeCoverage]
         public static bool IsNotNullOrWhiteSpace( this string str )
         {
             return !string.IsNullOrWhiteSpace( str );
