@@ -8,6 +8,8 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Tests.Documentation;
 
 public class XmlDocReaderTests
 {
+    #region Constant Test Data
+
     private const string SampleXmlDoc = """
         <?xml version="1.0"?>
         <doc>
@@ -44,16 +46,16 @@ public class XmlDocReaderTests
         </doc>
         """;
 
+    #endregion
+
     [Fact]
     public void ReadCommentsFrom_WithSampleXml_ReadsAllMembers()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
+        var reader = CreateSampleReader();
 
-        reader.ReadCommentsFrom( document.CreateNavigator() );
+        var typeIds = reader.GetAllXmlTypesIds().ToList();
 
-        Assert.Equal( 7, reader.GetAllXmlTypesIds().Count() );
+        Assert.Equal( 7, typeIds.Count );
     }
 
     #region GetTypeComments
@@ -61,12 +63,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetTypeComments_WithKnownType_ReturnsSummary()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "State" );
 
         var comments = reader.GetTypeComments( typeMock.Object );
@@ -79,13 +76,9 @@ public class XmlDocReaderTests
     [Fact]
     public void GetTypeComments_WithKnownType_ReturnsExplicitInheritdocSummary()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "ExplicitInheritdocState" );
+
         var comments = reader.GetTypeComments( typeMock.Object );
 
         Assert.NotNull( comments );
@@ -96,12 +89,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetTypeComments_WithKnownType_ReturnsImplicitInheritdocSummary()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var baseTypeMock = XmlDocIdTests.GetTypeMock( "TestLib", "State" );
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "ImplicitInheritdocState" );
 
@@ -117,12 +105,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetTypeComments_WithNullBaseType_ReturnsEmptyComments()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "ImplicitInheritdocState" );
 
         typeMock.Setup( m => m.BaseType ).Returns( ( Type? ) null );
@@ -137,12 +120,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetTypeComments_WithUnknownType_ReturnsNull()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "MissingType" );
 
         var comments = reader.GetTypeComments( typeMock.Object );
@@ -153,12 +131,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetTypeComments_WithTypeThatHasInvalidInheritdoc_ReturnsEmptySummary()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "MissingInheritdocState" );
 
         var comments = reader.GetTypeComments( typeMock.Object );
@@ -175,12 +148,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetMemberComments_WithMissingMember_ReturnsNull()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "State" );
         var propertyMock = new Mock<PropertyInfo>( MockBehavior.Strict );
 
@@ -196,12 +164,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetMemberComments_WithDocumentedProperty_ReturnsSummary()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "State" );
         var propertyMock = new Mock<PropertyInfo>( MockBehavior.Strict );
 
@@ -219,12 +182,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetMemberComments_WithDocumentedProperty_ReturnsValue()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "State" );
         var propertyMock = new Mock<PropertyInfo>( MockBehavior.Strict );
 
@@ -242,12 +200,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetMemberComments_WithProperty_ReturnsExplicitInheritdocSummary()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "State" );
         var propertyMock = new Mock<PropertyInfo>( MockBehavior.Strict );
 
@@ -265,12 +218,7 @@ public class XmlDocReaderTests
     [Fact]
     public void GetMemberComments_WithImplicitInheritdocProperty_ReturnsEmptySummary()
     {
-        var reader = new XmlDocReader();
-        var document = new System.Xml.XmlDocument();
-        document.LoadXml( SampleXmlDoc );
-
-        reader.ReadCommentsFrom( document.CreateNavigator() );
-
+        var reader = CreateSampleReader();
         var typeMock = XmlDocIdTests.GetTypeMock( "TestLib", "ImplicitInheritdocState" );
         var propertyMock = new Mock<PropertyInfo>( MockBehavior.Strict );
 
@@ -285,6 +233,25 @@ public class XmlDocReaderTests
         // then this test should be updated to reflect that.
         Assert.NotNull( comments );
         Assert.Null( comments.Summary );
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Creats a reader that has been loaded with the sample XML document.
+    /// </summary>
+    /// <returns>An instance of <see cref="XmlDocReader"/>.</returns>
+    private static XmlDocReader CreateSampleReader()
+    {
+        var reader = new XmlDocReader();
+        var document = new System.Xml.XmlDocument();
+        document.LoadXml( SampleXmlDoc );
+
+        reader.ReadCommentsFrom( document.CreateNavigator() );
+
+        return reader;
     }
 
     #endregion
