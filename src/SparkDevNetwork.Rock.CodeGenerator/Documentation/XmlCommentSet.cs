@@ -1,8 +1,11 @@
-﻿namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
 {
     /// <summary>
     /// The comments that were loaded for a given type or member.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class XmlCommentSet : ICommentSet
     {
         /// <inheritdoc/>
