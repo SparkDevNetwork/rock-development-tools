@@ -1,10 +1,12 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SparkDevNetwork.Rock.CodeGenerator
 {
     /// <summary>
     /// Represents a TypeScript type definition and required imports.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public class TypeScriptTypeDefinition
     {
         /// <summary>
