@@ -1,5 +1,6 @@
 {
     "dotnet.defaultSolution": "rock-development-tools.sln",
+    "dotnet.unitTests.runSettingsPath": "./.runsettings",
     "csharp.debug.console": "integratedTerminal",
     "xml.format.maxLineWidth": 0,
     "files.exclude": {
