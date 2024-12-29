@@ -176,4 +176,26 @@ public class StringExtensionsTests
     }
 
     #endregion
+
+    #region ToStringSafe
+    
+    [Fact]
+    public void ToStringSafe_ReturnsEmptyStringFromNull()
+    {
+        object? nullObj = null;
+
+        var value = nullObj.ToStringSafe();
+
+        Assert.Equal( string.Empty, value );
+    }
+
+    [Fact]
+    public void ToStringSafe_ReturnsValueAsStringFromObject()
+    {
+        var value = 42.ToStringSafe();
+
+        Assert.Equal( "42", value );
+    }
+
+    #endregion
 }

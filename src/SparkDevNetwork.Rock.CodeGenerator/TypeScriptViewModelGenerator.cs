@@ -32,14 +32,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <returns>A string that contains the contents of the file.</returns>
         public string GenerateClassViewModel( Type type )
         {
-            var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
-            var typeName = GetClassNameForType( type );
-            var properties = type.GetProperties().ToList();
-
-            var (content, imports) = GenerateClassViewModelContent( typeName, typeComment, properties, type );
-
-            // Remove recursive references to self.
-            imports = imports.Where( i => i.DefaultImport != typeName && i.NamedImport != typeName ).ToList();
+            var (content, imports) = GenerateClassViewModelContent( type );
 
             return GenerateTypeScriptFile( imports, content, true );
         }
@@ -56,14 +49,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
             foreach ( var type in types )
             {
-                var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
-                var typeName = GetClassNameForType( type );
-                var properties = type.GetProperties().ToList();
-
-                var (content, classImports) = GenerateClassViewModelContent( typeName, typeComment, properties, type );
-
-                // Remove recursive references to self.
-                classImports = classImports.Where( i => i.DefaultImport != typeName && i.NamedImport != typeName ).ToList();
+                var (content, classImports) = GenerateClassViewModelContent( type );
 
                 sb.Append( content );
                 sb.AppendLine();
@@ -84,10 +70,13 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <param name="type">The type being generated.</param>
         /// <param name="isAutoGen">if set to <c>true</c> the auto generated comment will be included.</param>
         /// <returns>A string that contains the contents of the file.</returns>
-        private (string Content, List<TypeScriptImport> Imports) GenerateClassViewModelContent( string typeName, string typeComment, IList<PropertyInfo> properties, Type type )
+        internal (string Content, List<TypeScriptImport> Imports) GenerateClassViewModelContent( Type type )
         {
-            var imports = new List<TypeScriptImport>();
+            var typeComment = GetDocumentationSummary( type );
+            var typeName = GetClassNameForType( type );
+            var properties = type.GetProperties().ToList();
 
+            var imports = new List<TypeScriptImport>();
             var sb = new StringBuilder();
 
             AppendCommentBlock( sb, typeComment, 0, type );
@@ -123,6 +112,9 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             }
 
             sb.AppendLine( "};" );
+
+            // Remove recursive references to self.
+            imports = imports.Where( i => i.DefaultImport != typeName && i.NamedImport != typeName ).ToList();
 
             return (sb.ToString(), imports);
         }
@@ -166,7 +158,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <returns>A string that contains the TypeScript code for this enum type.</returns>
         private string GenerateEnumViewModelContent( Type type )
         {
-            var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+            var typeComment = GetDocumentationSummary( type );
             var typeName = GetClassNameForType( type );
             var isFlagType = type.GetCustomAttributeData( "System.FlagsAttribute" ) != null;
 
@@ -198,7 +190,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <returns>A string that contains the contents of the file.</returns>
         private string GenerateEnumViewModelContent( Type type, bool isDescription )
         {
-            var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+            var typeComment = GetDocumentationSummary( type );
             var typeName = GetClassNameForType( type );
             var fields = type.GetFields( BindingFlags.Static | BindingFlags.Public ).ToList();
 
@@ -210,12 +202,12 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             {
                 var obsoleteMessage = string.Empty;
 
-                if ( obsoleteTypeAttribute.ConstructorArguments.Count > 0 && obsoleteTypeAttribute.ConstructorArguments[0].ArgumentType.FullName == "System.String" )
+                if ( obsoleteTypeAttribute.ConstructorArguments.Count > 0 )
                 {
-                    obsoleteMessage = obsoleteTypeAttribute.ConstructorArguments[0].Value.ToString();
+                    obsoleteMessage = obsoleteTypeAttribute.ConstructorArguments[0].Value.ToStringSafe();
                 }
 
-                sb.AppendLine( $"/** @deprecated {obsoleteMessage ?? string.Empty} */" );
+                sb.AppendLine( $"/** @deprecated {obsoleteMessage} */" );
             }
 
             if ( !isDescription )
@@ -268,10 +260,10 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
                         if ( obsoleteFieldAttribute.ConstructorArguments.Count > 0 && obsoleteFieldAttribute.ConstructorArguments[0].ArgumentType.FullName == "System.String" )
                         {
-                            obsoleteMessage = obsoleteFieldAttribute.ConstructorArguments[0].Value.ToString();
+                            obsoleteMessage = obsoleteFieldAttribute.ConstructorArguments[0].Value.ToStringSafe();
                         }
 
-                        sb.AppendLine( $"    /** @deprecated {obsoleteMessage ?? string.Empty} */" );
+                        sb.AppendLine( $"    /** @deprecated {obsoleteMessage} */" );
                     }
 
                     if ( type.GetCustomAttributeData( "System.FlagsAttribute" ) != null )
@@ -343,7 +335,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                 } );
 
             var camelName = $"{type.Name.Substring( 0, 1 ).ToLower()}{type.Name.Substring( 1 )}";
-            var typeComment = DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+            var typeComment = GetDocumentationSummary( type );
 
             var sb = new StringBuilder();
 
@@ -475,7 +467,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <param name="indentationSize">Size of the indentation for the comment block.</param>
         private void AppendCommentBlock( StringBuilder sb, MemberInfo memberInfo, int indentationSize )
         {
-            var xdoc = DocumentationProvider?.GetMemberComments( memberInfo )?.Summary?.PlainText;
+            var xdoc = GetDocumentationSummary( memberInfo );
 
             AppendCommentBlock( sb, xdoc, indentationSize, memberInfo.DeclaringType );
         }
@@ -733,6 +725,26 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             }
 
             return type.Name;
+        }
+
+        /// <summary>
+        /// Gets the summary plain text documentation for the type.
+        /// </summary>
+        /// <param name="type">The type to retrieve documentation for.</param>
+        /// <returns>A string containing the summary plain text or <c>null</c>.</returns>
+        private string GetDocumentationSummary( Type type )
+        {
+            return DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
+        }
+
+        /// <summary>
+        /// Gets the summary plain text documentation for the member.
+        /// </summary>
+        /// <param name="memberInfo">The member to retrieve documentation for.</param>
+        /// <returns>A string containing the summary plain text or <c>null</c>.</returns>
+        private string GetDocumentationSummary( MemberInfo memberInfo )
+        {
+            return DocumentationProvider?.GetMemberComments( memberInfo )?.Summary?.PlainText;
         }
 
         #endregion

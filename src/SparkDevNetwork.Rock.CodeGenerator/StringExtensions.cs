@@ -130,5 +130,15 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             return new string( chars );
         }
 
+        /// <summary>
+        /// Calls the ToString method on the object or an empty string
+        /// if it was <c>null</c>.
+        /// </summary>
+        /// <param name="value">The object to convert to a string.</param>
+        /// <returns>A string.</returns>
+        public static string ToStringSafe( this object value )
+        {
+            return value?.ToString() ?? string.Empty;
+        }
     }
 }

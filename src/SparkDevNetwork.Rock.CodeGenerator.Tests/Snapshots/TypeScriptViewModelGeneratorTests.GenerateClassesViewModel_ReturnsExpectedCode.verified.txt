@@ -1,0 +1,7 @@
+﻿export type TestBag = {
+    id: number;
+};
+
+export type OtherBag = {
+    name?: string | null;
+};

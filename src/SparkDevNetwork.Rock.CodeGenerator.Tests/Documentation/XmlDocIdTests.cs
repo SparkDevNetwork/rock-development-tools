@@ -558,6 +558,12 @@ public class XmlDocIdTests
 
         mock.Setup( m => m.Name ).Returns( name );
         mock.Setup( m => m.Namespace ).Returns( @namespace );
+        mock.Setup( m => m.FullName ).Returns( () =>
+        {
+            return @namespace != null
+                ? $"{@namespace}.{name}"
+                : name;
+        } );
 
         return mock;
     }

@@ -1,0 +1,5 @@
+﻿export type TestBag = {
+    id: number;
+
+    name?: string | null;
+};

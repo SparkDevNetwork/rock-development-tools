@@ -1,0 +1,27 @@
+﻿export const TestSetA = {
+    No: 0,
+
+    Yes: 1
+} as const;
+
+export const TestSetADescription: Record<number, string> = {
+    0: "No",
+
+    1: "Yes"
+};
+
+export type TestSetA = typeof TestSetA[keyof typeof TestSetA];
+
+export const TestSetB = {
+    Maybe: 0,
+
+    Definitely: 1
+} as const;
+
+export const TestSetBDescription: Record<number, string> = {
+    0: "Maybe",
+
+    1: "Definitely"
+};
+
+export type TestSetB = typeof TestSetB[keyof typeof TestSetB];
