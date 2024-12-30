@@ -1,0 +1,4 @@
+﻿export const Test = {
+    CapsName: "b85c07e2-1bdb-4868-96aa-af2ef58b5da3",
+    Item: "c650c429-6b4d-4edb-b7ce-340e1cc8fd44",
+};

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -79,7 +80,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             var imports = new List<TypeScriptImport>();
             var sb = new StringBuilder();
 
-            AppendCommentBlock( sb, typeComment, 0, type );
+            AppendCommentBlock( sb, typeComment, 0 );
             sb.AppendLine( $"export type {typeName} = {{" );
 
             var sortedProperties = properties.OrderBy( p => p.Name ).ToList();
@@ -169,7 +170,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             sb.Append( GenerateEnumViewModelContent( type, true ) );
             sb.AppendLine();
 
-            AppendCommentBlock( sb, typeComment, 0, type );
+            AppendCommentBlock( sb, typeComment, 0 );
 
             if ( !isFlagType )
             {
@@ -196,7 +197,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
             var sb = new StringBuilder();
 
-            AppendCommentBlock( sb, typeComment, 0, type );
+            AppendCommentBlock( sb, typeComment, 0 );
 
             if ( type.GetCustomAttributeData( "System.ObsoleteAttribute" ) is CustomAttributeData obsoleteTypeAttribute )
             {
@@ -339,28 +340,28 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
             var sb = new StringBuilder();
 
-            AppendCommentBlock( sb, typeComment, 0, type );
+            AppendCommentBlock( sb, typeComment, 0 );
             sb.AppendLine( $"export const {type.Name} = {{" );
 
             // Loop through each value and emit the declaration.
             foreach ( var value in values )
             {
-                bool cap = true;
+                bool convertToUpper = true;
                 string name = string.Empty;
 
                 // Convert the name into a JavaScript friendly one.
                 for ( int i = 0; i < value.Field.Name.Length; i++ )
                 {
-                    if ( cap )
+                    if ( convertToUpper )
                     {
                         name += value.Field.Name[i].ToString().ToUpper();
-                        cap = false;
+                        convertToUpper = false;
                     }
                     else
                     {
                         if ( value.Field.Name[i] == '_' )
                         {
-                            cap = true;
+                            convertToUpper = true;
                         }
                         else
                         {
@@ -469,7 +470,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         {
             var xdoc = GetDocumentationSummary( memberInfo );
 
-            AppendCommentBlock( sb, xdoc, indentationSize, memberInfo.DeclaringType );
+            AppendCommentBlock( sb, xdoc, indentationSize );
         }
 
         /// <summary>
@@ -479,7 +480,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <param name="comment">The comment to append.</param>
         /// <param name="indentationSize">Size of the indentation for the comment block.</param>
         /// /// <param name="sourceType">The source type that this comment is related to, if a method this would be the type that contains the method.</param>
-        private void AppendCommentBlock( StringBuilder sb, string comment, int indentationSize, Type sourceType )
+        internal static void AppendCommentBlock( StringBuilder sb, string comment, int indentationSize )
         {
             if ( string.IsNullOrWhiteSpace( comment ) )
             {
@@ -559,6 +560,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// Gets the TypeScript definition type of the type.
         /// </summary>
         /// <param name="type">The type.</param>
+        /// <param name="isRequired">Indicates if this type is already considered required.
         /// <returns>A string that contains the definition, such as "boolean | null".</returns>
         protected virtual TypeScriptTypeDefinition GetTypeScriptTypeDefinition( Type type, bool isRequired )
         {
@@ -598,7 +600,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             else if ( type.FullName == typeof( string ).FullName )
             {
                 tsType = "string";
-                isNullable = isNullable || !isRequired;
+                isNullable = !isRequired;
             }
             else if ( type.FullName == typeof( DateTime ).FullName || type.FullName == typeof( DateTimeOffset ).FullName )
             {
@@ -626,7 +628,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
                 tsType = $"{tsBaseType.Definition}[]";
                 imports.AddRange( tsBaseType.Imports );
-                isNullable = isNullable || !isRequired;
+                isNullable = !isRequired;
             }
             else if ( type.IsGenericType )
             {
@@ -640,7 +642,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                     tsType = $"Record<{keyType.Definition}, {valueType.Definition}>";
                     imports.AddRange( keyType.Imports );
                     imports.AddRange( valueType.Imports );
-                    isNullable = isNullable || !isRequired;
+                    isNullable = !isRequired;
                 }
                 else if ( type.ImplementsInterface( typeof( ICollection<> ).FullName ) )
                 {
@@ -648,7 +650,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
                     tsType = $"{valueType.Definition}[]";
                     imports.AddRange( valueType.Imports );
-                    isNullable = isNullable || !isRequired;
+                    isNullable = !isRequired;
                 }
                 else if ( genericTypeDefinition.FullName == "Rock.ViewModels.Utility.ValidPropertiesBox`1" )
                 {
@@ -661,7 +663,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                         SourcePath = "@Obsidian/ViewModels/Utility/validPropertiesBox",
                         NamedImport = "ValidPropertiesBox"
                     } );
-                    isNullable = isNullable || !isRequired;
+                    isNullable = !isRequired;
                 }
             }
             else if ( type.Namespace?.StartsWith( "Rock.ViewModels" ) == true && ( type.Name.EndsWith( "Bag" ) || type.Name.EndsWith( "Box" ) ) )
@@ -673,33 +675,36 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                     SourcePath = $"@Obsidian/ViewModels/{path}",
                     NamedImport = type.Name
                 } );
-                isNullable = isNullable || !isRequired;
-            }
-            else if ( type.IsEnum && type.Namespace?.StartsWith( "Rock.Enums" ) == true )
-            {
-                var path = $"{type.Namespace.Substring( 10 ).Trim( '.' ).Replace( '.', '/' )}/{type.Name.ToCamelCase()}";
-                tsType = type.Name;
-                imports.Add( new TypeScriptImport
-                {
-                    SourcePath = $"@Obsidian/Enums/{path}",
-                    NamedImport = type.Name
-                } );
-            }
-            else if ( type.IsEnum && type.GetCustomAttributeData( "Rock.Enums.EnumDomainAttribute" ) != null )
-            {
-                var domainAttribute = type.GetCustomAttributeData( "Rock.Enums.EnumDomainAttribute" );
-                var domain = domainAttribute.ConstructorArguments[0].Value.ToString();
-                var path = $"{CoreSupport.GetDomainFolderName( domain )}/{type.Name.ToCamelCase()}";
-                tsType = type.Name;
-                imports.Add( new TypeScriptImport
-                {
-                    SourcePath = $"@Obsidian/Enums/{path}",
-                    NamedImport = type.Name
-                } );
+                isNullable = !isRequired;
             }
             else if ( type.IsEnum )
             {
-                tsType = "number";
+                if ( type.Namespace?.StartsWith( "Rock.Enums" ) == true )
+                {
+                    var path = $"{type.Namespace.Substring( 10 ).Trim( '.' ).Replace( '.', '/' )}/{type.Name.ToCamelCase()}";
+                    tsType = type.Name;
+                    imports.Add( new TypeScriptImport
+                    {
+                        SourcePath = $"@Obsidian/Enums/{path}",
+                        NamedImport = type.Name
+                    } );
+                }
+                else if ( type.GetCustomAttributeData( "Rock.Enums.EnumDomainAttribute" ) != null )
+                {
+                    var domainAttribute = type.GetCustomAttributeData( "Rock.Enums.EnumDomainAttribute" );
+                    var domain = domainAttribute.ConstructorArguments[0].Value.ToString();
+                    var path = $"{CoreSupport.GetDomainFolderName( domain )}/{type.Name.ToCamelCase()}";
+                    tsType = type.Name;
+                    imports.Add( new TypeScriptImport
+                    {
+                        SourcePath = $"@Obsidian/Enums/{path}",
+                        NamedImport = type.Name
+                    } );
+                }
+                else
+                {
+                    tsType = "number";
+                }
             }
 
             if ( isNullable )
@@ -732,6 +737,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// </summary>
         /// <param name="type">The type to retrieve documentation for.</param>
         /// <returns>A string containing the summary plain text or <c>null</c>.</returns>
+        [ExcludeFromCodeCoverage]
         private string GetDocumentationSummary( Type type )
         {
             return DocumentationProvider?.GetTypeComments( type )?.Summary?.PlainText;
@@ -742,6 +748,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// </summary>
         /// <param name="memberInfo">The member to retrieve documentation for.</param>
         /// <returns>A string containing the summary plain text or <c>null</c>.</returns>
+        [ExcludeFromCodeCoverage]
         private string GetDocumentationSummary( MemberInfo memberInfo )
         {
             return DocumentationProvider?.GetMemberComments( memberInfo )?.Summary?.PlainText;
