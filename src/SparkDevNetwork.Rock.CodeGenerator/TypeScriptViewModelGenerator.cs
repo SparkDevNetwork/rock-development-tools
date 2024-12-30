@@ -103,7 +103,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                 // If its nullable that means it could also be undefined.
                 if ( isNullable )
                 {
-                    sb.Append( "?" );
+                    sb.Append( '?' );
                 }
 
                 var valueType = GetTypeScriptTypeDefinition( property.PropertyType, !isNullable );
@@ -409,7 +409,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
                 if ( i + 1 < sortedItems.Count )
                 {
-                    sb.Append( "," );
+                    sb.Append( ',' );
                 }
 
                 sb.AppendLine();
@@ -449,7 +449,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
                 if ( i + 1 < sortedItems.Count )
                 {
-                    sb.Append( "," );
+                    sb.Append( ',' );
                 }
 
                 sb.AppendLine();
