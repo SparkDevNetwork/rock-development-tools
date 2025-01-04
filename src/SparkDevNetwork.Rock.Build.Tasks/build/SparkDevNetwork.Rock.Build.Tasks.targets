@@ -4,7 +4,22 @@
         AfterTargets="CopyFilesToOutputDirectory"
         Condition="'$(CopyToRockWeb)' == 'True' and '$(RockWebPath)' != '' and '$(TargetFramework)' == 'net472'">
         <SparkDevNetwork.Rock.Build.Tasks.CopyAssemblyToRockWeb
-            Source="$(TargetDir)$(TargetFileName)"
+            Source="$(TargetDir)"
+            Files="$(TargetFileName);$(AdditionalAssembliesToCopy)"
             Destination="$(RockWebPath)\Bin" />
+    </Target>
+
+    <Target
+        Name="GetPluginVersion"
+        BeforeTargets="BeforeCompile;CoreCompile;GetAssemblyVersion;GenerateNuspec;_GenerateRestoreProjectSpec;_GetOutputItemsFromPack;EnsureWixToolsetInstalled"
+        Condition=" '$(PluginConfigurationFile)' != '' ">
+        <SparkDevNetwork.Rock.Build.Tasks.GetPluginVersion
+            PluginConfigurationFile="$(PluginConfigurationFile)">
+            <Output TaskParameter="Version" PropertyName="Plugin_Version" />
+        </SparkDevNetwork.Rock.Build.Tasks.GetPluginVersion>
+
+        <PropertyGroup Condition=" '$(UpdateVersionFromPlugin)' == 'true' ">
+            <Version>$(Plugin_Version)</Version>
+        </PropertyGroup>
     </Target>
 </Project>

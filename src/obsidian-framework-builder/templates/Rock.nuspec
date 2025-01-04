@@ -11,6 +11,7 @@
     <repository type="git" url="https://github.com/SparkDevNetwork/Rock" />
     <dependencies>
       <dependency id="EntityFramework" version="6.4.4" />
+      <dependency id="Newtonsoft.Json" version="13.0.1" />
       <dependency id="RockRMS.Rock.Common" version="{{ rockVersion }}" />
       <dependency id="RockRMS.Rock.Enums" version="{{ rockVersion }}" />
       <dependency id="RockRMS.Rock.Lava.Shared" version="{{ rockVersion }}" />

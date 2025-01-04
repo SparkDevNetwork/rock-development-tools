@@ -1,5 +1,7 @@
 {
     "dotnet.defaultSolution": "rock-development-tools.sln",
+    "dotnet.unitTests.runSettingsPath": "./.runsettings",
+    "csharp.debug.console": "integratedTerminal",
     "xml.format.maxLineWidth": 0,
     "files.exclude": {
         "**/.git": true,
@@ -8,5 +10,14 @@
         "**/node_modules": true,
         "**/bin": true,
         "**/obj": true
+    },
+    "[json]": {
+        "files.insertFinalNewline": true
+    },
+    "[jsonc]": {
+        "files.insertFinalNewline": true
+    },
+    "[xml]": {
+        "files.insertFinalNewline": true
     }
 }

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RockWebPath>{{ RockWebPath | replace:'/','\\' }}</RockWebPath>
+    <AdditionalAssembliesToCopy></AdditionalAssembliesToCopy>
+    <CopyToRockWeb>{{ Copy }}</CopyToRockWeb>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SparkDevNetwork.Rock.Build.Tasks" Version="1.0.0-rc.4" />
+    <PackageReference Include="SparkDevNetwork.Rock.Analyzers" Version="1.0.0-rc.1" />
+    <PackageReference Include="RockRMS.Rock" Version="{{ RockVersion }}" />{% if RestApiSupport == true %}
+    <PackageReference Include="RockRMS.Rock.Rest" Version="{{ RockVersion }}" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.3" />{% endif %}
+  </ItemGroup>{% if RestApiSupport == true %}
+
+  <ItemGroup>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>{% endif %}
+
+</Project>

@@ -1,0 +1,5 @@
+{
+    "source": "src",
+    "destination": "$(Environment)/Rock/RockWeb/Plugins/{{ OrganizationCode | replace:'.','_' }}/{{ PluginCode }}",
+    "copy": {% if Copy != true %}false{% else %}true{% endif %}
+}

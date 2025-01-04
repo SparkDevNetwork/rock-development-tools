@@ -1,11 +1,14 @@
 {
     "compilerOptions": {
         "outDir": "dist",
+        "strict": true,
         "esModuleInterop": true,
         "module": "CommonJS",
         "noImplicitAny": true,
         "noEmitOnError": true,
         "skipLibCheck": true
     },
-    "include": ["./*.ts"]
+    "include": [
+        "./*.ts"
+    ]
 }

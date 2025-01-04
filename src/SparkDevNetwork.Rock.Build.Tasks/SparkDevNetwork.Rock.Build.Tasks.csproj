@@ -4,7 +4,7 @@
     <GenerateDependencyFile>True</GenerateDependencyFile>
 
     <IsPackable>true</IsPackable>
-    <Version>1.0.0-rc.1</Version>
+    <Version>1.0.0-rc.8</Version>
     <Title>SparkDevNetwork.Rock.Build.Tasks</Title>
     <Authors>Spark Development Network</Authors>
     <Description>MSBuild tasks for Rock RMS projects.</Description>
@@ -18,6 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="SparkDevNetwork.Rock.Build.Tasks.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="build\SparkDevNetwork.Rock.Build.Tasks.props" PackagePath="build\" />
     <Content Include="build\SparkDevNetwork.Rock.Build.Tasks.targets" PackagePath="build\" />
     <Content Include="Icon.png" PackagePath="" />
@@ -25,7 +29,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.3" PrivateAssets="all" ExcludeAssets="Runtime" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="8.0.0" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Update the paths that project references get copied to. -->

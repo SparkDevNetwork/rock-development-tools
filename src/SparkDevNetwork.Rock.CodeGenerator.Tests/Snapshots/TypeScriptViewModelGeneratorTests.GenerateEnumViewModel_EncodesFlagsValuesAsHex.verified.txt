@@ -1,0 +1,13 @@
+﻿export const TestSet = {
+    No: 0x0000,
+
+    Yes: 0x0001
+} as const;
+
+export const TestSetDescription: Record<number, string> = {
+    0: "No",
+
+    1: "Yes"
+};
+
+export type TestSet = number;

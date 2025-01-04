@@ -1,0 +1,14 @@
+﻿export const TestSet = {
+    No: 0,
+
+    /** @deprecated Do not use this */
+    Yes: 1
+} as const;
+
+export const TestSetDescription: Record<number, string> = {
+    0: "No",
+
+    1: "Yes"
+};
+
+export type TestSet = typeof TestSet[keyof typeof TestSet];

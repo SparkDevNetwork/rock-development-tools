@@ -3,8 +3,7 @@
 import { existsSync } from "fs";
 import path from "path";
 import process from "process";
-import { OutputOptions, RollupError, RollupOptions, RollupWatcher, rollup, watch } from "rollup";
-import { clearScreen, defineConfigs, dim, green, red } from "./lib";
+import { Bundle, BundleBuilder, BundleError, clearScreen, defineBuilders, green, red, Watcher, yellow } from "./lib";
 
 /**
  * The configuration options from the config file.
@@ -29,25 +28,29 @@ interface ObsidianOptions {
  * 
  * @param error The error that should be displayed.
  */
-function displayError(error: RollupError): void {
+function displayError(error: BundleError): void {
     let description = error.message || error;
     if (error.name) {
         description = `${error.name}: ${description}`;
     }
 
-    if (error.plugin) {
-        description = `(plugin ${error.plugin}) ${description}`;
-    }
+    process.stderr.write(`${red(`${description}`)}\n`);
 
-    process.stderr.write(`${red(`[!] ${description}`)}\n`); // red
-
-    if (error.loc) {
-        process.stderr.write(`${path.relative(process.cwd(), error.loc.file)} (${error.loc.line}:${error.loc.column})\n`);
+    if (error instanceof BundleError) {
+        process.stderr.write(`${path.relative(process.cwd(), error.filename)} (${error.line}:${error.column})\n\n`);
     }
+}
 
-    if (error.stack) {
-        process.stderr.write(`${dim(error.stack)}\n`);
-    }
+/**
+ * Creates a standard datestamp string for use in log messages.
+ * 
+ * @returns A string that describes the current date and time.
+ */
+function datestamp(): string {
+    return new Date()
+        .toISOString()
+        .replace(/T/, " ")
+        .replace(/\..+/, "");
 }
 
 /**
@@ -55,107 +58,197 @@ function displayError(error: RollupError): void {
  * 
  * @param watcher The rollup watcher that will be configured.
  */
-function configureWatcher(watcher: RollupWatcher): void {
-    watcher.on("event", ev => {
-        // A new build has started.
-        if (ev.code === "START") {
+async function watch(builders: BundleBuilder[]): Promise<void> {
+    if (builders.length === 0) {
+        process.stderr.write("No files found that need building, aborting watch.\n");
+        return;
+    }
+
+    let buildTimeout: NodeJS.Timeout | undefined;
+    let isBuilding = false;
+    let queueBuild = false;
+
+    function requestBuild() {
+        if (isBuilding) {
+            queueBuild = true;
+            return;
+        }
+
+        if (buildTimeout !== undefined) {
+            clearTimeout(buildTimeout);
+        }
+
+        buildTimeout = setTimeout(performBuild, 100);
+    }
+
+    async function performBuild(): Promise<void> {
+        isBuilding = true;
+
+        const dirtyWatchedBundles = watchedBundles.filter(wb => wb.watcher.dirty);
+
+        if (dirtyWatchedBundles.length > 0) {
+
             clearScreen();
-            process.stdout.write("starting build.\n");
-        }
+            process.stdout.write(`[${datestamp()}] File change detected. Starting build.\n\n`);
 
-        // A build has completed.
-        else if (ev.code === "END") {
-            const date = new Date();
-            const dateString = date
-                .toISOString()
-                .replace(/T/, " ")
-                .replace(/\..+/, "");
-            process.stdout.write(`\n[${dateString}] waiting for changes...\n`);
-        }
+            for (let i = 0; i < dirtyWatchedBundles.length; i++) {
+                const wb = dirtyWatchedBundles[i];
 
-        // A build has started for a single bundle.
-        else if (ev.code === "BUNDLE_START") {
-            process.stdout.write("\n");
-        }
-        
-        // A build has completed for a single bundle.
-        else if (ev.code === "BUNDLE_END") {
-            if (typeof ev.input !== "string") {
-                throw new Error("Unexpected input type, only single file inputs are supported.");
+                try {
+                    const bundle = await wb.builder.build();
+
+                    const source = path.relative(process.cwd(), bundle.source);
+                    const dest = path.relative(process.cwd(), bundle.destination);
+                    process.stdout.write(green(`[${i + 1}/${dirtyWatchedBundles.length}] ${source} => ${dest} [${bundle.duration}ms]`) + "\n");
+
+                    wb.watcher.updateWatchFiles(bundle.watchFiles);
+                }
+                catch (error) {
+                    const source = path.relative(process.cwd(), wb.builder.source);
+                    process.stdout.write(red(`[${i + 1}/${dirtyWatchedBundles.length}] ${source}`) + "\n");
+
+                    displayError(error as BundleError);
+                }
+
+                wb.watcher.dirty = false;
             }
 
-            const source = path.relative(process.cwd(), ev.input);
-            const dest = path.relative(process.cwd(), ev.output[0]);
-            process.stdout.write(green(`${source} => ${dest} [${ev.duration}ms]`) + "\n");
-            ev.result.close();
+            process.stdout.write(`\n[${datestamp()}] Build complete. Waiting for changes.\n`);
         }
 
-        // A build has encountered an error and been aborted.
-        else if (ev.code === "ERROR") {
-            displayError(ev.error);
+        isBuilding = false;
+
+        if (queueBuild) {
+            queueBuild = false;
+            buildTimeout = setTimeout(performBuild, 0);
         }
+        else {
+            buildTimeout = undefined;
+        }
+    }
+
+    const watchedBundles: { builder: BundleBuilder, watcher: Watcher }[] = builders.map(builder => {
+        const watcher = new Watcher(requestBuild);
+
+        watcher.dirty = true;
+        watcher.updateWatchFiles([builder.source]);
+
+        return {
+            builder,
+            watcher
+        };
     });
+
+    await performBuild();
 }
 
 /**
  * Executes a single build of the Obsidian project by using the rollup build
  * system.
  * 
- * @param options The options to pass to rollup for the build.
+ * @param builders The bundle builders that need to be built.
  */
-async function build(options: RollupOptions[]): Promise<void> {
-    process.stdout.write(`Compiling source files [0/${options.length}]`);
+async function build(builders: BundleBuilder[]): Promise<{ bundle: Bundle, builder: BundleBuilder }[]> {
+    const results: { bundle: Bundle, builder: BundleBuilder }[] = [];
+
+    process.stdout.write(`[${datestamp()}] Starting build.\n\n`);
 
     // Each bundle is an element of the array, loop through each one and
     // compile/bundle.
-    for (let i = 0; i < options.length; i++) {
-        const optionsObj = options[i];
+    for (let i = 0; i < builders.length; i++) {
+        const builder = builders[i];
 
         try {
-            let output: OutputOptions = Array.isArray(optionsObj.output) ? optionsObj.output[0] : optionsObj.output;
+            const bundle = await builder.build();
 
-            const bundle = await rollup(optionsObj);
-            await bundle.write(output);
-            await bundle.close();
+            const source = path.relative(process.cwd(), bundle.source);
+            const dest = path.relative(process.cwd(), bundle.destination);
+            process.stdout.write(green(`[${i + 1}/${builders.length}] ${source} => ${dest} (${bundle.duration}ms)`) + "\n");
+
+            results.push({ bundle, builder });
         }
         catch (error) {
-            process.stdout.write("\n");
-            displayError(error);
+            const source = path.relative(process.cwd(), builder.source);
+            process.stdout.write(red(`[${i + 1}/${builders.length}] ${source}`) + "\n");
+
+            displayError(error as BundleError);
 
             process.exit(1);
         }
-
-        process.stdout.write(`\rCompiling source files [${i + 1}/${options.length}]`);
     }
 
-    process.stdout.write("\n");
+    process.stdout.write(`\n[${datestamp()}] Build complete.\n`);
+
+    return results;
 }
 
-const configFilePath = path.resolve(process.cwd(), "obsidian.config.json");
+function findEnvironmentPath(startingPath: string): string | undefined {
+    let checkPath = startingPath;
 
-// Verify that the configuration file exists.
-if (!existsSync(configFilePath)) {
-    process.stderr.write("Configuration file obsidian.config.json was not found.");
-    process.exit(1);
+    while (true) {
+        if (existsSync(path.join(checkPath, "environment.json"))) {
+            return path.relative(process.cwd(), checkPath).replace(/\\/g, '/');
+        }
+
+        const nextPath = path.dirname(checkPath);
+        if (nextPath === checkPath) {
+            return undefined;
+        }
+
+        checkPath = nextPath;
+    }
 }
 
-const config = require(configFilePath) as ObsidianOptions;
+async function main(): Promise<void> {
+    let configFilePath = path.resolve(process.cwd(), "obsidian.config.json");
+    let useWatch = false;
 
-// Verify the configuration file is valid.
-if (!config.source) {
-    process.stderr.write("Must specify the source path of the files to compile.");
-    process.exit(1);
+    for (let i = 0; i < process.argv.length; i++) {
+        if (process.argv[i] === "--watch") {
+            useWatch = true;
+        }
+        else if (process.argv[i] === "--config" && i + 1 < process.argv.length) {
+            configFilePath = path.resolve(process.cwd(), process.argv[i + 1]);
+            i++;
+        }
+    }
+
+    // Verify that the configuration file exists.
+    if (!existsSync(configFilePath)) {
+        process.stderr.write("Configuration file obsidian.config.json was not found.");
+        process.exit(1);
+    }
+
+    const config = require(configFilePath) as ObsidianOptions;
+
+    // Verify the configuration file is valid.
+    if (!config.source) {
+        process.stderr.write("Must specify the source path of the files to compile.");
+        process.exit(1);
+    }
+
+    if (config.destination && config.destination.includes("$(Environment)") && config.copy) {
+        const environmentPath = findEnvironmentPath(path.dirname(configFilePath));
+
+        if (!environmentPath) {
+            process.stdout.write(yellow("Note: Environment not found, skipping copy phase.") + "\n");
+            config.copy = false;
+        }
+        else {
+            config.destination = config.destination.replace("$(Environment)", environmentPath);
+        }
+    }
+
+    const builders = defineBuilders(path.resolve(path.dirname(configFilePath), config.source), path.resolve(path.dirname(configFilePath), "dist"), {
+        copy: config.copy === true ? config.destination : undefined
+    });
+
+    if (useWatch) {
+        watch(builders);
+    }
+    else {
+        await build(builders);
+    }
 }
 
-const options = defineConfigs(path.resolve(process.cwd(), config.source), path.resolve(process.cwd(), "dist"), {
-    copy: config.copy === true ? config.destination : undefined
-});
-
-const useWatch = process.argv.includes("--watch");
-
-if (useWatch) {
-    configureWatcher(watch(options));
-}
-else {
-    build(options);
-}
+main();

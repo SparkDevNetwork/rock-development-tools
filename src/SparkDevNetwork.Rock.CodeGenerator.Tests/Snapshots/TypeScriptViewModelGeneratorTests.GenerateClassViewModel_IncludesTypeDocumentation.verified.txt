@@ -1,0 +1,4 @@
+﻿/** This is a test. */
+export type TestBag = {
+    id: number;
+};

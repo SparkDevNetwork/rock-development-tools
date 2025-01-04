@@ -7,14 +7,24 @@
         <RockBuildTasksAssemblyFile Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net6.0\SparkDevNetwork.Rock.Build.Tasks.dll</RockBuildTasksAssemblyFile>
     </PropertyGroup>
 
-    <!-- Tasks -->
+    <!-- CopyAssemblyToRockWeb task and defaults -->
     <UsingTask
         TaskName="SparkDevNetwork.Rock.Build.Tasks.CopyAssemblyToRockWeb"
         AssemblyFile="$(RockBuildTasksAssemblyFile)" />
 
-    <!-- Defined default property values. -->
     <PropertyGroup>
         <CopyToRockWeb>False</CopyToRockWeb>
+        <AdditionalAssembliesToCopy></AdditionalAssembliesToCopy>
         <RockWebPath></RockWebPath>
+    </PropertyGroup>
+
+    <!-- GetPluginVersion task and defaults -->
+    <UsingTask
+        TaskName="SparkDevNetwork.Rock.Build.Tasks.GetPluginVersion"
+        AssemblyFile="$(RockBuildTasksAssemblyFile)" />
+
+    <PropertyGroup>
+        <UpdateVersionFromPlugin>True</UpdateVersionFromPlugin>
+        <PluginConfigurationFile>$(MSBuildProjectDirectory)\..\plugin.json</PluginConfigurationFile>
     </PropertyGroup>
 </Project>

@@ -1,25 +1,24 @@
 {
-  "name": "@sparkdevnetwork/eslint-config-rock-recommended",
-  "version": "1.0.0-rc.1",
-  "description": "Recommended ESLint rules for Rock plugins.",
-  "main": "index.js",
-  "scripts": {
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/SparkDevNetwork/rock-development-tools.git"
-  },
-  "keywords": [
-    "rockrms",
-    "eslint"
-  ],
-  "author": "Spark Development Network",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/SparkDevNetwork/rock-development-tools/issues"
-  },
-  "homepage": "https://github.com/SparkDevNetwork/rock-development-tools#readme",
-  "peerDependencies": {
-    "eslint": ">= 3"
-  }
+    "name": "@sparkdevnetwork/eslint-config-rock-recommended",
+    "version": "1.0.0-rc.1",
+    "description": "Recommended ESLint rules for Rock plugins.",
+    "main": "index.js",
+    "scripts": {},
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/SparkDevNetwork/rock-development-tools.git"
+    },
+    "keywords": [
+        "rockrms",
+        "eslint"
+    ],
+    "author": "Spark Development Network",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/SparkDevNetwork/rock-development-tools/issues"
+    },
+    "homepage": "https://github.com/SparkDevNetwork/rock-development-tools#readme",
+    "peerDependencies": {
+        "eslint": ">= 3"
+    }
 }

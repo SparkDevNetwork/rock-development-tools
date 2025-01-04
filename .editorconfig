@@ -1,5 +1,24 @@
 root = true
 
+[*]
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Legacy solution files
+[*.sln]
+indent_style = tab
+indent_size = 8
+
+# Xml project files
+[*.{csproj,esproj}]
+indent_size = 2
+
+# Xml config files
+[*.{props,targets,config,nuspec,runsettings}]
+indent_size = 2
+
 [*.cs]
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = true
@@ -8,3 +27,19 @@ csharp_space_between_parentheses = control_flow_statements, expressions, type_ca
 csharp_space_between_method_declaration_parameter_list_parentheses = true
 csharp_space_between_method_call_parameter_list_parentheses = true
 dotnet_diagnostic.IDE0290.severity = none
+
+# Shell scripts
+[*.sh]
+end_of_line = lf
+[*.{cmd,bat}]
+end_of_line = crlf
+
+# Verify settings
+[*.{received,verified}.{json,txt,xml}]
+charset = "utf-8-bom"
+end_of_line = lf
+indent_size = unset
+indent_style = unset
+insert_final_newline = false
+tab_width = unset
+trim_trailing_whitespace = false

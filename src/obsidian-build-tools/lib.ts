@@ -1,7 +1,9 @@
 import { sync as globSync } from "glob";
 import { statSync, readdirSync } from "fs";
+import { mkdir, readFile, writeFile } from "fs/promises";
 import * as path from "path";
-import { defineConfig as defineRollupConfig, Plugin, RollupOptions } from "rollup";
+import chokidar from "chokidar";
+import { defineConfig as defineRollupConfig, OutputOptions, Plugin, rollup } from "rollup";
 import vuePlugin from "rollup-plugin-vue";
 import babelPlugin from "@rollup/plugin-babel";
 import commonJsPlugin from "@rollup/plugin-commonjs";
@@ -13,9 +15,33 @@ import cssnano from "cssnano";
 import { cwd } from "process";
 import babelPresetEnv from "@babel/preset-env";
 import babelTypescript from "@babel/preset-typescript";
+import { compileStylesheetFile, minifyString, StylesheetError, StylesheetOutput } from "./css";
+
+// #region Interfaces
 
 /**
- * The configuration options to use when generating the rollup configuration
+ * The configuration options to use when generating the configuration object(s).
+ */
+export interface ConfigOptions {
+    /**
+     * If enabled the output file will be minified. Set to "auto" to use the
+     * environment variable TODO to determine if minification should be used.
+     */
+    minify?: boolean | "auto";
+
+    /**
+     * The directory to copy the output file(s) to.
+     */
+    copy?: string;
+
+    /**
+     * The options specific to compiler TypeScript files.
+     */
+    script?: ScriptConfigOptions;
+}
+
+/**
+ * The configuraiton options to use when generating script configuration
  * object(s). There are four build modes.
  *
  * Normal compiles the input file and
@@ -35,18 +61,7 @@ import babelTypescript from "@babel/preset-typescript";
  * This is useless to blocks and plugin developers. It is used by the framework
  * to build special directories that are then handled by the loader.
  */
-export interface ConfigOptions {
-    /**
-     * If enabled the output file will be minified. Set to "auto" to use the
-     * environment variable TODO to determine if minification should be used.
-     */
-    minify?: boolean | "auto";
-
-    /**
-     * The directory to copy the output file(s) to.
-     */
-    copy?: string;
-
+export interface ScriptConfigOptions {
     /**
      * If enabled the entire directory tree will be bundled into a single file.
      * The outputPath should specify a filename instead of a directory. This is
@@ -68,6 +83,67 @@ export interface ConfigOptions {
      */
     lib?: boolean;
 }
+
+/**
+ * A bundle that describes a previous build operation.
+ */
+export interface Bundle {
+    /** The primary source file that was built. */
+    source: string;
+
+    /** The destination file that was written. */
+    destination: string;
+
+    /** The files to be watched for changes to initiate a rebuild. */
+    watchFiles: string[];
+
+    /** Duration in milliseconds this build took. */
+    duration: number;
+}
+
+/**
+ * Defines a builder that will build and output a bundle.
+ */
+export interface BundleBuilder {
+    /** The primary source file for this bundle. */
+    readonly source: string;
+
+    /** The function that will build the bundle. */
+    build(): Promise<Bundle>;
+}
+
+/**
+ * The internal configuration for a stylesheet builder.
+ */
+interface StylesheetConfiguration {
+    /** The absolute path to the file that will be compiled. */
+    source: string;
+
+    /** The absolute path to the output file. */
+    destination: string;
+
+    /** If `true` then the output will be minified. */
+    minify: boolean;
+
+    /** If set then this contains the absolute path to copy the output to. */
+    copy?: string;
+}
+
+/**
+ * The internal configuration for an static file builder.
+ */
+interface StaticFileConfiguration {
+    /** The absolute path to the file that will be compiled. */
+    source: string;
+
+    /** The absolute path to the output file. */
+    destination: string;
+
+    /** If set then this contains the absolute path to copy the output to. */
+    copy?: string;
+}
+
+// #endregion
 
 // #region Rollup Plugins
 
@@ -186,6 +262,17 @@ export function green(text: string): string {
 }
 
 /**
+ * Wraps the text in ANSI sequence to make the foreground color yellow.
+ * 
+ * @param text The text that should be made yellow.
+ * 
+ * @returns A new string with the text wrapped in ANSI sequences.
+ */
+export function yellow(text: string): string {
+    return `\u001b[33m${text}\u001b[39m`;
+}
+
+/**
  * Wraps the text in ANSI sequence to make the foreground color dim.
  * 
  * @param text The text that should be made dim.
@@ -196,22 +283,45 @@ export function dim(text: string): string {
     return `\u001b[2m${text}\u001b[22m`;
 }
 
-// #endregion
-
-// #region Rollup Configs
-
 /**
- * Compiles all the files, including those in sub directories, for a given
- * directory. Any filename ending with .lib.ts will be automatically compiled
- * with ConfigOptions.lib option enabled.
+ * Defines the builders for all the valid source files, including those
+ * in sub directories, for a given directory.
  *
  * @param sourcePath The base path to use when searching for files to compile.
- * @param outputPath The base output path to use when searching for files to compile. The relative paths to the source files will be maintained when compiled to this location.
- * @param options The options to pass to defineFileConfig.
+ * @param outputPath The base output path to use when writing the compiled
+ * files. The relative paths to the source files will be maintained when
+ * compiled to this location.
+ * @param options The options that define how the files are compiled.
  *
- * @returns An array of rollup configuration objects.
+ * @returns An array of {@link BundleBuilder} objects.
  */
-export function defineConfigs(sourcePath: string, outputPath: string, options: ConfigOptions): RollupOptions[] {
+export function defineBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
+    return [
+        ...defineScriptBuilders(sourcePath, outputPath, options),
+        ...defineStylesheetBuilders(sourcePath, outputPath, options),
+        ...defineStaticFileBuilders(sourcePath, outputPath, options)
+    ];
+}
+
+// #endregion
+
+// #region Script Builders
+
+/**
+ * Defines the builders for all the TypeScript and Obsidian files,
+ * including those in sub directories, for a given directory. Any filename
+ * ending with .lib.ts will be automatically compiled with ConfigOptions.lib
+ * option enabled.
+ *
+ * @param sourcePath The base path to use when searching for files to compile.
+ * @param outputPath The base output path to use when writing the compiled
+ * files. The relative paths to the source files will be maintained when
+ * compiled to this location.
+ * @param options The options to pass to {@link defineScriptFileBuilder}.
+ *
+ * @returns An array of {@link BundleBuilder} objects.
+ */
+export function defineScriptBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
     options = options || {};
 
     const files = globSync(sourcePath.replace(/\\/g, "/") + "/**/*.@(ts|obs)")
@@ -221,6 +331,8 @@ export function defineConfigs(sourcePath: string, outputPath: string, options: C
     return files.map(file => {
         const fileOptions = Object.assign({}, options);
         let outFile = file;
+
+        fileOptions.script ??= {};
 
         // If the caller requested a copy operation, append the path to the
         // source file to the copy destination. If sourcePath is "/src" and
@@ -233,7 +345,7 @@ export function defineConfigs(sourcePath: string, outputPath: string, options: C
         // If the filename indicates it should be compiled as a library then
         // enable that option in the file options.
         if (file.endsWith(".lib.ts") || file.endsWith(".lib.obs")) {
-            fileOptions.lib = true;
+            fileOptions.script.lib = true;
         }
 
         // Fix extension names for the output file.
@@ -244,20 +356,20 @@ export function defineConfigs(sourcePath: string, outputPath: string, options: C
             outFile = outFile.replace(/\.ts$/, ".js");
         }
 
-        return defineFileConfig(path.join(sourcePath, file), path.join(outputPath, outFile), fileOptions);
+        return defineScriptFileBuilder(path.join(sourcePath, file), path.join(outputPath, outFile), fileOptions);
     });
 }
 
 /**
- * Defines the rollup configuration object for a single file.
+ * Defines the builder object for a single script file.
  *
  * @param input The path to the input file or directory to be built.
  * @param output The path to the output file or directory to write compiled files.
  * @param options The configuration options to use when compiling the source.
  *
- * @returns A rollup configuration object.
+ * @returns A {@link BundleBuilder} object.
  */
-export function defineFileConfig(input: string, output: string, options: ConfigOptions): RollupOptions {
+export function defineScriptFileBuilder(input: string, output: string, options: ConfigOptions): BundleBuilder {
     let virtualPlugin: Plugin | undefined = undefined;
     let inputFile = input;
     const absoluteSrcPath = path.resolve(input);
@@ -267,7 +379,7 @@ export function defineFileConfig(input: string, output: string, options: ConfigO
     // If they requested the special nested structure, we need to generate
     // a special index file that exports all the files and folders
     // recursively.
-    if (options.nested) {
+    if (options.script?.nested) {
         const virtualData = {};
         inputFile = createVirtualNestedIndex(virtualData, input);
         virtualPlugin = virtual(virtualData);
@@ -292,7 +404,7 @@ export function defineFileConfig(input: string, output: string, options: ConfigO
             }
 
             // If we are building a library, always bundle all externals.
-            if (options.lib) {
+            if (options?.script?.lib) {
                 // Except these special cases that are handled by our global
                 // imports and need to be standard.
                 if (target === "vue") {
@@ -318,7 +430,7 @@ export function defineFileConfig(input: string, output: string, options: ConfigO
             }
 
             // If we are building a bundled file then include any relative imports.
-            if (options.bundled || options.nested) {
+            if (options?.script?.bundled || options?.script?.nested) {
                 if (target.startsWith("./") || target.startsWith(absoluteSrcPath)) {
                     return false;
                 }
@@ -368,7 +480,7 @@ export function defineFileConfig(input: string, output: string, options: ConfigO
 
     // If they requested minification, then do so.
     if (options.minify) {
-        config.plugins.push(terserPlugin());
+        config.plugins!.push(terserPlugin());
     }
 
     // If they wanted to copy it, do that after the bundle is closed.
@@ -376,7 +488,7 @@ export function defineFileConfig(input: string, output: string, options: ConfigO
         const copySource = path.relative(cwd(), output).replace(/\\/g, "/");
         const copyDestination = path.relative(cwd(), options.copy).replace(/\\/g, "/");
 
-        config.plugins.push(copyPlugin({
+        config.plugins!.push(copyPlugin({
             targets: [
                 {
                     src: copySource,
@@ -391,7 +503,315 @@ export function defineFileConfig(input: string, output: string, options: ConfigO
         }));
     }
 
-    return config;
+    return {
+        source: config.input as string,
+        async build(): Promise<Bundle> {
+            const start = Date.now();
+            const bundle = await rollup(config);
+
+            let output: OutputOptions | undefined = Array.isArray(config.output) ? config.output[0] : config.output;
+            if (output) {
+                await bundle.write(output);
+            }
+
+            await bundle.close();
+
+            const duration = Math.floor((Date.now() - start) / 1000);
+
+            return {
+                source: config.input as string,
+                destination: output?.file ?? "none",
+                duration,
+                watchFiles: bundle.watchFiles
+            };
+        }
+    };
 }
 
 // #endregion
+
+// #region Stylesheet Builders
+
+/**
+ * Defines the configuration for all the stylesheet files that need to be
+ * compiled, including those in sub directories, for a given directory. Any
+ * filename ending with .css, .less, .scss or .sass will be included.
+ * 
+ * @param sourcePath The base path to use when searching for files to compile.
+ * @param outputPath The base output path to use when writing the compiled
+ * files. The relative paths to the source files will be maintained when
+ * compiled to this location.
+ * @param options The options that define how the files are compiled.
+ * 
+ * @returns An array of {@link BundleBuilder} objects.
+ */
+export function defineStylesheetBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
+    options = options || {};
+
+    const ignoredExtensions: string[] = [
+        ".partial.css",
+        ".partial.less",
+        ".partial.sass",
+        ".partial.scss"
+    ];
+
+    const files = globSync(sourcePath.replace(/\\/g, "/") + "/**/*.@(css|less|sass|scss)")
+        .map(f => path.normalize(f).substring(sourcePath.length + 1))
+        .filter(f => !ignoredExtensions.some(ext => f.endsWith(ext)));
+
+    return files.map(file => {
+        let outFile = file;
+
+        if (outFile.endsWith(".less") || outFile.endsWith(".sass") || outFile.endsWith(".scss")) {
+            outFile = `${outFile.substring(0, outFile.length - 4)}css`;
+        }
+
+        const configuration: StylesheetConfiguration = {
+            source: path.join(sourcePath, file),
+            destination: path.join(outputPath, outFile),
+            minify: false
+        };
+
+        // If the caller requested a copy operation, append the path to the
+        // source file to the copy destination. If sourcePath is "/src" and
+        // outputPath is "/dist" and file is "/src/a/b/c.js" then the new
+        // copy path becomes "/dist/a/b".
+        if (options.copy) {
+            configuration.copy = path.join(options.copy, path.dirname(file));
+        }
+
+        const builder: BundleBuilder = {
+            source: configuration.source,
+            build(): Promise<Bundle> {
+                return buildStylesheet(configuration);
+            }
+        };
+
+        return builder;
+    });
+}
+
+/**
+ * Builds a single stylesheet from the configuration.
+ * 
+ * @param configuration The configuration that defines the stylesheet to build.
+ * 
+ * @returns An instance of {@link Bundle} describing the output.
+ */
+export async function buildStylesheet(configuration: StylesheetConfiguration): Promise<Bundle> {
+    const start = Date.now();
+    let output: StylesheetOutput;
+
+    try {
+        output = await compileStylesheetFile(configuration.source);
+    }
+    catch (error) {
+        if (error instanceof StylesheetError) {
+            throw new BundleError(error.message, error.filename, error.line, error.column);
+        }
+
+        throw error;
+    }
+
+    let css = output.css;
+
+    if (configuration.minify) {
+        css = await minifyString(css);
+    }
+
+    await mkdir(path.dirname(configuration.destination), { recursive: true });
+    await writeFile(configuration.destination, css);
+
+    if (configuration.copy) {
+        await mkdir(configuration.copy, { recursive: true });
+        await writeFile(path.join(configuration.copy, path.basename(configuration.source)), css);
+    }
+
+    const duration = Math.floor((Date.now() - start) / 1000);
+
+    return {
+        source: configuration.source,
+        destination: configuration.destination,
+        duration,
+        watchFiles: output.watchFiles
+    };
+}
+
+// #endregion
+
+// #region Static File Builders
+
+/**
+ * Defines the configuration for all the static files that need to be
+ * "compiled", including those in sub directories, for a given directory. Any
+ * filename ending with .css, .less, .scss or .sass will be included.
+ * 
+ * @param sourcePath The base path to use when searching for files to compile.
+ * @param outputPath The base output path to use when writing the compiled
+ * files. The relative paths to the source files will be maintained when
+ * compiled to this location.
+ * @param options The options that define how the files are compiled.
+ * 
+ * @returns An array of {@link BundleBuilder} objects.
+ */
+export function defineStaticFileBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
+    options = options || {};
+
+    const extensions: string[] = [
+        "jpg",
+        "jpeg",
+        "png",
+        "apng",
+        "gif",
+        "svg",
+        "webp",
+        "lava",
+    ];
+
+    const files = globSync(sourcePath.replace(/\\/g, "/") + `/**/*.@(${extensions.join("|")})`)
+        .map(f => path.normalize(f).substring(sourcePath.length + 1));
+
+    return files.map(file => {
+        let outFile = file;
+
+        const configuration: StaticFileConfiguration = {
+            source: path.join(sourcePath, file),
+            destination: path.join(outputPath, outFile)
+        };
+
+        // If the caller requested a copy operation, append the path to the
+        // source file to the copy destination. If sourcePath is "/src" and
+        // outputPath is "/dist" and file is "/src/a/b/c.jpg" then the new
+        // copy path becomes "/dist/a/b".
+        if (options.copy) {
+            configuration.copy = path.join(options.copy, path.dirname(file));
+        }
+
+        const builder: BundleBuilder = {
+            source: configuration.source,
+            build(): Promise<Bundle> {
+                return buildStaticFile(configuration);
+            }
+        };
+
+        return builder;
+    });
+}
+
+/**
+ * Builds a single static from the configuration.
+ * 
+ * @param configuration The configuration that defines the static file to copy.
+ * 
+ * @returns An instance of {@link Bundle} describing the output.
+ */
+export async function buildStaticFile(configuration: StaticFileConfiguration): Promise<Bundle> {
+    const start = Date.now();
+    let data: Buffer;
+
+    try {
+        data = await readFile(configuration.source);
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            throw new BundleError(error.message, configuration.source, 0, 0);
+        }
+
+        throw error;
+    }
+
+    await mkdir(path.dirname(configuration.destination), { recursive: true });
+    await writeFile(configuration.destination, data);
+
+    if (configuration.copy) {
+        await mkdir(configuration.copy, { recursive: true });
+        await writeFile(path.join(configuration.copy, path.basename(configuration.source)), data);
+    }
+
+    const duration = Math.floor((Date.now() - start) / 1000);
+
+    return {
+        source: configuration.source,
+        destination: configuration.destination,
+        duration,
+        watchFiles: [configuration.source]
+    };
+}
+
+// #endregion
+
+/**
+ * An error reported by the bundling system.
+ */
+export class BundleError extends Error {
+    /** The filename that caused the error. */
+    public readonly filename: string;
+
+    /** The line number that caused the error. */
+    public readonly line: number;
+
+    /** The column in the line that caused the error. */
+    public readonly column: number;
+
+    /**
+     * Creates a new instance of {@link BundleError}.
+     * 
+     * @param message The message that describes the error.
+     * @param filename The filename that caused the error.
+     * @param line The line number that caused the error.
+     * @param column The column in the line that caused the error.
+     */
+    public constructor(message: string, filename: string, line: number, column: number) {
+        super(message);
+
+        Object.setPrototypeOf(this, new.target.prototype);
+
+        this.filename = filename;
+        this.line = line;
+        this.column = column;
+    }
+}
+
+/**
+ * Simple helper for watching file changes and triggering an event when one
+ * of the watched files is changed.
+ */
+export class Watcher {
+    private readonly watcher: chokidar.FSWatcher;
+
+    private readonly callback: () => void;
+
+    private watchedFiles: string[] = [];
+
+    /** This will be set to `true` whenever a watched file has changed. */
+    public dirty: boolean = false;
+
+    /**
+     * Creates a new instance of {@link Watcher}.
+     * 
+     * @param callback The function to call when any file has changed.
+     */
+    public constructor(callback: () => void) {
+        this.callback = callback;
+        this.watcher = chokidar.watch([]);
+        this.watcher.on("change", () => {
+            this.dirty = true;
+            this.callback();
+        });
+    }
+
+    /**
+     * Updates the list of watched files by adding new watchers and removing old
+     * watchers based on the list of files.
+     * 
+     * @param files The new list of files to be watched.
+     */
+    public updateWatchFiles(files: string[]): void {
+        const validFiles = files.filter(f => !f.includes("\0"));
+        const filesToUnwatch = this.watchedFiles.filter(f => !validFiles.includes(f));
+        const filesToWatch = validFiles.filter(f => !this.watchedFiles.includes(f));
+
+        this.watcher.unwatch(filesToUnwatch);
+        this.watcher.add(filesToWatch);
+    }
+}
