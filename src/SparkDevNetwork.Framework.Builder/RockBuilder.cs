@@ -114,11 +114,14 @@ partial class RockBuilder
 
         var gitPath = Path.Combine( path, ".git" );
 
-        foreach ( string fileName in Directory.EnumerateFiles( gitPath, "*", SearchOption.AllDirectories ) )
+        if ( Directory.Exists( gitPath ) )
         {
-            var fileInfo = new FileInfo( fileName );
+            foreach ( string fileName in Directory.EnumerateFiles( gitPath, "*", SearchOption.AllDirectories ) )
+            {
+                var fileInfo = new FileInfo( fileName );
 
-            fileInfo.Attributes = FileAttributes.Normal;
+                fileInfo.Attributes = FileAttributes.Normal;
+            }
         }
 
         Directory.Delete( path, true );
