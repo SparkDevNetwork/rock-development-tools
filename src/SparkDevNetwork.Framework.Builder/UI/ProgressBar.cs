@@ -19,6 +19,11 @@ sealed class ProgressBar
     private readonly string _taskName;
 
     /// <summary>
+    /// Determines if the task completed successfully.
+    /// </summary>
+    private bool _taskStatus = true;
+
+    /// <summary>
     /// The current progress step towards the total.
     /// </summary>
     private int _step;
@@ -54,15 +59,23 @@ sealed class ProgressBar
     /// <param name="taskName">The name of the task to display.</param>
     /// <param name="totalSteps">The number of steps in this task.</param>
     /// <param name="executor">The action to execute.</param>
-    public static void Run( string taskName, int totalSteps, Func<ProgressBar, bool> executor )
+    public static void Run( string taskName, int totalSteps, Action<ProgressBar> executor )
     {
         var bar = new ProgressBar( taskName, totalSteps );
 
         bar.Start();
 
-        var result = executor( bar );
+        try
+        {
+            executor( bar );
 
-        bar.Stop( result );
+            bar.Stop( bar._taskStatus );
+        }
+        catch
+        {
+            bar.Stop( false );
+            throw;
+        }
     }
 
     /// <summary>
@@ -71,15 +84,31 @@ sealed class ProgressBar
     /// <param name="taskName">The name of the task to display.</param>
     /// <param name="totalSteps">The number of steps in this task.</param>
     /// <param name="executor">The action to execute.</param>
-    public static async Task Run( string taskName, int totalSteps, Func<ProgressBar, Task<bool>> executor )
+    public static async Task Run( string taskName, int totalSteps, Func<ProgressBar, Task> executor )
     {
         var bar = new ProgressBar( taskName, totalSteps );
 
         bar.Start();
 
-        var result = await executor( bar );
+        try
+        {
+            await executor( bar );
 
-        bar.Stop( result );
+            bar.Stop( bar._taskStatus );
+        }
+        catch
+        {
+            bar.Stop( false );
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Indicates that the task has failed and should report an error.
+    /// </summary>
+    public void Fail()
+    {
+        _taskStatus = false;
     }
 
     /// <summary>

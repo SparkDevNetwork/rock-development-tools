@@ -2,25 +2,25 @@
 
 class Program
 {
-    static void Main( string[] args )
+    static async Task Main( string[] args )
     {
-        var builder = new RockBuilder();
+        var buildPath = Path.Combine( Path.GetTempPath(), "rock-framework-builder" );
+        var builder = new RockBuilder( buildPath );
 
-        var version = builder.PromptForRockVersion();
-        var suffix = builder.PromptForPrereleaseSuffix( version );
-
-        var rockPath = Directory.CreateTempSubdirectory().FullName;
+        Console.WriteLine( $"Building in {buildPath}" );
 
         try
         {
-            Console.WriteLine( $"Downloading to {rockPath}" );
+            var version = builder.PromptForRockVersion();
+            var suffix = builder.PromptForPrereleaseSuffix( version );
 
-            // builder.DownloadRock( version, rockPath );
+            builder.DownloadRock( version );
+
+            await builder.BuildProjectAsync( "Rock.Enums" );
         }
         finally
         {
-            RockBuilder.DeleteRepository( rockPath );
-            Console.WriteLine( $"Deleted {rockPath}" );
+            builder.Cleanup();
         }
     }
 }

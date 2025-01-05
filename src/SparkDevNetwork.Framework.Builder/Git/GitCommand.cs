@@ -24,20 +24,18 @@ static partial class GitCommand
     /// <returns>A collection of <see cref="GitReference"/> objects.</returns>
     public static List<GitReference> ListRemoteReferences( string remoteRepo, params string[] refSpecs )
     {
-        var reporter = new StringsCommandProgress();
-        var executor = new CommandExecutor( "git", ["ls-remote", remoteRepo, .. refSpecs] )
-        {
-            ProgressReporter = reporter
-        };
+        var command = new CommandExecutor( "git", ["ls-remote", remoteRepo, .. refSpecs] );
 
-        if ( executor.Execute() != 0 )
+        var commandResult = command.Execute();
+
+        if ( commandResult.ExitCode != 0 )
         {
             throw new Exception( "Failed to list remote refs." );
         }
 
         var references = new List<GitReference>();
 
-        foreach ( var msg in reporter.Output )
+        foreach ( var msg in commandResult.Output )
         {
             var match = ListRemoteRefLineRegExp().Match( msg );
 

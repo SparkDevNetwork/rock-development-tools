@@ -28,6 +28,11 @@ sealed class IndeterminateBar
     private CancellationTokenSource? _cancellationTokenSource;
 
     /// <summary>
+    /// Determines if the task completed successfully.
+    /// </summary>
+    private bool _taskStatus = true;
+
+    /// <summary>
     /// The string that represents the filled bar.
     /// </summary>
     private const string BarString = "\u2592\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2592";
@@ -64,7 +69,7 @@ sealed class IndeterminateBar
     /// </summary>
     /// <param name="taskName">The name of the task to display.</param>
     /// <param name="executor">The action to execute.</param>
-    public static void Run( string taskName, Func<IndeterminateBar, bool> executor )
+    public static T Run<T>( string taskName, Func<IndeterminateBar, T> executor )
     {
         var bar = new IndeterminateBar( taskName );
 
@@ -74,7 +79,9 @@ sealed class IndeterminateBar
         {
             var result = executor( bar );
 
-            bar.Stop( result );
+            bar.Stop( bar._taskStatus );
+
+            return result;
         }
         catch
         {
@@ -88,7 +95,7 @@ sealed class IndeterminateBar
     /// </summary>
     /// <param name="taskName">The name of the task to display.</param>
     /// <param name="executor">The action to execute.</param>
-    public static async Task Run( string taskName, Func<IndeterminateBar, Task<bool>> executor )
+    public static async Task<T> Run<T>( string taskName, Func<IndeterminateBar, Task<T>> executor )
     {
         var bar = new IndeterminateBar( taskName );
 
@@ -98,13 +105,23 @@ sealed class IndeterminateBar
         {
             var result = await executor( bar );
 
-            bar.Stop( result );
+            bar.Stop( bar._taskStatus );
+
+            return result;
         }
         catch
         {
             bar.Stop( false );
             throw;
         }
+    }
+
+    /// <summary>
+    /// Indicates that the task has failed and should report an error.
+    /// </summary>
+    public void Fail()
+    {
+        _taskStatus = false;
     }
 
     /// <summary>

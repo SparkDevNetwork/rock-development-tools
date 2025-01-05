@@ -20,6 +20,11 @@ class CommandExecutor
     private readonly string[] _arguments;
 
     /// <summary>
+    /// The working directory to launch the command in.
+    /// </summary>
+    public string? WorkingDirectory { get; set; }
+
+    /// <summary>
     /// The object that will receive progress updates from the command.
     /// </summary>
     public ICommandProgress? ProgressReporter { get; set; }
@@ -53,7 +58,7 @@ class CommandExecutor
     /// Executes the command and returns the exit code.
     /// </summary>
     /// <returns>The status code from the executed command.</returns>
-    public int Execute()
+    public CommandResult Execute()
     {
         ProgressReporter?.OnStarted();
 
@@ -62,6 +67,7 @@ class CommandExecutor
             var startInfo = new ProcessStartInfo
             {
                 FileName = _command,
+                WorkingDirectory = WorkingDirectory ?? string.Empty,
                 UseShellExecute = false,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
@@ -81,6 +87,7 @@ class CommandExecutor
 
             proc.Start();
 
+            var output = new List<string>();
             var reader = ProgressFromStandardError
                 ? proc.StandardError
                 : proc.StandardOutput;
@@ -91,13 +98,14 @@ class CommandExecutor
 
                 if ( line != null )
                 {
+                    output.Add( line );
                     ProgressReporter?.OnProgress( line );
                 }
             }
 
             proc.WaitForExit();
 
-            return proc.ExitCode;
+            return new CommandResult( proc.ExitCode, [.. output] );
         }
         finally
         {

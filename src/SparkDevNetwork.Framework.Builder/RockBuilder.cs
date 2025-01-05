@@ -23,9 +23,25 @@ partial class RockBuilder
     private static partial Regex VersionRegExp();
 
     /// <summary>
+    /// The path that Rock will be downloaded and built in.
+    /// </summary>
+    private readonly string _rockPath;
+
+    /// <summary>
+    /// A instance that will handle VS related commands.
+    /// </summary>
+    private readonly VisualStudio _visualStudio;
+
+    /// <summary>
     /// The URL to use when accessing the Rock repository.
     /// </summary>
     public string RepositoryUrl { get; set; } = "https://github.com/SparkDevNetwork/Rock";
+
+    public RockBuilder( string buildPath )
+    {
+        _rockPath = Path.Combine( buildPath, "Rock" );
+        _visualStudio = new VisualStudio( buildPath );
+    }
 
     /// <summary>
     /// Gets the possible version tags that can be used when building Rock.
@@ -74,7 +90,7 @@ partial class RockBuilder
         var prompt = new SelectionPrompt<RockVersionTag>()
             .Title( "Build which version of Rock" )
             .PageSize( 10 )
-            .MoreChoicesText( "[grey](Move up and down to reveal more fruits)[/]" )
+            .MoreChoicesText( "[grey](Move up and down to reveal more)[/]" )
             .AddChoices( versions.OrderByDescending( v => v.Version ) );
 
         prompt.Converter = v => v.Version.ToString();
@@ -123,38 +139,121 @@ partial class RockBuilder
     /// </summary>
     /// <param name="version">The version to download.</param>
     /// <param name="path">The path to clone the repository into.</param>
-    public void DownloadRock( RockVersionTag version, string path )
+    public void DownloadRock( RockVersionTag version )
     {
+        if ( Directory.Exists( _rockPath ) )
+        {
+            DeleteRepository( _rockPath );
+        }
+
         ProgressBar.Run( "Downloading Rock", 1, bar =>
         {
             try
             {
-                var executor = new CommandExecutor( "git",
+                var command = new CommandExecutor( "git",
                     "clone",
                     RepositoryUrl,
-                    path,
+                    _rockPath,
                     "--progress",
                     "--depth",
                     "1",
                     "--branch",
-                    version.Tag );
+                    version.Tag )
+                {
+                    ProgressFromStandardError = true,
+                    ProgressReporter = new GitCloneProgressReporter( bar )
+                };
 
-                executor.ProgressFromStandardError = true;
-                executor.ProgressReporter = new GitCloneProgressReporter( bar );
+                var commandResult = command.Execute();
 
-                var status = executor.Execute();
-
-                return status == 0;
+                if ( commandResult.ExitCode != 0 )
+                {
+                    bar.Fail();
+                }
             }
             catch
             {
-                if ( Directory.Exists( path ) )
+                if ( Directory.Exists( _rockPath ) )
                 {
-                    DeleteRepository( path );
+                    DeleteRepository( _rockPath );
                 }
                 throw;
             }
         } );
+    }
+
+    /// <summary>
+    /// Builds the specified project from the Rock solution.
+    /// </summary>
+    /// <param name="projectName">The name of the project to build.</param>
+    /// <returns><c>true</c> if the project was built.</returns>
+    public async Task<bool> BuildProjectAsync( string projectName )
+    {
+        var projectPath = Path.Combine( _rockPath, projectName );
+
+        var buildResult = await IndeterminateBar.Run( $"Building {projectName}", async bar =>
+        {
+            var commandResult = await _visualStudio.BuildAsync( [
+                $"{projectName}.csproj",
+                "/p:Configuration=Release",
+                "/nr:false"
+            ], projectPath );
+
+            if ( commandResult.ExitCode != 0 )
+            {
+                bar.Fail();
+            }
+
+            return commandResult;
+        } );
+
+        if ( buildResult!.ExitCode != 0 )
+        {
+            buildResult.WriteOutput();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Builds the specified projects from the Rock solution.
+    /// </summary>
+    /// <param name="projectNames">The names of the projects to build.</param>
+    /// <returns><c>true</c> if the projects were built.</returns>
+    public async Task<bool> BuildProjectsAsync( params string[] projectNames )
+    {
+        var restoreResult = await IndeterminateBar.Run( "Restoring NuGet packages.", async bar =>
+        {
+            var commandResult = await _visualStudio.NuGetAsync( ["restore", "Rock.sln"], _rockPath );
+
+            if ( commandResult.ExitCode != 0 )
+            {
+                bar.Fail();
+            }
+
+            return commandResult;
+        } );
+
+        foreach ( var projectName in projectNames )
+        {
+            if ( !await BuildProjectAsync( projectName ) )
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Cleanup any files that should be removed after a completed or failed
+    /// attempt to build Rock.
+    /// </summary>
+    public void Cleanup()
+    {
+        DeleteRepository( _rockPath );
     }
 
     /// <summary>
@@ -163,7 +262,7 @@ partial class RockBuilder
     /// special file attributes that prevent normal deletion.
     /// </summary>
     /// <param name="path">The local repository path to delete.</param>
-    public static void DeleteRepository( string path )
+    private static void DeleteRepository( string path )
     {
         if ( !Directory.Exists( path ) )
         {
