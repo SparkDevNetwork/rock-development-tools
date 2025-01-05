@@ -86,17 +86,30 @@ sealed class ProgressBar
     /// Sets the current step achieved in this progress bar.
     /// </summary>
     /// <param name="step">The step number.</param>
-    public void SetStep( int step )
+    /// <param name="totalSteps">If not <c>null</c> then the total number of steps will be updated.</param>
+    /// <param name="stage">If not <c>null</c> then the stage will be updated.
+    public void SetStep( int step, int? totalSteps = null, string? stage = null )
     {
         if ( _step == step )
         {
             return;
         }
 
+        var stageChanged = false;
         var lastPercent = Math.Floor( _step / ( float ) _totalSteps * 100 );
-        _step = step;
 
-        if ( Math.Floor( _step / ( float ) _totalSteps * 100 ) != lastPercent )
+        _step = step;
+        _totalSteps = totalSteps ?? _totalSteps;
+
+        if ( !string.IsNullOrEmpty( stage ) && stage != _stage )
+        {
+            _stage = stage;
+            stageChanged = true;
+        }
+
+        var currentPercent = Math.Floor( _step / ( float ) _totalSteps * 100 );
+
+        if ( currentPercent != lastPercent || stageChanged )
         {
             UpdateBar();
         }
@@ -108,20 +121,6 @@ sealed class ProgressBar
     public void NextStep()
     {
         SetStep( _step + 1 );
-    }
-
-    /// <summary>
-    /// Sets the total number of steps and optionally a new stage. This will
-    /// also reset the current step to 0.
-    /// </summary>
-    /// <param name="totalSteps">The new total number of steps.</param>
-    /// <param name="stage">The stage to display with the task name.</param>
-    public void SetTotal( int totalSteps, string? stage )
-    {
-        _totalSteps = totalSteps;
-        _stage = stage;
-
-        UpdateBar();
     }
 
     /// <summary>

@@ -2,7 +2,9 @@ using System.Text.RegularExpressions;
 
 using Semver;
 
+using SparkDevNetwork.Framework.Builder.Executor;
 using SparkDevNetwork.Framework.Builder.Git;
+using SparkDevNetwork.Framework.Builder.UI;
 
 namespace SparkDevNetwork.Framework.Builder;
 
@@ -53,10 +55,70 @@ partial class RockBuilder
             .ToList();
     }
 
-    public static void DownloadRock( RockVersionTag version )
+    /// <summary>
+    /// Download the specified version of Rock into the path.
+    /// </summary>
+    /// <param name="version">The version to download.</param>
+    /// <param name="path">The path to clone the repository into.</param>
+    public static void DownloadRock( RockVersionTag version, string path )
     {
+        ProgressBar.Run( "Downloading Rock", 1, bar =>
+        {
+            try
+            {
+                var executor = new CommandExecutor( "git",
+                    "clone",
+                    "https://github.com/SparkDevNetwork/Rock",
+                    path,
+                    "--progress",
+                    "--depth",
+                    "1",
+                    "--branch",
+                    version.Tag );
 
+                executor.ProgressFromStandardError = true;
+                executor.ProgressReporter = new GitCloneProgressReporter( bar );
+
+                var status = executor.Execute();
+
+                return status == 0;
+            }
+            catch
+            {
+                if ( Directory.Exists( path ) )
+                {
+                    DeleteRepository( path );
+                }
+                throw;
+            }
+        } );
     }
+
+    /// <summary>
+    /// Deletes the local repository at the given path. This should be used
+    /// instead of Directory.Delete() because the .git folder has files with
+    /// special file attributes that prevent normal deletion.
+    /// </summary>
+    /// <param name="path">The local repository path to delete.</param>
+    public static void DeleteRepository( string path )
+    {
+        if ( !Directory.Exists( path ) )
+        {
+            return;
+        }
+
+        var gitPath = Path.Combine( path, ".git" );
+
+        foreach ( string fileName in Directory.EnumerateFiles( gitPath, "*", SearchOption.AllDirectories ) )
+        {
+            var fileInfo = new FileInfo( fileName );
+
+            fileInfo.Attributes = FileAttributes.Normal;
+        }
+
+        Directory.Delete( path, true );
+    }
+
 
     /// <summary>
     /// Parse a suffix on the version tag into a set of pre-release comonents.

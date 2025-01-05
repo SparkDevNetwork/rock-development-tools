@@ -24,6 +24,12 @@ class CommandExecutor
     /// </summary>
     public ICommandProgress? ProgressReporter { get; set; }
 
+    /// <summary>
+    /// <c>true</c> if the output should be read from standard error instead
+    /// of standard output when sending updates to the progress reporter.
+    /// </summary>
+    public bool ProgressFromStandardError { get; set; }
+
     #endregion
 
     #region Constructors
@@ -59,6 +65,7 @@ class CommandExecutor
                 UseShellExecute = false,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 CreateNoWindow = true
             };
 
@@ -74,9 +81,13 @@ class CommandExecutor
 
             proc.Start();
 
-            while ( !proc.StandardOutput.EndOfStream )
+            var reader = ProgressFromStandardError
+                ? proc.StandardError
+                : proc.StandardOutput;
+
+            while ( !reader.EndOfStream )
             {
-                var line = proc.StandardOutput.ReadLine();
+                var line = reader.ReadLine();
 
                 if ( line != null )
                 {

@@ -2,30 +2,25 @@
 
 class Program
 {
-    static async Task Main( string[] args )
+    static void Main( string[] args )
     {
-        // var refs = RockBuilder.GetRockVersions();
+        var rockPath = Directory.CreateTempSubdirectory().FullName;
 
-        // foreach ( var r in refs )
-        // {
-        //     Console.WriteLine( r.Version );
-        // }
+        Console.WriteLine( $"Downloading to {rockPath}" );
 
-        await UI.ProgressBar.Run( "Processing", 25, async bar =>
+        try
         {
-            for ( int i = 0; i < 25; i++ )
+            RockBuilder.DownloadRock( new RockVersionTag
             {
-                bar.SetStep( i );
-                await Task.Delay( 100 );
-            }
-
-            return true;
-        } );
-
-        await UI.IndeterminateBar.Run( "Thinking", async bar =>
+                CommitHash = "",
+                Version = new Semver.SemVersion( 1, 16, 7 ),
+                Tag = "1.16.7"
+            }, rockPath );
+        }
+        finally
         {
-            await Task.Delay( 5000 );
-            return true;
-        } );
+            RockBuilder.DeleteRepository( rockPath );
+        Console.WriteLine( $"Deleted {rockPath}" );
+        }
     }
 }
