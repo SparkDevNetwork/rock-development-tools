@@ -6,6 +6,8 @@ using SparkDevNetwork.Framework.Builder.Executor;
 using SparkDevNetwork.Framework.Builder.Git;
 using SparkDevNetwork.Framework.Builder.UI;
 
+using Spectre.Console;
+
 namespace SparkDevNetwork.Framework.Builder;
 
 /// <summary>
@@ -58,6 +60,62 @@ partial class RockBuilder
             } )
             .Where( v => v.Version.ComparePrecedenceTo( minimumVersion ) >= 0 )
             .ToList();
+    }
+
+    /// <summary>
+    /// Prompts the user for the version of Rock to build.
+    /// </summary>
+    /// <param name="versions">The possible version numbers available.</param>
+    /// <returns>The selected version.</returns>
+    public RockVersionTag PromptForRockVersion()
+    {
+        var versions = GetRockVersions();
+
+        var prompt = new SelectionPrompt<RockVersionTag>()
+            .Title( "Build which version of Rock" )
+            .PageSize( 10 )
+            .MoreChoicesText( "[grey](Move up and down to reveal more fruits)[/]" )
+            .AddChoices( versions.OrderByDescending( v => v.Version ) );
+
+        prompt.Converter = v => v.Version.ToString();
+
+        return AnsiConsole.Prompt( prompt );
+    }
+
+    /// <summary>
+    /// Prompts for an optional pre-release suffix to apply to the packages.
+    /// </summary>
+    /// <param name="version">The version that is going to be built.</param>
+    /// <returns>A string to use as the version suffix or an empty string if none.</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage( "Performance", "CA1822:Mark members as static", Justification = "In the future this may require instance data." )]
+    public string PromptForPrereleaseSuffix( RockVersionTag version )
+    {
+        var useSuffixPrompt = new TextPrompt<bool>( "Use pre-release suffix" )
+            .AddChoice( true )
+            .AddChoice( false )
+            .DefaultValue( !string.IsNullOrEmpty( version.Version.Prerelease ) )
+            .WithConverter( choice => choice ? "y" : "n" );
+
+        var useSuffix = AnsiConsole.Prompt( useSuffixPrompt );
+
+        if ( !useSuffix )
+        {
+            return string.Empty;
+        }
+
+        var suffixPrompt = new TextPrompt<string>( "Pre-release suffix" )
+            .DefaultValue( version.Version.Prerelease )
+            .Validate( v =>
+            {
+                if ( !v.StartsWith( '-' ) )
+                {
+                    return ValidationResult.Success();
+                }
+
+                return ValidationResult.Error( "Do not start with a dash." );
+            } );
+
+        return AnsiConsole.Prompt( suffixPrompt );
     }
 
     /// <summary>

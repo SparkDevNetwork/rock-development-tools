@@ -4,18 +4,18 @@ class Program
 {
     static void Main( string[] args )
     {
-        var rockPath = Directory.CreateTempSubdirectory().FullName;
+        var builder = new RockBuilder();
 
-        Console.WriteLine( $"Downloading to {rockPath}" );
+        var version = builder.PromptForRockVersion();
+        var suffix = builder.PromptForPrereleaseSuffix( version );
+
+        var rockPath = Directory.CreateTempSubdirectory().FullName;
 
         try
         {
-            new RockBuilder().DownloadRock( new RockVersionTag
-            {
-                CommitHash = "",
-                Version = new Semver.SemVersion( 1, 16, 7 ),
-                Tag = "1.16.7"
-            }, rockPath );
+            Console.WriteLine( $"Downloading to {rockPath}" );
+
+            // builder.DownloadRock( version, rockPath );
         }
         finally
         {
