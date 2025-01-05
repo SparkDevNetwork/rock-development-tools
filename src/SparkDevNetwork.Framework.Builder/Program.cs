@@ -1,20 +1,31 @@
-﻿using SparkDevNetwork.Framework.Builder.Git;
-
-namespace SparkDevNetwork.Framework.Builder;
+﻿namespace SparkDevNetwork.Framework.Builder;
 
 class Program
 {
     static async Task Main( string[] args )
     {
-        var refs = Repository.GetRockVersions();
-        var repoDir = Path.Combine( Directory.GetCurrentDirectory(), "language-tools" );
+        // var refs = RockBuilder.GetRockVersions();
 
-        Repository.DeleteRepository( repoDir );
+        // foreach ( var r in refs )
+        // {
+        //     Console.WriteLine( r.Version );
+        // }
 
-        await Repository.CloneAsync( "https://github.com/vuejs/language-tools", repoDir, null, new ConsoleGitProgressReporter() );
+        await UI.ProgressBar.Run( "Processing", 25, async bar =>
+        {
+            for ( int i = 0; i < 25; i++ )
+            {
+                bar.SetStep( i );
+                await Task.Delay( 100 );
+            }
 
-        var repo = new LibGit2Sharp.Repository( repoDir );
-        repo.RevParse( "HEAD", out var reference, out _ );
-        Console.WriteLine( $"Commit: {reference.TargetIdentifier}" );
+            return true;
+        } );
+
+        await UI.IndeterminateBar.Run( "Thinking", async bar =>
+        {
+            await Task.Delay( 5000 );
+            return true;
+        } );
     }
 }
