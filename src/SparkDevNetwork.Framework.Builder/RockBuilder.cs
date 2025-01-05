@@ -21,15 +21,20 @@ partial class RockBuilder
     private static partial Regex VersionRegExp();
 
     /// <summary>
+    /// The URL to use when accessing the Rock repository.
+    /// </summary>
+    public string RepositoryUrl { get; set; } = "https://github.com/SparkDevNetwork/Rock";
+
+    /// <summary>
     /// Gets the possible version tags that can be used when building Rock.
     /// </summary>
     /// <returns>A list of <see cref="RockVersionTag"/> objects.</returns>
-    public static List<RockVersionTag> GetRockVersions()
+    public List<RockVersionTag> GetRockVersions()
     {
         var minimumVersion = new SemVersion( 1, 16, 0 );
 
         return GitCommand
-            .ListRemoteReferences( "https://github.com/SparkDevNetwork/Rock", "refs/tags/[0-9]*.*" )
+            .ListRemoteReferences( RepositoryUrl, "refs/tags/[0-9]*.*" )
             .Select( r => new
             {
                 Match = VersionRegExp().Match( r.Ref ),
@@ -60,7 +65,7 @@ partial class RockBuilder
     /// </summary>
     /// <param name="version">The version to download.</param>
     /// <param name="path">The path to clone the repository into.</param>
-    public static void DownloadRock( RockVersionTag version, string path )
+    public void DownloadRock( RockVersionTag version, string path )
     {
         ProgressBar.Run( "Downloading Rock", 1, bar =>
         {
@@ -68,7 +73,7 @@ partial class RockBuilder
             {
                 var executor = new CommandExecutor( "git",
                     "clone",
-                    "https://github.com/SparkDevNetwork/Rock",
+                    RepositoryUrl,
                     path,
                     "--progress",
                     "--depth",
@@ -118,7 +123,6 @@ partial class RockBuilder
 
         Directory.Delete( path, true );
     }
-
 
     /// <summary>
     /// Parse a suffix on the version tag into a set of pre-release comonents.

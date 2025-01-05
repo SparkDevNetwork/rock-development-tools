@@ -10,7 +10,7 @@ class Program
 
         try
         {
-            RockBuilder.DownloadRock( new RockVersionTag
+            new RockBuilder().DownloadRock( new RockVersionTag
             {
                 CommitHash = "",
                 Version = new Semver.SemVersion( 1, 16, 7 ),
@@ -20,7 +20,7 @@ class Program
         finally
         {
             RockBuilder.DeleteRepository( rockPath );
-        Console.WriteLine( $"Deleted {rockPath}" );
+            Console.WriteLine( $"Deleted {rockPath}" );
         }
     }
 }
