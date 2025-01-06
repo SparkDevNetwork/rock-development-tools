@@ -1,4 +1,4 @@
-﻿namespace SparkDevNetwork.Framework.Builder;
+namespace SparkDevNetwork.Framework.Builder;
 
 class Program
 {
@@ -11,6 +11,10 @@ class Program
         {
             var version = builder.PromptForRockVersion();
             var suffix = builder.PromptForPrereleaseSuffix( version );
+            var packageVersion = new Semver.SemVersion( version.Version.Major,
+                version.Version.Minor,
+                version.Version.Patch,
+                suffix.Split( '.' ) );
 
             Console.WriteLine( $"Building in {buildPath}" );
 
@@ -24,6 +28,15 @@ class Program
                 "Rock",
                 "Rock.Rest",
                 "Rock.JavaScript.Obsidian" );
+
+            await builder.CreateNuGetPackagesAsync( packageVersion, [
+                "Rock.Enums",
+                "Rock.ViewModels",
+                "Rock.Common",
+                "Rock.Lava.Shared",
+                "Rock",
+                "Rock.Rest"
+            ] );
         }
         finally
         {

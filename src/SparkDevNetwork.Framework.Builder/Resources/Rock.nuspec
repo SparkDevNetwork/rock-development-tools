@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+    <id>RockRMS.Rock</id>
+    <version>{{ RockVersion }}</version>
+    <authors>Spark Development Network</authors>
+    <license type="file">LICENSE.md</license>
+    <icon>Icon.png</icon>
+    <projectUrl>https://www.rockrms.com/</projectUrl>
+    <description>The core Rock assembly for plugin development.</description>
+    <repository type="git" url="https://github.com/SparkDevNetwork/Rock" />
+    <dependencies>
+      <dependency id="EntityFramework" version="6.4.4" />
+      <dependency id="Newtonsoft.Json" version="13.0.1" />
+      <dependency id="RockRMS.Rock.Common" version="{{ RockVersion }}" />
+      <dependency id="RockRMS.Rock.Enums" version="{{ RockVersion }}" />
+      <dependency id="RockRMS.Rock.Lava.Shared" version="{{ RockVersion }}" />
+      <dependency id="RockRMS.Rock.ViewModels" version="{{ RockVersion }}" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="LICENSE.md" target="" />
+    <file src="Icon.png" target="" />
+    <file src="Rock\Rock\bin\Release\Rock.dll" target="lib\net472" />
+    <file src="Rock\Rock\bin\Release\Rock.xml" target="lib\net472" />
+  </files>
+</package>

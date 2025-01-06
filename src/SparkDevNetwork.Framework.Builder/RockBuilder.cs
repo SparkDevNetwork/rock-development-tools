@@ -23,6 +23,11 @@ partial class RockBuilder
     private static partial Regex VersionRegExp();
 
     /// <summary>
+    /// The path to download and build Rock in.
+    /// </summary>
+    private readonly string _buildPath;
+
+    /// <summary>
     /// The path that Rock will be downloaded and built in.
     /// </summary>
     private readonly string _rockPath;
@@ -37,8 +42,13 @@ partial class RockBuilder
     /// </summary>
     public string RepositoryUrl { get; set; } = "https://github.com/SparkDevNetwork/Rock";
 
+    /// <summary>
+    /// Creates a new instance of <see cref="RockBuilder"/>. 
+    /// </summary>
+    /// <param name="buildPath">The path to use when downloading and building.</param>
     public RockBuilder( string buildPath )
     {
+        _buildPath = buildPath;
         _rockPath = Path.Combine( buildPath, "Rock" );
         _visualStudio = new VisualStudio( buildPath );
     }
@@ -347,4 +357,138 @@ partial class RockBuilder
 
         return components;
     }
+
+    /// <summary>
+    /// Prepares the files required to create the NuGet packages.
+    /// </summary>
+    /// <param name="packageVersion">The package version number.</param>
+    /// <param name="projectNames">The projects to be prepared.</param>
+    private void PrepareNugetPackages( SemVersion packageVersion, string[] projectNames )
+    {
+        CopyTemplateFile( "Icon.png", Path.Combine( _buildPath, "Icon.png" ) );
+        CopyTemplateFile( "LICENSE.md", Path.Combine( _buildPath, "LICENSE.md" ) );
+
+        foreach ( var projectName in projectNames )
+        {
+            var nuspec = $"{projectName}.nuspec";
+
+            CopyTextTemplate( nuspec, Path.Combine( _buildPath, nuspec ), packageVersion );
+        }
+    }
+
+    /// <summary>
+    /// Creates a single NuGet package for the specified project.
+    /// </summary>
+    /// <param name="projectName">The name of the project to package.</param>
+    /// <returns><c>true</c> if the package was created.</returns>
+    private async Task<bool> CreateNuGetPackageAsync( string projectName )
+    {
+        var nugetResult = await IndeterminateBar.Run( $"Packing {projectName}", async bar =>
+        {
+            var result = await _visualStudio.NuGetAsync( [
+                "pack",
+                $"{projectName}.nuspec",
+                "-OutputDirectory",
+                _buildPath
+            ], _buildPath );
+
+            if ( result.ExitCode != 0 )
+            {
+                bar.Fail();
+            }
+
+            return result;
+        } );
+
+        if ( nugetResult.ExitCode != 0 )
+        {
+            nugetResult.WriteOutput();
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Packs the specified projects from the Rock solution.
+    /// </summary>
+    /// <param name="packageVersion">The package version number to build.</param>
+    /// <param name="projectNames">The names of the projects to pack.</param>
+    /// <returns><c>true</c> if the projects were packed.</returns>
+    public async Task<bool> CreateNuGetPackagesAsync( SemVersion packageVersion, string[] projectNames )
+    {
+        PrepareNugetPackages( packageVersion, projectNames );
+
+        foreach ( var projectName in projectNames )
+        {
+            if ( !await CreateNuGetPackageAsync( projectName ) )
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    #region Templates
+
+    /// <summary>
+    /// Gets the resource name for the specified template filename.
+    /// </summary>
+    /// <param name="filename">The filename in the resources.</param>
+    /// <returns>The full namespace and name of the resource.</returns>
+    private static string GetResourceName( string filename )
+    {
+        return $"{typeof( RockBuilder ).Namespace}.Resources.{filename}";
+    }
+
+    /// <summary>
+    /// Reads the text template from the resource stream.
+    /// </summary>
+    /// <param name="filename">The name of the template filename.</param>
+    /// <returns>The contents of the resource.</returns>
+    private static string ReadTextTemplate( string filename )
+    {
+        var resourceName = GetResourceName( filename );
+        var stream = typeof( RockBuilder ).Assembly.GetManifestResourceStream( resourceName )
+            ?? throw new Exception( $"Template {resourceName} not found in resource list." );
+        using var reader = new StreamReader( stream);
+
+        return reader.ReadToEnd();
+    }
+
+    /// <summary>
+    /// Copies the text template to the destination path after applying the
+    /// text replacement values.
+    /// </summary>
+    /// <param name="filename">The filename of the source template.</param>
+    /// <param name="destinationPath">The full destination path and filename.</param>
+    /// <param name="rockVersion">The version of Rock being packaged.</param>
+    public static void CopyTextTemplate( string filename, string destinationPath, SemVersion rockVersion )
+    {
+        var text = ReadTextTemplate( filename );
+
+        text = text.Replace( "{{ RockVersion }}", rockVersion.ToString() );
+
+        File.WriteAllText( destinationPath, text );
+    }
+
+    /// <summary>
+    /// Copies the template file without changes to the destination.
+    /// </summary>
+    /// <param name="filename">The filename of the source template.</param>
+    /// <param name="destinationPath">The full path and filename to copy the source to.</param>
+    public static void CopyTemplateFile( string filename, string destinationPath )
+    {
+        var resourceName = GetResourceName( filename );
+        
+        using var stream = typeof( RockBuilder ).Assembly.GetManifestResourceStream( resourceName )
+            ?? throw new Exception( $"Template {resourceName} not found in resource list." );
+
+        using var destinationStream = File.OpenWrite( destinationPath );
+
+        stream.CopyTo( destinationStream );
+    }
+
+    #endregion
 }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+    <id>RockRMS.Rock.Enums</id>
+    <version>{{ RockVersion }}</version>
+    <authors>Spark Development Network</authors>
+    <license type="file">LICENSE.md</license>
+    <icon>Icon.png</icon>
+    <projectUrl>https://www.rockrms.com/</projectUrl>
+    <description>The enum types for plugin development.</description>
+    <repository type="git" url="https://github.com/SparkDevNetwork/Rock" />
+    <dependencies>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="LICENSE.md" target="" />
+    <file src="Icon.png" target="" />
+    <file src="Rock\Rock.Enums\bin\Release\Rock.Enums.dll" target="lib\net472" />
+    <file src="Rock\Rock.Enums\bin\Release\Rock.Enums.xml" target="lib\net472" />
+  </files>
+</package>
