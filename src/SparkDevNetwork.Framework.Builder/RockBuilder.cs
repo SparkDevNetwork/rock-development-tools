@@ -190,11 +190,17 @@ partial class RockBuilder
     public async Task<bool> BuildProjectAsync( string projectName )
     {
         var projectPath = Path.Combine( _rockPath, projectName );
+        var projectExt = "csproj";
+
+        if ( File.Exists( Path.Combine( projectPath, $"{projectName}.esproj" ) ) )
+        {
+            projectExt = "esproj";
+        }
 
         var buildResult = await IndeterminateBar.Run( $"Building {projectName}", async bar =>
         {
             var commandResult = await _visualStudio.BuildAsync( [
-                $"{projectName}.csproj",
+                $"{projectName}.{projectExt}",
                 "/p:Configuration=Release",
                 "/nr:false"
             ], projectPath );

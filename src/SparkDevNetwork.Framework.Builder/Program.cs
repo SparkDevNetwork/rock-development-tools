@@ -7,16 +7,23 @@ class Program
         var buildPath = Path.Combine( Path.GetTempPath(), "rock-framework-builder" );
         var builder = new RockBuilder( buildPath );
 
-        Console.WriteLine( $"Building in {buildPath}" );
-
         try
         {
             var version = builder.PromptForRockVersion();
             var suffix = builder.PromptForPrereleaseSuffix( version );
 
+            Console.WriteLine( $"Building in {buildPath}" );
+
             builder.DownloadRock( version );
 
-            await builder.BuildProjectAsync( "Rock.Enums" );
+            await builder.BuildProjectsAsync(
+                "Rock.Enums",
+                "Rock.ViewModels",
+                "Rock.Common",
+                "Rock.Lava.Shared",
+                "Rock",
+                "Rock.Rest",
+                "Rock.JavaScript.Obsidian" );
         }
         finally
         {
