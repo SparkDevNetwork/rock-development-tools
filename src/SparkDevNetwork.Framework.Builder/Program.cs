@@ -14,7 +14,7 @@ class Program
             var packageVersion = new Semver.SemVersion( version.Version.Major,
                 version.Version.Minor,
                 version.Version.Patch,
-                suffix.Split( '.' ) );
+                suffix != string.Empty ? suffix.Split( '.' ) : null );
 
             Console.WriteLine( $"Building in {buildPath}" );
 
@@ -37,6 +37,8 @@ class Program
                 "Rock",
                 "Rock.Rest"
             ] );
+
+            builder.CreateObsidianFrameworkPackage( packageVersion );
         }
         finally
         {

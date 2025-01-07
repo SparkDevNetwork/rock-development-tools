@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Glob" Version="1.1.9" />
     <PackageReference Include="Semver" Version="2.3.0" />
     <PackageReference Include="Spectre.Console" Version="0.49.1" />
   </ItemGroup>

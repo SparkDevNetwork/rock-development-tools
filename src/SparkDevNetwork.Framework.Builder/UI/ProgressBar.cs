@@ -84,6 +84,33 @@ sealed class ProgressBar
     /// <param name="taskName">The name of the task to display.</param>
     /// <param name="totalSteps">The number of steps in this task.</param>
     /// <param name="executor">The action to execute.</param>
+    public static T Run<T>( string taskName, int totalSteps, Func<ProgressBar, T> executor )
+    {
+        var bar = new ProgressBar( taskName, totalSteps );
+
+        bar.Start();
+
+        try
+        {
+            var result = executor( bar );
+
+            bar.Stop( bar._taskStatus );
+
+            return result;
+        }
+        catch
+        {
+            bar.Stop( false );
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Runs the task and displays a progress bar until it completes.
+    /// </summary>
+    /// <param name="taskName">The name of the task to display.</param>
+    /// <param name="totalSteps">The number of steps in this task.</param>
+    /// <param name="executor">The action to execute.</param>
     public static async Task Run( string taskName, int totalSteps, Func<ProgressBar, Task> executor )
     {
         var bar = new ProgressBar( taskName, totalSteps );
@@ -95,6 +122,33 @@ sealed class ProgressBar
             await executor( bar );
 
             bar.Stop( bar._taskStatus );
+        }
+        catch
+        {
+            bar.Stop( false );
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Runs the task and displays a progress bar until it completes.
+    /// </summary>
+    /// <param name="taskName">The name of the task to display.</param>
+    /// <param name="totalSteps">The number of steps in this task.</param>
+    /// <param name="executor">The action to execute.</param>
+    public static async Task<T> Run<T>( string taskName, int totalSteps, Func<ProgressBar, Task<T>> executor )
+    {
+        var bar = new ProgressBar( taskName, totalSteps );
+
+        bar.Start();
+
+        try
+        {
+            var result = await executor( bar );
+
+            bar.Stop( bar._taskStatus );
+
+            return result;
         }
         catch
         {

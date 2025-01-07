@@ -1,4 +1,8 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+
+using GlobExpressions;
 
 using Semver;
 
@@ -377,6 +381,132 @@ partial class RockBuilder
     }
 
     /// <summary>
+    /// Prepare the directory structure for building the rock-obsidian-framework
+    /// pacakge with NPM.
+    /// </summary>
+    /// <param name="packageVersion">The version of the package to build.</param>
+    /// <returns><c>true</c> if the package was successfully prepared.</returns>
+    public bool PrepareObsidianFrameworkPackage( SemVersion packageVersion )
+    {
+        var frameworkBuildPath = Path.Combine( _rockPath,
+            "Rock.JavaScript.Obsidian",
+            "dist",
+            "Framework" );
+        var frameworkPath = Path.Combine( _rockPath,
+            "Rock.JavaScript.Obsidian",
+            "Framework" );
+        var stagingPath = Path.Combine( _buildPath, "rock-obsidian-framework" );
+
+        // Delete any left over staging files.
+        if ( Directory.Exists( stagingPath ) )
+        {
+            Directory.Delete( stagingPath, true );
+        }
+
+        Directory.CreateDirectory( stagingPath );
+
+        var error = ProgressBar.Run( "Preparing rock-obsidian-framework", 1, bar =>
+        {
+            // Get the built files, except the Libs files since those are
+            // internal to Rock and should not be used by plugins.
+            var builtFiles = Glob.Files( frameworkBuildPath, "**/*.d.ts" )
+                .Where( f => !f.StartsWith( $"Libs{Path.DirectorySeparatorChar}" ) )
+                .Select( f => new
+                {
+                    Source = Path.Combine( frameworkBuildPath, f ),
+                    Target = f
+                } );
+
+            // Get the ViewModels files that aren't copied into the distribution
+            // folder but should be part of the packge.
+            var viewModelFiles = Glob.Files( frameworkPath, "ViewModels/**/*.d.ts" )
+                .Select( f => new
+                {
+                    Source = Path.Combine( frameworkPath, f ),
+                    Target = f
+                } );
+
+            // Get the ViewModels files that aren't copied into the distribution
+            // folder but should be part of the packge.
+            var typesFiles = Glob.Files( frameworkPath, "Types/**/*.d.ts" )
+                .Select( f => new
+                {
+                    Source = Path.Combine( frameworkPath, f ),
+                    Target = f
+                } );
+
+            var files = builtFiles
+                .Union( viewModelFiles )
+                .Union( typesFiles )
+                .ToList();
+
+            if ( files.Count == 0 )
+            {
+                bar.Fail();
+
+                return "No files were found, perhaps the build fialed.";
+            }
+
+            bar.SetStep( 0, files.Count );
+
+            foreach ( var file in files )
+            {
+                var source = file.Source;
+                var destination = Path.Combine( stagingPath, "types", file.Target );
+                var destinationDirectory = Path.GetDirectoryName( destination );
+
+                if ( destinationDirectory == null )
+                {
+                    bar.Fail();
+
+                    return "Destination directory was null.";
+                }
+
+                if ( !Directory.Exists( destinationDirectory ) )
+                {
+                    Directory.CreateDirectory( destinationDirectory );
+                }
+
+                File.Copy( source, destination );
+
+                bar.NextStep();
+            }
+
+            // Read the Vue version from the rock project.
+            var obsidianPackagePath = Path.Combine( _rockPath,
+                "Rock.JavaScript.Obsidian",
+                "package.json" );
+            var obsidianPackageText = File.ReadAllText( obsidianPackagePath );
+            var obsidianPackage = JsonSerializer.Deserialize<JsonNode>( obsidianPackageText );
+            var vueVersion = obsidianPackage!["dependencies"]!["vue"]!.ToString();
+
+            // Create the package.json file.
+            var templateJson = ReadTextTemplate( "rock-obsidian-framework.json" )
+                .Replace( "{{ RockVersion }}", packageVersion.ToString() )
+                .Replace( "{{ VueVersion }}", vueVersion );
+
+            File.WriteAllText( Path.Combine( stagingPath, "package.json" ), templateJson );
+
+            // Copy additional template files.
+            CopyTemplateFile( "tsconfig.base.json",
+                Path.Combine( stagingPath, "tsconfig.base.json" ) );
+            CopyTemplateFile( "LICENSE.md",
+                Path.Combine( stagingPath, "LICENSE.md" ) );
+
+            return null;
+        } );
+
+        if ( error != null )
+        {
+            Console.WriteLine( error );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Creates a single NuGet package for the specified project.
     /// </summary>
     /// <param name="projectName">The name of the project to package.</param>
@@ -430,6 +560,45 @@ partial class RockBuilder
         return true;
     }
 
+    /// <summary>
+    /// Creates a single NPM package for the specified project.
+    /// </summary>
+    /// <param name="packageVersion">The version of the package to build.</param>
+    /// <returns><c>true</c> if the package was created.</returns>
+    public bool CreateObsidianFrameworkPackage( SemVersion packageVersion )
+    {
+        var stagingPath = Path.Combine( _buildPath, "rock-obsidian-framework" );
+
+        if ( !PrepareObsidianFrameworkPackage( packageVersion ) )
+        {
+            return false;
+        }
+
+        var npmResult = IndeterminateBar.Run( "Packing rock-obsidian-framework", bar =>
+        {
+            var result = _visualStudio.Npm( [
+                "pack",
+                "--pack-destination",
+                ".."
+            ], stagingPath );
+
+            if ( result.ExitCode != 0 )
+            {
+                bar.Fail();
+            }
+
+            return result;
+        } );
+
+        if ( npmResult.ExitCode != 0 )
+        {
+            npmResult.WriteOutput();
+            return false;
+        }
+
+        return true;
+    }
+
     #region Templates
 
     /// <summary>
@@ -452,7 +621,7 @@ partial class RockBuilder
         var resourceName = GetResourceName( filename );
         var stream = typeof( RockBuilder ).Assembly.GetManifestResourceStream( resourceName )
             ?? throw new Exception( $"Template {resourceName} not found in resource list." );
-        using var reader = new StreamReader( stream);
+        using var reader = new StreamReader( stream );
 
         return reader.ReadToEnd();
     }
@@ -481,7 +650,7 @@ partial class RockBuilder
     public static void CopyTemplateFile( string filename, string destinationPath )
     {
         var resourceName = GetResourceName( filename );
-        
+
         using var stream = typeof( RockBuilder ).Assembly.GetManifestResourceStream( resourceName )
             ?? throw new Exception( $"Template {resourceName} not found in resource list." );
 

@@ -99,7 +99,7 @@ class VisualStudio
     }
 
     /// <summary>
-    /// Executes the nuget process witht he given arguments.
+    /// Executes the nuget process with the given arguments.
     /// </summary>
     /// <param name="arguments">The arguments to pass to nuget.</param>
     /// <param name="workingDirectory">The working directory to start the process in.</param>
@@ -113,6 +113,63 @@ class VisualStudio
         };
 
         return command.Execute();
+    }
+
+    /// <summary>
+    /// Executes the npm process with the given arguments.
+    /// </summary>
+    /// <param name="arguments">The arguments to pass to nuget.</param>
+    /// <param name="workingDirectory">The working directory to start the process in.</param>
+    /// <returns><c>true</c> if the process was successful.</returns>
+    public CommandResult Npm( string[] arguments, string workingDirectory )
+    {
+        var commandPath = FindExecutablePath( "npm" );
+
+        if ( commandPath.EndsWith( ".cmd" ) )
+        {
+            var command = new CommandExecutor( "cmd.exe", ["/C", commandPath, .. arguments] )
+            {
+                WorkingDirectory = workingDirectory,
+                ProgressFromStandardError = true
+            };
+
+            return command.Execute();
+        }
+        else
+        {
+            var command = new CommandExecutor( commandPath, arguments )
+            {
+                WorkingDirectory = workingDirectory
+            };
+
+            return command.Execute();
+        }
+    }
+
+    private static string FindExecutablePath( string executable )
+    {
+        var paths = Environment.GetEnvironmentVariable( "PATH" )?.Split( ';' );
+        var extensions = new string[] { ".exe", ".com", ".cmd", "" };
+
+        if ( paths == null )
+        {
+            return executable;
+        }
+
+        foreach ( var path in paths )
+        {
+            foreach ( var ext in extensions )
+            {
+                var executablePath = Path.Combine( path, $"{executable}{ext}" );
+
+                if ( File.Exists( executablePath ) )
+                {
+                    return executablePath;
+                }
+            }
+        }
+
+        return executable;
     }
 
     #endregion
