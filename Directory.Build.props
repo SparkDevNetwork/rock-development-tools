@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <!--
+    This will set the version number of all C# projects. The node projects will
+    need to be manually updated by running 'npm run version' on each project:
+    src\eslint-config-rock-recommended
+    src\obsidian-build-tools
+    -->
+    <Version>1.0.0-rc.9</Version>
+  </PropertyGroup>
+</Project>

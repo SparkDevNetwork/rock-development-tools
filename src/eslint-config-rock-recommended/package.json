@@ -1,9 +1,12 @@
 {
     "name": "@sparkdevnetwork/eslint-config-rock-recommended",
-    "version": "1.0.0-rc.1",
+    "version": "1.0.0-rc.9",
     "description": "Recommended ESLint rules for Rock plugins.",
     "main": "index.js",
-    "scripts": {},
+    "scripts": {
+        "prepack": "node ../../lib/check-version.cjs",
+        "version": "node ../../lib/update-version.cjs"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/SparkDevNetwork/rock-development-tools.git"

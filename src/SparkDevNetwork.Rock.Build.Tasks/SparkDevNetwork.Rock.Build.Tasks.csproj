@@ -4,7 +4,6 @@
     <GenerateDependencyFile>True</GenerateDependencyFile>
 
     <IsPackable>true</IsPackable>
-    <Version>1.0.0-rc.8</Version>
     <Title>SparkDevNetwork.Rock.Build.Tasks</Title>
     <Authors>Spark Development Network</Authors>
     <Description>MSBuild tasks for Rock RMS projects.</Description>

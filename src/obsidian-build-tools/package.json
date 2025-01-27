@@ -1,9 +1,11 @@
 {
     "name": "@sparkdevnetwork/obsidian-build-tools",
-    "version": "1.0.0-rc.6",
+    "version": "1.0.0-rc.9",
     "description": "Tools to help with building Obsidian plugins for Rock.",
     "scripts": {
-        "build": "tsc -b"
+        "build": "tsc -b",
+        "prepack": "node ../../lib/check-version.cjs",
+        "version": "node ../../lib/update-version.cjs"
     },
     "bin": {
         "obsidian-build": "./dist/obsidian-build.js"
