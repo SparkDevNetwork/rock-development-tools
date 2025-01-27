@@ -87,25 +87,46 @@ class CommandExecutor
 
             proc.Start();
 
-            var output = new List<string>();
-            var reader = ProgressFromStandardError
-                ? proc.StandardError
-                : proc.StandardOutput;
-
-            while ( !reader.EndOfStream )
+            void KillProcess( object? sender, ConsoleCancelEventArgs e )
             {
-                var line = reader.ReadLine();
-
-                if ( line != null )
+                try
                 {
-                    output.Add( line );
-                    ProgressReporter?.OnProgress( line );
+                    proc.Kill( true );
+                }
+                catch
+                {
+                    // Ignore exceptions when killing the process.
                 }
             }
 
-            proc.WaitForExit();
+            Console.CancelKeyPress += KillProcess;
 
-            return new CommandResult( proc.ExitCode, [.. output] );
+            try
+            {
+                var output = new List<string>();
+                var reader = ProgressFromStandardError
+                    ? proc.StandardError
+                    : proc.StandardOutput;
+
+                while ( !reader.EndOfStream )
+                {
+                    var line = reader.ReadLine();
+
+                    if ( line != null )
+                    {
+                        output.Add( line );
+                        ProgressReporter?.OnProgress( line );
+                    }
+                }
+
+                proc.WaitForExit();
+
+                return new CommandResult( proc.ExitCode, [.. output] );
+            }
+            finally
+            {
+                Console.CancelKeyPress -= KillProcess;
+            }
         }
         finally
         {
