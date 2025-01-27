@@ -8,14 +8,29 @@ sealed class IndeterminateBar
     #region Fields
 
     /// <summary>
-    /// The starting position of the filled bar within the total bar space.
+    /// The width of the inner progress bar.
     /// </summary>
-    private int _tickPosition;
+    private const int TotalBarWidth = 40;
+
+    /// <summary>
+    /// The duration in milliseconds between bar updates.
+    /// </summary>
+    private const int TickDuration = 50;
 
     /// <summary>
     /// The name of the task that will be displayed before the progress bar.
     /// </summary>
     private readonly string _taskName;
+
+    /// <summary>
+    /// Our best guess at if this is a terminal or not.
+    /// </summary>
+    private readonly bool _isTerminal = !Console.IsOutputRedirected;
+
+    /// <summary>
+    /// The starting position of the filled bar within the total bar space.
+    /// </summary>
+    private int _tickPosition;
 
     /// <summary>
     /// The background task that is updating the progress bar.
@@ -36,16 +51,6 @@ sealed class IndeterminateBar
     /// The string that represents the filled bar.
     /// </summary>
     private const string BarString = "\u2592\u2593\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2593\u2592";
-
-    /// <summary>
-    /// The width of the inner progress bar.
-    /// </summary>
-    private const int TotalBarWidth = 40;
-
-    /// <summary>
-    /// The duration in milliseconds between bar updates.
-    /// </summary>
-    private const int TickDuration = 50;
 
     #endregion
 
@@ -95,7 +100,7 @@ sealed class IndeterminateBar
     /// </summary>
     /// <param name="taskName">The name of the task to display.</param>
     /// <param name="executor">The action to execute.</param>
-    public static async Task<T> Run<T>( string taskName, Func<IndeterminateBar, Task<T>> executor )
+    public static async Task<T> RunAsync<T>( string taskName, Func<IndeterminateBar, Task<T>> executor )
     {
         var bar = new IndeterminateBar( taskName );
 
@@ -138,6 +143,11 @@ sealed class IndeterminateBar
         var cancellationToken = _cancellationTokenSource.Token;
 
         _timerTask = Task.Run( async () => await TickTimer( cancellationToken ), cancellationToken );
+
+        if ( !_isTerminal )
+        {
+            Console.Out.Write( $"{_taskName}..." );
+        }
     }
 
     /// <summary>
@@ -147,20 +157,33 @@ sealed class IndeterminateBar
     private void Stop( bool success )
     {
         _cancellationTokenSource?.Cancel();
+        _timerTask?.Wait();
 
         var padLength = 1 + TotalBarWidth + 1;
         var pad = new string( ' ', padLength );
 
         if ( success )
         {
-            Console.WriteLine( $"\r{_taskName} \u001b[38;5;10m\u2714\u001b[0m{pad}" );
+            if ( _isTerminal )
+            {
+                Console.WriteLine( $"\r{_taskName} \u001b[38;5;10m\u2714\u001b[0m{pad}" );
+            }
+            else
+            {
+                Console.WriteLine( " done" );
+            }
         }
         else
         {
-            Console.WriteLine( $"\r{_taskName} \u001b[38;5;9m\u2715\u001b[0m{pad}" );
+            if ( _isTerminal )
+            {
+                Console.WriteLine( $"\r{_taskName} \u001b[38;5;9m\u2715\u001b[0m{pad}" );
+            }
+            else
+            {
+                Console.WriteLine( " failed" );
+            }
         }
-
-        _timerTask?.Wait();
     }
 
     /// <summary>
@@ -169,6 +192,11 @@ sealed class IndeterminateBar
     /// <param name="cancellationToken">The token that indicates when the task has finished.</param>
     private async Task TickTimer( CancellationToken cancellationToken )
     {
+        if ( !_isTerminal )
+        {
+            return;
+        }
+
         try
         {
             while ( !cancellationToken.IsCancellationRequested )

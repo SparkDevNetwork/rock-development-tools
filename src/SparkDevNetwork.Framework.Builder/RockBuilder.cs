@@ -160,7 +160,7 @@ partial class RockBuilder
             DeleteRepository( _rockPath );
         }
 
-        await ProgressBar.Run( "Downloading Rock", 1, async bar =>
+        await ProgressBar.RunAsync( "Downloading Rock", 1, async bar =>
         {
             try
             {
@@ -210,7 +210,7 @@ partial class RockBuilder
             projectExt = "esproj";
         }
 
-        var buildResult = await IndeterminateBar.Run( $"Building {projectName}", async bar =>
+        var buildResult = await IndeterminateBar.RunAsync( $"Building {projectName}", async bar =>
         {
             var commandResult = await _visualStudio.BuildAsync( [
                 $"{projectName}.{projectExt}",
@@ -243,7 +243,7 @@ partial class RockBuilder
     /// <returns><c>true</c> if the projects were built.</returns>
     public async Task<bool> BuildProjectsAsync( params string[] projectNames )
     {
-        var restoreResult = await IndeterminateBar.Run( "Restoring NuGet packages.", async bar =>
+        var restoreResult = await IndeterminateBar.RunAsync( "Restoring NuGet packages", async bar =>
         {
             var commandResult = await _visualStudio.NuGetAsync( ["restore", "Rock.sln"], _rockPath );
 
@@ -514,7 +514,7 @@ partial class RockBuilder
     {
         var outputDirectory = Directory.GetCurrentDirectory();
 
-        var nugetResult = await IndeterminateBar.Run( $"Packing {projectName}", async bar =>
+        var nugetResult = await IndeterminateBar.RunAsync( $"Packing {projectName}", async bar =>
         {
             var result = await _visualStudio.NuGetAsync( [
                 "pack",
@@ -576,7 +576,7 @@ partial class RockBuilder
             return false;
         }
 
-        var npmResult = await IndeterminateBar.Run( "Packing rock-obsidian-framework", async bar =>
+        var npmResult = await IndeterminateBar.RunAsync( "Packing rock-obsidian-framework", async bar =>
         {
             var result = await _visualStudio.Npm( [
                 "pack",

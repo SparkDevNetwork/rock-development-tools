@@ -8,15 +8,20 @@ sealed class ProgressBar
     #region Fields
 
     /// <summary>
-    /// The stage of the progress. This allows the caller to essentially
-    /// have multiple progress bars in a single bar.
+    /// Our best guess at if this is a terminal or not.
     /// </summary>
-    private string? _stage;
+    private readonly bool _isTerminal = !Console.IsOutputRedirected;
 
     /// <summary>
     /// The name of the task being executed.
     /// </summary>
     private readonly string _taskName;
+
+    /// <summary>
+    /// The stage of the progress. This allows the caller to essentially
+    /// have multiple progress bars in a single bar.
+    /// </summary>
+    private string? _stage;
 
     /// <summary>
     /// Determines if the task completed successfully.
@@ -32,6 +37,11 @@ sealed class ProgressBar
     /// The total number of steps to complete the task.
     /// </summary>
     private int _totalSteps;
+
+    /// <summary>
+    /// The last time the progress bar was updated.
+    /// </summary>
+    private DateTime? _lastUpdate;
 
     #endregion
 
@@ -111,7 +121,7 @@ sealed class ProgressBar
     /// <param name="taskName">The name of the task to display.</param>
     /// <param name="totalSteps">The number of steps in this task.</param>
     /// <param name="executor">The action to execute.</param>
-    public static async Task Run( string taskName, int totalSteps, Func<ProgressBar, Task> executor )
+    public static async Task RunAsync( string taskName, int totalSteps, Func<ProgressBar, Task> executor )
     {
         var bar = new ProgressBar( taskName, totalSteps );
 
@@ -136,7 +146,7 @@ sealed class ProgressBar
     /// <param name="taskName">The name of the task to display.</param>
     /// <param name="totalSteps">The number of steps in this task.</param>
     /// <param name="executor">The action to execute.</param>
-    public static async Task<T> Run<T>( string taskName, int totalSteps, Func<ProgressBar, Task<T>> executor )
+    public static async Task<T> RunAsync<T>( string taskName, int totalSteps, Func<ProgressBar, Task<T>> executor )
     {
         var bar = new ProgressBar( taskName, totalSteps );
 
@@ -173,22 +183,22 @@ sealed class ProgressBar
     /// <param name="stage">If not <c>null</c> then the stage will be updated.
     public void SetStep( int step, int? totalSteps = null, string? stage = null )
     {
-        if ( _step == step )
-        {
-            return;
-        }
-
         var stageChanged = false;
         var lastPercent = Math.Floor( _step / ( float ) _totalSteps * 100 );
-
-        _step = step;
-        _totalSteps = totalSteps ?? _totalSteps;
 
         if ( !string.IsNullOrEmpty( stage ) && stage != _stage )
         {
             _stage = stage;
             stageChanged = true;
         }
+
+        if ( _step == step && !stageChanged )
+        {
+            return;
+        }
+
+        _step = step;
+        _totalSteps = totalSteps ?? _totalSteps;
 
         var currentPercent = Math.Floor( _step / ( float ) _totalSteps * 100 );
 
@@ -224,11 +234,25 @@ sealed class ProgressBar
 
         if ( success )
         {
-            Console.Out.WriteLine( $"{_taskName} \u001b[38;5;10m\u2714\u001b[0m" );
+            if ( _isTerminal )
+            {
+                Console.Out.WriteLine( $"{_taskName} \u001b[38;5;10m\u2714\u001b[0m" );
+            }
+            else
+            {
+                Console.Out.WriteLine( $"{_taskName}... done" );
+            }
         }
         else
         {
-            Console.Out.WriteLine( $"{_taskName} \u001b[38;5;9m\u2715\u001b[0m" );
+            if ( _isTerminal )
+            {
+                Console.Out.WriteLine( $"{_taskName} \u001b[38;5;9m\u2715\u001b[0m" );
+            }
+            else
+            {
+                Console.Out.WriteLine( $"{_taskName}... failed" );
+            }
         }
     }
 
@@ -241,6 +265,21 @@ sealed class ProgressBar
             ? _taskName
             : $"{_taskName} [{_stage}]";
         var percent = Math.Max( 0, Math.Min( 100, Math.Floor( _step / ( float ) _totalSteps * 100 ) ) );
+
+        if ( !_isTerminal )
+        {
+            // Update at most once per 2.5 seconds.
+            if ( !_lastUpdate.HasValue || DateTime.Now - _lastUpdate.Value >= TimeSpan.FromMilliseconds( 2500 ) )
+            {
+                _lastUpdate = DateTime.Now;
+                Console.WriteLine( $"{msg}... {percent}%" );
+            }
+
+            return;
+        }
+
+        _lastUpdate = DateTime.Now;
+
         var bar = new string( '\u2588', ( int ) Math.Floor( percent * 40 / 100.0f ) );
         var fill = new string( ' ', 40 - bar.Length );
 
