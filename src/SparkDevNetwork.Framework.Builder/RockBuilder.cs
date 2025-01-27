@@ -95,11 +95,19 @@ partial class RockBuilder
     /// <summary>
     /// Prompts the user for the version of Rock to build.
     /// </summary>
-    /// <param name="versions">The possible version numbers available.</param>
+    /// <param name="tag">The pre-selected branch.</param>
     /// <returns>The selected version.</returns>
-    public async Task<RockVersionTag> PromptForRockVersionAsync()
+    public async Task<RockVersionTag> PromptForRockVersionAsync( string? tag )
     {
         var versions = await GetRockVersionsAsync();
+
+        if ( tag != null )
+        {
+            var tagVersion = versions.SingleOrDefault( v => v.Tag == tag )
+                ?? throw new Exception( $"Tag '{tag}' not found in the list of versions." );
+
+            return tagVersion;
+        }
 
         var prompt = new SelectionPrompt<RockVersionTag>()
             .Title( "Build which version of Rock" )

@@ -1,48 +1,21 @@
+﻿using System.CommandLine;
+
 namespace SparkDevNetwork.Framework.Builder;
 
+/// <summary>
+/// The main entry point for the application.
+/// </summary>
 class Program
 {
-    static async Task Main( string[] args )
+    /// <summary>
+    /// The main entry point for the application.
+    /// </summary>
+    /// <param name="args">The arguments passed on the command line.</param>
+    /// <returns>The exit status, 0 for success.</returns>
+    static async Task<int> Main( string[] args )
     {
-        var buildPath = Path.Combine( Path.GetTempPath(), "rock-framework-builder" );
-        var builder = new RockBuilder( buildPath );
+        var rootCommand = new RootAppCommand();
 
-        try
-        {
-            var version = await builder.PromptForRockVersionAsync();
-            var suffix = builder.PromptForPrereleaseSuffix( version );
-            var packageVersion = new Semver.SemVersion( version.Version.Major,
-                version.Version.Minor,
-                version.Version.Patch,
-                suffix != string.Empty ? suffix.Split( '.' ) : null );
-
-            Console.WriteLine( $"Building in {buildPath}" );
-
-            await builder.DownloadRockAsync( version );
-
-            await builder.BuildProjectsAsync(
-                "Rock.Enums",
-                "Rock.ViewModels",
-                "Rock.Common",
-                "Rock.Lava.Shared",
-                "Rock",
-                "Rock.Rest",
-                "Rock.JavaScript.Obsidian" );
-
-            await builder.CreateNuGetPackagesAsync( packageVersion, [
-                "Rock.Enums",
-                "Rock.ViewModels",
-                "Rock.Common",
-                "Rock.Lava.Shared",
-                "Rock",
-                "Rock.Rest"
-            ] );
-
-            await builder.CreateObsidianFrameworkPackageAsync( packageVersion );
-        }
-        finally
-        {
-            builder.Cleanup();
-        }
+        return await rootCommand.InvokeAsync( args );
     }
 }
