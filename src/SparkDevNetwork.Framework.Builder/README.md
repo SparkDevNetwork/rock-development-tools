@@ -1,4 +1,4 @@
-# Process to build binary package
+# Process to build binary RockWeb package
 
 We do not currently have this automated, but here is the current process to build a binary package. This package is uploaded to azure so that the dev tool can download pre-built Rock versions for the environment.
 
