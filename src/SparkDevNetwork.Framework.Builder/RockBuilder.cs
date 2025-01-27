@@ -513,13 +513,15 @@ partial class RockBuilder
     /// <returns><c>true</c> if the package was created.</returns>
     private async Task<bool> CreateNuGetPackageAsync( string projectName )
     {
+        var outputDirectory = Directory.GetCurrentDirectory();
+
         var nugetResult = await IndeterminateBar.Run( $"Packing {projectName}", async bar =>
         {
             var result = await _visualStudio.NuGetAsync( [
                 "pack",
                 $"{projectName}.nuspec",
                 "-OutputDirectory",
-                _buildPath
+                outputDirectory
             ], _buildPath );
 
             if ( result.ExitCode != 0 )
@@ -568,6 +570,7 @@ partial class RockBuilder
     public bool CreateObsidianFrameworkPackage( SemVersion packageVersion )
     {
         var stagingPath = Path.Combine( _buildPath, "rock-obsidian-framework" );
+        var destinationPath = Directory.GetCurrentDirectory();
 
         if ( !PrepareObsidianFrameworkPackage( packageVersion ) )
         {
@@ -579,7 +582,7 @@ partial class RockBuilder
             var result = _visualStudio.Npm( [
                 "pack",
                 "--pack-destination",
-                ".."
+                destinationPath
             ], stagingPath );
 
             if ( result.ExitCode != 0 )
