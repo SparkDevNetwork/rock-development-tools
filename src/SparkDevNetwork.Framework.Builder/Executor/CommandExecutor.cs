@@ -29,12 +29,6 @@ class CommandExecutor
     /// </summary>
     public ICommandProgress? ProgressReporter { get; set; }
 
-    /// <summary>
-    /// <c>true</c> if the output should be read from standard error instead
-    /// of standard output when sending updates to the progress reporter.
-    /// </summary>
-    public bool ProgressFromStandardError { get; set; }
-
     #endregion
 
     #region Constructors
@@ -58,78 +52,73 @@ class CommandExecutor
     /// Executes the command and returns the exit code.
     /// </summary>
     /// <returns>The status code from the executed command.</returns>
-    public CommandResult Execute()
+    public async Task<CommandResult> ExecuteAsync()
     {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = _command,
+            WorkingDirectory = WorkingDirectory ?? string.Empty,
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        foreach ( var arg in _arguments )
+        {
+            startInfo.ArgumentList.Add( arg );
+        }
+
+        var process = new Process
+        {
+            StartInfo = startInfo,
+            EnableRaisingEvents = true
+        };
+        var output = new List<string>();
+        var tcs = new TaskCompletionSource();
+
+        void OutputReceived( string? line )
+        {
+            if ( line != null )
+            {
+                output.Add( line );
+                ProgressReporter?.OnProgress( line );
+            }
+        }
+
+        void KillProcess( object? sender, ConsoleCancelEventArgs e )
+        {
+            try
+            {
+                process.Kill( true );
+            }
+            catch
+            {
+                // Ignore exceptions when killing the process.
+            }
+        }
+
+        process.OutputDataReceived += ( s, ea ) => OutputReceived( ea.Data );
+        process.ErrorDataReceived += ( s, ea ) => OutputReceived( ea.Data );
+        process.Exited += ( s, ea ) => tcs.TrySetResult();
+
+        Console.CancelKeyPress += KillProcess;
         ProgressReporter?.OnStarted();
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
 
         try
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = _command,
-                WorkingDirectory = WorkingDirectory ?? string.Empty,
-                UseShellExecute = false,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
+            await tcs.Task;
 
-            foreach ( var arg in _arguments )
-            {
-                startInfo.ArgumentList.Add( arg );
-            }
-
-            var proc = new Process
-            {
-                StartInfo = startInfo
-            };
-
-            proc.Start();
-
-            void KillProcess( object? sender, ConsoleCancelEventArgs e )
-            {
-                try
-                {
-                    proc.Kill( true );
-                }
-                catch
-                {
-                    // Ignore exceptions when killing the process.
-                }
-            }
-
-            Console.CancelKeyPress += KillProcess;
-
-            try
-            {
-                var output = new List<string>();
-                var reader = ProgressFromStandardError
-                    ? proc.StandardError
-                    : proc.StandardOutput;
-
-                while ( !reader.EndOfStream )
-                {
-                    var line = reader.ReadLine();
-
-                    if ( line != null )
-                    {
-                        output.Add( line );
-                        ProgressReporter?.OnProgress( line );
-                    }
-                }
-
-                proc.WaitForExit();
-
-                return new CommandResult( proc.ExitCode, [.. output] );
-            }
-            finally
-            {
-                Console.CancelKeyPress -= KillProcess;
-            }
+            return new CommandResult( process.ExitCode, [.. output] );
         }
         finally
         {
+            Console.CancelKeyPress -= KillProcess;
             ProgressReporter?.OnCompleted();
         }
     }

@@ -61,12 +61,12 @@ partial class RockBuilder
     /// Gets the possible version tags that can be used when building Rock.
     /// </summary>
     /// <returns>A list of <see cref="RockVersionTag"/> objects.</returns>
-    public List<RockVersionTag> GetRockVersions()
+    public async Task<List<RockVersionTag>> GetRockVersionsAsync()
     {
         var minimumVersion = new SemVersion( 1, 16, 0 );
 
-        return GitCommand
-            .ListRemoteReferences( RepositoryUrl, "refs/tags/[0-9]*.*" )
+        return ( await GitCommand
+            .ListRemoteReferencesAsync( RepositoryUrl, "refs/tags/[0-9]*.*" ) )
             .Select( r => new
             {
                 Match = VersionRegExp().Match( r.Ref ),
@@ -97,9 +97,9 @@ partial class RockBuilder
     /// </summary>
     /// <param name="versions">The possible version numbers available.</param>
     /// <returns>The selected version.</returns>
-    public RockVersionTag PromptForRockVersion()
+    public async Task<RockVersionTag> PromptForRockVersionAsync()
     {
-        var versions = GetRockVersions();
+        var versions = await GetRockVersionsAsync();
 
         var prompt = new SelectionPrompt<RockVersionTag>()
             .Title( "Build which version of Rock" )
@@ -153,14 +153,14 @@ partial class RockBuilder
     /// </summary>
     /// <param name="version">The version to download.</param>
     /// <param name="path">The path to clone the repository into.</param>
-    public void DownloadRock( RockVersionTag version )
+    public async Task DownloadRockAsync( RockVersionTag version )
     {
         if ( Directory.Exists( _rockPath ) )
         {
             DeleteRepository( _rockPath );
         }
 
-        ProgressBar.Run( "Downloading Rock", 1, bar =>
+        await ProgressBar.Run( "Downloading Rock", 1, async bar =>
         {
             try
             {
@@ -174,11 +174,10 @@ partial class RockBuilder
                     "--branch",
                     version.Tag )
                 {
-                    ProgressFromStandardError = true,
                     ProgressReporter = new GitCloneProgressReporter( bar )
                 };
 
-                var commandResult = command.Execute();
+                var commandResult = await command.ExecuteAsync();
 
                 if ( commandResult.ExitCode != 0 )
                 {
@@ -567,7 +566,7 @@ partial class RockBuilder
     /// </summary>
     /// <param name="packageVersion">The version of the package to build.</param>
     /// <returns><c>true</c> if the package was created.</returns>
-    public bool CreateObsidianFrameworkPackage( SemVersion packageVersion )
+    public async Task<bool> CreateObsidianFrameworkPackageAsync( SemVersion packageVersion )
     {
         var stagingPath = Path.Combine( _buildPath, "rock-obsidian-framework" );
         var destinationPath = Directory.GetCurrentDirectory();
@@ -577,9 +576,9 @@ partial class RockBuilder
             return false;
         }
 
-        var npmResult = IndeterminateBar.Run( "Packing rock-obsidian-framework", bar =>
+        var npmResult = await IndeterminateBar.Run( "Packing rock-obsidian-framework", async bar =>
         {
-            var result = _visualStudio.Npm( [
+            var result = await _visualStudio.Npm( [
                 "pack",
                 "--pack-destination",
                 destinationPath

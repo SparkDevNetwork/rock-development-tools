@@ -9,7 +9,7 @@ class Program
 
         try
         {
-            var version = builder.PromptForRockVersion();
+            var version = await builder.PromptForRockVersionAsync();
             var suffix = builder.PromptForPrereleaseSuffix( version );
             var packageVersion = new Semver.SemVersion( version.Version.Major,
                 version.Version.Minor,
@@ -18,7 +18,7 @@ class Program
 
             Console.WriteLine( $"Building in {buildPath}" );
 
-            builder.DownloadRock( version );
+            await builder.DownloadRockAsync( version );
 
             await builder.BuildProjectsAsync(
                 "Rock.Enums",
@@ -38,7 +38,7 @@ class Program
                 "Rock.Rest"
             ] );
 
-            builder.CreateObsidianFrameworkPackage( packageVersion );
+            await builder.CreateObsidianFrameworkPackageAsync( packageVersion );
         }
         finally
         {

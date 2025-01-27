@@ -22,11 +22,11 @@ static partial class GitCommand
     /// <param name="remoteRepo">The URL of the remote repository.</param>
     /// <param name="refSpecs">The ref specifications that will be retrieved.</param>
     /// <returns>A collection of <see cref="GitReference"/> objects.</returns>
-    public static List<GitReference> ListRemoteReferences( string remoteRepo, params string[] refSpecs )
+    public static async Task<List<GitReference>> ListRemoteReferencesAsync( string remoteRepo, params string[] refSpecs )
     {
         var command = new CommandExecutor( "git", ["ls-remote", remoteRepo, .. refSpecs] );
 
-        var commandResult = command.Execute();
+        var commandResult = await command.ExecuteAsync();
 
         if ( commandResult.ExitCode != 0 )
         {

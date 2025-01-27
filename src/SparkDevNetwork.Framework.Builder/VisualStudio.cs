@@ -71,7 +71,7 @@ class VisualStudio
             "-find",
             "MSBuild\\**\\Bin\\MSBuild.exe" );
 
-        var commandResult = command.Execute();
+        var commandResult = await command.ExecuteAsync();
 
         if ( commandResult.ExitCode != 0 )
         {
@@ -95,7 +95,7 @@ class VisualStudio
             WorkingDirectory = workingDirectory
         };
 
-        return command.Execute();
+        return await command.ExecuteAsync();
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ class VisualStudio
             WorkingDirectory = workingDirectory
         };
 
-        return command.Execute();
+        return await command.ExecuteAsync();
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ class VisualStudio
     /// <param name="arguments">The arguments to pass to nuget.</param>
     /// <param name="workingDirectory">The working directory to start the process in.</param>
     /// <returns><c>true</c> if the process was successful.</returns>
-    public CommandResult Npm( string[] arguments, string workingDirectory )
+    public Task<CommandResult> Npm( string[] arguments, string workingDirectory )
     {
         var commandPath = FindExecutablePath( "npm" );
 
@@ -129,11 +129,10 @@ class VisualStudio
         {
             var command = new CommandExecutor( "cmd.exe", ["/C", commandPath, .. arguments] )
             {
-                WorkingDirectory = workingDirectory,
-                ProgressFromStandardError = true
+                WorkingDirectory = workingDirectory
             };
 
-            return command.Execute();
+            return command.ExecuteAsync();
         }
         else
         {
@@ -142,7 +141,7 @@ class VisualStudio
                 WorkingDirectory = workingDirectory
             };
 
-            return command.Execute();
+            return command.ExecuteAsync();
         }
     }
 
