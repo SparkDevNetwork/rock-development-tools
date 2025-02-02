@@ -8,4 +8,12 @@
     <InternalsVisibleTo Include="SparkDevNetwork.Rock.CodeGenerator.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\*.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fluid.Core" Version="2.9.0" />
+  </ItemGroup>
+
 </Project>
