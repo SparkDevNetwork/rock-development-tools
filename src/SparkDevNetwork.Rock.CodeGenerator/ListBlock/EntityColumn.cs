@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace SparkDevNetwork.Rock.CodeGenerator
+namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
 {
     /// <summary>
     /// Various bits of logic for dealing with columns that are to be passed
@@ -133,7 +133,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// Gets a value indicating whether this property is an entity.
         /// </summary>
         /// <value><c>true</c> if this property is an entity; otherwise, <c>false</c>.</value>
-        public bool IsEntity => PropertyType.ImplementsInterface( "Rock.Data.IEntity" );
+        public bool IsEntity => PropertyType.IsRockEntity();
 
         #endregion
 
@@ -156,10 +156,10 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// Gets the C# code that will handle adding the field to the builder.
         /// </summary>
         /// <returns>A string that represents the C# code.</returns>
-        public string GetAddFieldCode()
+        private string GetAddFieldCode()
         {
             // Check if date type.
-            if ( _dateTypes.Contains( PropertyType.FullName ) )
+            if ( IsDateType( PropertyType ) )
             {
                 return $".AddDateTimeField( \"{FriendlyName.ToCamelCase()}\", a => a.{Name} )";
             }
@@ -198,7 +198,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             }
 
             // Check if it is a simple primitive type.
-            if ( _primitiveTypes.Contains( PropertyType.FullName ) )
+            if ( IsPrimitiveType( PropertyType ) )
             {
                 return $".AddField( \"{FriendlyName.ToCamelCase()}\", a => a.{Name} )";
             }
@@ -211,7 +211,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// definition in the Obsidian file.
         /// </summary>
         /// <returns>A string that represents the C# code.</returns>
-        public string GetTemplateCode()
+        private string GetTemplateCode()
         {
             // Check for string types.
             if ( PropertyType.FullName == typeof( string ).FullName || PropertyType.FullName == typeof( Guid ).FullName || PropertyType.FullName == typeof( Guid? ).FullName )
@@ -225,7 +225,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             }
 
             // Check for numeric types.
-            if ( _numericTypes.Contains( PropertyType.FullName ) )
+            if ( IsNumericType( PropertyType ) )
             {
                 return $@"
         <NumberColumn name=""{FriendlyName.ToCamelCase()}""
@@ -246,7 +246,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             }
 
             // Check for date types.
-            if ( _dateTypes.Contains( PropertyType.FullName ) )
+            if ( IsDateType( PropertyType ) )
             {
                 return $@"
         <DateColumn name=""{FriendlyName.ToCamelCase()}""
@@ -302,7 +302,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             }
 
             // Check for numeric types.
-            if ( _numericTypes.Contains( PropertyType.FullName ) )
+            if ( IsNumericType( PropertyType ) )
             {
                 return new[] { "NumberColumn", "numberValueFilter" };
             }
@@ -314,7 +314,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             }
 
             // Check for date types.
-            if ( _dateTypes.Contains( PropertyType.FullName ) )
+            if ( IsDateType( PropertyType ) )
             {
                 return new[] { "DateColumn", "dateValueFilter" };
             }
@@ -344,20 +344,40 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         {
             // If the type is one of the few supported entity types or one of
             // the known primitive types then it is considered supported.
-            if ( type.ImplementsInterface( "Rock.Data.IEntity" ) )
-            {
-                return true;
-            }
-            else if ( _primitiveTypes.Contains( type.FullName ) )
-            {
-                return true;
-            }
-            else if ( _dateTypes.Contains( type.FullName ) )
-            {
-                return true;
-            }
+            return type.IsRockEntity()
+                || IsNumericType( type )
+                || IsDateType( type )
+                || IsPrimitiveType( type );
+        }
 
-            return false;
+        /// <summary>
+        /// Determines if the type is considered a primitive type.
+        /// </summary>
+        /// <param name="type">The type to be checked.</param>
+        /// <returns><c>true</c> if the type is primitive; otherwise <c>false</c>.</returns>
+        internal static bool IsPrimitiveType( Type type )
+        {
+            return _primitiveTypes.Contains( type.FullName );
+        }
+
+        /// <summary>
+        /// Determines if the type is considered a numeric type.
+        /// </summary>
+        /// <param name="type">The type to be checked.</param>
+        /// <returns><c>true</c> if the type is numeric; otherwise <c>false</c>.</returns>
+        internal static bool IsNumericType( Type type )
+        {
+            return _numericTypes.Contains( type.FullName );
+        }
+
+        /// <summary>
+        /// Determines if the type is considered a date type.
+        /// </summary>
+        /// <param name="type">The type to be checked.</param>
+        /// <returns><c>true</c> if the type is date; otherwise <c>false</c>.</returns>
+        internal static bool IsDateType( Type type )
+        {
+            return _dateTypes.Contains( type.FullName );
         }
 
         #endregion

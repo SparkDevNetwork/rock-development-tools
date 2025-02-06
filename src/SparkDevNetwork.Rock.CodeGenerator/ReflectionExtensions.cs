@@ -136,7 +136,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             {
                 return new PropertyDeclaration( "DateTimeOffset", new[] { "System" } );
             }
-            else if ( type.FullName == typeof( DateTimeOffset ).FullName )
+            else if ( type.FullName == typeof( DateTimeOffset? ).FullName )
             {
                 return new PropertyDeclaration( "DateTimeOffset?", new[] { "System" } );
             }
@@ -144,7 +144,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             {
                 return new PropertyDeclaration( type.Name, new[] { type.Namespace } );
             }
-            else if ( type.IsEnum && type.Namespace.StartsWith( "Rock.Model" ) && type.GetCustomAttributeData( "Rock.Enums.EnumDomainAttribute" ) != null )
+            else if ( type.IsEnum && type.GetCustomAttributeData( "Rock.Enums.EnumDomainAttribute" ) != null )
             {
                 return new PropertyDeclaration( type.Name, new[] { type.Namespace } );
             }

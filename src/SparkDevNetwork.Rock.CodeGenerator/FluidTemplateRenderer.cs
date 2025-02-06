@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -12,10 +11,25 @@ namespace SparkDevNetwork.Rock.CodeGenerator
     /// </summary>
     public class FluidTemplateRenderer : ITemplateRenderer
     {
+        #region Fields
+
+        /// <summary>
+        /// The parser to use when rendering templates.
+        /// </summary>
         private readonly FluidParser _parser = new FluidParser();
 
+        /// <summary>
+        /// The options that describe how the template should be rendered.
+        /// </summary>
         private readonly TemplateOptions _options;
 
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Creates a new instance of <see cref="FluidTemplateRenderer"/>. 
+        /// </summary>
         public FluidTemplateRenderer()
         {
             _options = new TemplateOptions
@@ -30,6 +44,10 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             _options.Filters.AddFilter( "SplitCase", FilterSplitCase );
         }
 
+        #endregion
+
+        #region Methods
+
         /// <inheritdoc/>
         public string Render( string source, Dictionary<string, object> mergeFields )
         {
@@ -38,6 +56,10 @@ namespace SparkDevNetwork.Rock.CodeGenerator
 
             return template.Render( context );
         }
+
+        #endregion
+
+        #region Filters
 
         private static ValueTask<FluidValue> FilterSplitCase( FluidValue source, FilterArguments arguments, TemplateContext context )
         {
@@ -53,5 +75,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         {
             return new StringValue( Vocabulary.Default.Pluralize( source.ToStringValue(), false ) );
         }
+
+        #endregion
     }
 }

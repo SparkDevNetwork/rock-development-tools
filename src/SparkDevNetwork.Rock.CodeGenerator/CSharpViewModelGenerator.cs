@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -102,10 +103,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             // of ListItemBag objects.
             if ( type.IsGenericType && type.GenericTypeArguments.Length == 1 )
             {
-                var genericArg = type.GenericTypeArguments[0];
-                var collectionType = typeof( ICollection<> ).MakeGenericType( genericArg );
-
-                if ( type.ImplementsInterface( collectionType.FullName ) )
+                if ( type.ImplementsInterface( typeof( ICollection<> ).FullName ) )
                 {
                     return new PropertyDeclaration( $"List<ListItemBag>", new[] { "System.Collections.Generic", "Rock.ViewModels.Utility" } );
                 }
@@ -127,6 +125,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <param name="sb">The StringBuilder to append the comment to.</param>
         /// <param name="memberInfo">The member information to get comments for.</param>
         /// <param name="indentationSize">Size of the indentation for the comment block.</param>
+        [ExcludeFromCodeCoverage]
         private void AppendCommentBlock( StringBuilder sb, MemberInfo memberInfo, int indentationSize )
         {
             var xdoc = DocumentationProvider?.GetMemberComments( memberInfo )?.Summary?.PlainText;

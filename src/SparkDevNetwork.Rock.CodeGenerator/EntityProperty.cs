@@ -103,13 +103,13 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         public string GetConvertToBagCode( bool throwOnError = true )
         {
             // Check if it is a simple assignment type.
-            if ( _assignmentTypes.Contains( PropertyType.FullName ) )
+            if ( IsAssignmentType( PropertyType ) )
             {
                 return Name;
             }
 
             // If the type is an IEntity, then use the standard conversion.
-            if ( PropertyType.IsRockEntity() )
+            if ( IsEntity )
             {
                 return $"{Name}.ToListItemBag()";
             }
@@ -119,9 +119,9 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             if ( PropertyType.IsGenericType && PropertyType.GenericTypeArguments.Length == 1 )
             {
                 var genericArg = PropertyType.GenericTypeArguments[0];
-                var collectionType = typeof( ICollection<> ).MakeGenericType( genericArg );
+                var collectionType = typeof( ICollection<> );
 
-                if ( PropertyType.ImplementsInterface( collectionType.FullName ) )
+                if ( PropertyType.ImplementsInterface( collectionType.FullName ) && genericArg.IsRockEntity() )
                 {
                     return $"{Name}.ToListItemBagList()";
                 }
@@ -141,13 +141,13 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         public string GetConvertFromBagCode( bool throwOnError = true )
         {
             // Check if it is a simple assignment type.
-            if ( _assignmentTypes.Contains( PropertyType.FullName ) )
+            if ( IsAssignmentType( PropertyType ) )
             {
                 return Name;
             }
 
             // If the type is an IEntity, then use the standard conversion.
-            if ( PropertyType.IsRockEntity() )
+            if ( IsEntity )
             {
                 var idProperty = PropertyInfo.DeclaringType.GetProperty( $"{PropertyType.Name}Id" );
 
@@ -178,67 +178,29 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             // If the type is a collection of supported types then it is supported.
             if ( type.IsGenericType && type.GenericTypeArguments.Length == 1 )
             {
-                var genericArg = type.GenericTypeArguments[0];
-                var collectionType = typeof( ICollection<> ).MakeGenericType( genericArg );
-
-                if ( type.ImplementsInterface( collectionType.FullName ) )
+                if ( type.ImplementsInterface( typeof( ICollection<> ).FullName ) )
                 {
-                    return true;
+                    return IsSupportedPropertyType( type.GenericTypeArguments[0] );
                 }
             }
 
             // If the type is an entity type or one of the known primitive
             // types then it is considered supported.
-            if ( type.IsRockEntity() )
-            {
-                return true;
-            }
-            else if ( type.FullName == typeof( bool ).FullName || type.FullName == typeof( bool? ).FullName )
-            {
-                return true;
-            }
-            else if ( type.FullName == typeof( int ).FullName || type.FullName == typeof( int? ).FullName )
-            {
-                return true;
-            }
-            else if ( type.FullName == typeof( long ).FullName || type.FullName == typeof( long? ).FullName )
-            {
-                return true;
-            }
-            else if ( type.FullName == typeof( decimal ).FullName || type.FullName == typeof( decimal? ).FullName )
-            {
-                return true;
-            }
-            else if ( type.FullName == typeof( double ).FullName || type.FullName == typeof( double? ).FullName )
-            {
-                return true;
-            }
-            else if ( type.FullName == typeof( Guid ).FullName || type.FullName == typeof( Guid? ).FullName )
-            {
-                return true;
-            }
-            else if ( type.FullName == typeof( string ).FullName )
-            {
-                return true;
-            }
-            else if ( type.FullName == typeof( DateTime ).FullName || type.FullName == typeof( DateTime? ).FullName )
-            {
-                return true;
-            }
-            else if ( type.FullName == typeof( DateTimeOffset ).FullName || type.FullName == typeof( DateTimeOffset? ).FullName )
-            {
-                return true;
-            }
-            else if ( type.IsEnum && type.Namespace.StartsWith( "Rock.Enums" ) )
-            {
-                return true;
-            }
-            else if ( type.IsEnum && type.GetCustomAttributeData( "Rock.Enums.EnumDomainAttribute" ) != null )
-            {
-                return true;
-            }
+            return type.IsRockEntity()
+                || IsAssignmentType( type )
+                || ( type.IsEnum && type.Namespace.StartsWith( "Rock.Enums" ) )
+                || ( type.IsEnum && type.GetCustomAttributeData( "Rock.Enums.EnumDomainAttribute" ) != null );
+        }
 
-            return false;
+        /// <summary>
+        /// Determines if the type is a simple assignment type to convert the
+        /// value to and from the bag.
+        /// </summary>
+        /// <param name="type">The type to be inspected.</param>
+        /// <returns><c>true</c> if the type is considered an assignment type; otherwise <c>false</c.>.</returns>
+        internal static bool IsAssignmentType( Type type )
+        {
+            return _assignmentTypes.Contains( type.FullName );
         }
 
         #endregion

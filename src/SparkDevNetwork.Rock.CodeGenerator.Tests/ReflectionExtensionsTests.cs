@@ -1,4 +1,7 @@
 using System.Collections;
+using System.Reflection;
+
+using Moq;
 
 namespace SparkDevNetwork.Rock.CodeGenerator.Tests;
 
@@ -68,6 +71,150 @@ public class ReflectionExtensionsTests
         var result = type.ImplementsInterface( typeof( ICollection ).FullName );
 
         Assert.False( result );
+    }
+
+    #endregion
+
+    #region GetFriendlyName
+
+    [Fact]
+    public void GetFriendlyName_WithNonGeneric_ReturnsName()
+    {
+        var name = ReflectionExtensions.GetFriendlyName( typeof( string ) );
+
+        Assert.Equal( "String", name );
+    }
+
+    [Fact]
+    public void GetFriendlyName_WithGeneric_ReturnsConciseName()
+    {
+        var name = ReflectionExtensions.GetFriendlyName( typeof( Dictionary<string, string> ) );
+
+        Assert.Equal( "Dictionary<String, String>", name );
+    }
+
+    #endregion
+
+    #region GetCSharpPropertyDeclaration
+
+    [Theory]
+    [InlineData( typeof( bool ), "bool" )]
+    [InlineData( typeof( bool? ), "bool?" )]
+    [InlineData( typeof( int ), "int" )]
+    [InlineData( typeof( int? ), "int?" )]
+    [InlineData( typeof( long ), "long" )]
+    [InlineData( typeof( long? ), "long?" )]
+    [InlineData( typeof( decimal ), "decimal" )]
+    [InlineData( typeof( decimal? ), "decimal?" )]
+    [InlineData( typeof( double ), "double" )]
+    [InlineData( typeof( double? ), "double?" )]
+    [InlineData( typeof( string ), "string" )]
+    public void GetCSharpPropertyDeclaration_WithSimpleType_ReturnsNoUsings( Type type, string propertyType )
+    {
+        var declaration = ReflectionExtensions.GetCSharpPropertyDeclaration( type );
+
+        Assert.Equal( propertyType, declaration.TypeName );
+        Assert.Empty( declaration.RequiredUsings );
+    }
+
+    [Theory]
+    [InlineData( typeof( Guid ), "Guid" )]
+    [InlineData( typeof( Guid? ), "Guid?" )]
+    [InlineData( typeof( DateTime ), "DateTime" )]
+    [InlineData( typeof( DateTime? ), "DateTime?" )]
+    [InlineData( typeof( DateTimeOffset ), "DateTimeOffset" )]
+    [InlineData( typeof( DateTimeOffset? ), "DateTimeOffset?" )]
+    public void GetCSharpPropertyDeclaration_WithSystemType_ReturnsSystemUsing( Type type, string propertyType )
+    {
+        var declaration = ReflectionExtensions.GetCSharpPropertyDeclaration( type );
+
+        Assert.Equal( propertyType, declaration.TypeName );
+        Assert.Single( declaration.RequiredUsings );
+        Assert.Equal( "System", declaration.RequiredUsings[0] );
+    }
+
+    [Fact]
+    public void GetCSharpPropertyDeclaration_WithRockEnum_ReturnsTypeNamespaceUsing()
+    {
+        var typeMock = new Mock<Type>( MockBehavior.Strict );
+        typeMock.Setup( m => m.IsGenericType ).Returns( false );
+        typeMock.Setup( m => m.IsEnum ).Returns( true );
+        typeMock.Setup( m => m.GetInterfaces() ).Returns( [] );
+        typeMock.Setup( m => m.Name ).Returns( "TestValue" );
+        typeMock.Setup( m => m.FullName ).Returns( "Rock.Enums.TestValue" );
+        typeMock.Setup( m => m.Namespace ).Returns( "Rock.Enums" );
+
+        var declaration = ReflectionExtensions.GetCSharpPropertyDeclaration( typeMock.Object );
+
+        Assert.Equal( "TestValue", declaration.TypeName );
+        Assert.Single( declaration.RequiredUsings );
+        Assert.Equal( "Rock.Enums", declaration.RequiredUsings[0] );
+    }
+
+    [Fact]
+    public void GetCSharpPropertyDeclaration_WithRockDomainEnum_ReturnsTypeNamespaceUsing()
+    {
+        var attributeTypeMock = new Mock<Type>( MockBehavior.Strict );
+        attributeTypeMock.Setup( m => m.FullName ).Returns( "Rock.Enums.EnumDomainAttribute" );
+
+        var attributeMock = new Mock<CustomAttributeData>( MockBehavior.Strict );
+        attributeMock.Setup( m => m.AttributeType ).Returns( attributeTypeMock.Object );
+
+        var typeMock = new Mock<Type>( MockBehavior.Strict );
+        typeMock.Setup( m => m.IsGenericType ).Returns( false );
+        typeMock.Setup( m => m.IsEnum ).Returns( true );
+        typeMock.Setup( m => m.GetInterfaces() ).Returns( [] );
+        typeMock.Setup( m => m.Name ).Returns( "TestValue" );
+        typeMock.Setup( m => m.FullName ).Returns( "Rock.Data.TestValue" );
+        typeMock.Setup( m => m.Namespace ).Returns( "Rock.Data" );
+        typeMock.Setup( m => m.GetCustomAttributesData() ).Returns( [attributeMock.Object] );
+
+        var declaration = ReflectionExtensions.GetCSharpPropertyDeclaration( typeMock.Object );
+
+        Assert.Equal( "TestValue", declaration.TypeName );
+        Assert.Single( declaration.RequiredUsings );
+        Assert.Equal( "Rock.Data", declaration.RequiredUsings[0] );
+    }
+
+    [Fact]
+    public void GetCSharpPropertyDeclaration_WithUnsupportedEnum_ThrowsException()
+    {
+        var typeMock = new Mock<Type>( MockBehavior.Strict );
+        typeMock.Setup( m => m.IsGenericType ).Returns( false );
+        typeMock.Setup( m => m.IsEnum ).Returns( true );
+        typeMock.Setup( m => m.GetInterfaces() ).Returns( [] );
+        typeMock.Setup( m => m.Name ).Returns( "TestValue" );
+        typeMock.Setup( m => m.FullName ).Returns( "Rock.Data.TestValue" );
+        typeMock.Setup( m => m.Namespace ).Returns( "Rock.Data" );
+        typeMock.Setup( m => m.GetCustomAttributesData() ).Returns( [] );
+
+        Assert.Throws<Exception>( () => ReflectionExtensions.GetCSharpPropertyDeclaration( typeMock.Object ) );
+    }
+
+    #endregion
+
+    #region IsRockEntity
+
+    [Fact]
+    public void IsRockWith_WithEntity_ReturnsTrue()
+    {
+        var entityInterfaceMock = new Mock<Type>( MockBehavior.Strict );
+        entityInterfaceMock.Setup( m => m.IsGenericType ).Returns( false );
+        entityInterfaceMock.Setup( m => m.FullName ).Returns( "Rock.Data.IEntity" );
+
+        var typeMock = new Mock<Type>( MockBehavior.Strict );
+        typeMock.Setup( m => m.IsGenericType ).Returns( false );
+        typeMock.Setup( m => m.IsEnum ).Returns( false );
+        typeMock.Setup( m => m.GetInterfaces() ).Returns( [entityInterfaceMock.Object] );
+        typeMock.Setup( m => m.FullName ).Returns( "Rock.Model.DefinedValue" );
+
+        Assert.True( ReflectionExtensions.IsRockEntity( typeMock.Object ) );
+    }
+
+    [Fact]
+    public void IsRockWith_WithNonEntity_ReturnsTrue()
+    {
+        Assert.False( ReflectionExtensions.IsRockEntity( typeof( string ) ) );
     }
 
     #endregion

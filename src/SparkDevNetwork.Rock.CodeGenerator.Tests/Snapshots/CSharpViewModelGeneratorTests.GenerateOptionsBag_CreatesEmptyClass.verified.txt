@@ -1,0 +1,9 @@
+﻿namespace Rock.ViewModels.Test
+{
+    /// <summary>
+    /// A test bag.
+    /// </summary>
+    public class TestBag
+    {
+    }
+}

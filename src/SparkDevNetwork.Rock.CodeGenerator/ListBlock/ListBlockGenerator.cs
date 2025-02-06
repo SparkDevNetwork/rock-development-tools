@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace SparkDevNetwork.Rock.CodeGenerator
+namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
 {
     public class ListBlockGenerator : Generator
     {
@@ -122,7 +122,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <param name="entityType">Type of the entity whose properties should be enumerated.</param>
         /// <param name="includeAdvancedProperties">If <c>true</c> then advanced properties will be included.</param>
         /// <returns>An enumeration of all the entity's properties.</returns>
-        private IEnumerable<PropertyInfo> GetEntityProperties( Type entityType, bool includeAdvancedProperties )
+        public IEnumerable<PropertyInfo> GetEntityProperties( Type entityType, bool includeAdvancedProperties )
         {
             return GetProperties( entityType, includeAdvancedProperties )
                 .OrderBy( p => p.Name )

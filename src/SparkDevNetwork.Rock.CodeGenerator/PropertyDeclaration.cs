@@ -12,15 +12,13 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         #region Properties
 
         /// <summary>
-        /// Gets the required usings statements for this type to work.
+        /// The required usings statements for this type to work.
         /// </summary>
-        /// <value>The required usings statements for this type to work.</value>
         public IList<string> RequiredUsings { get; }
 
         /// <summary>
-        /// Gets the name of the type, this is the text that will be emitted to reference the type.
+        /// The name of the type, this is the text that will be emitted to reference the type.
         /// </summary>
-        /// <value>The name of the type.</value>
         public string TypeName { get; }
 
         #endregion

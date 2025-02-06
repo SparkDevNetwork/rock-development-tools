@@ -1,0 +1,26 @@
+﻿using System;
+using System.Collections.Generic;
+
+using Rock.ViewModels.Utility;
+
+namespace Rock.ViewModels.Test
+{
+    /// <summary>
+    /// A test entity bag.
+    /// </summary>
+    public class DefinedValueBag : EntityBagBase
+    {
+        public ListItemBag DefinedValue { get; set; }
+
+        public Guid ItemGuid { get; set; }
+
+        /// <summary>
+        /// A comment for item.
+        /// </summary>
+        public int ItemId { get; set; }
+
+        public List<ListItemBag> Items { get; set; }
+
+        public int? OtherId { get; set; }
+    }
+}

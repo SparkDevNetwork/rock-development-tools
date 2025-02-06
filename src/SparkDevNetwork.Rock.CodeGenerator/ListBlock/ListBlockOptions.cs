@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace SparkDevNetwork.Rock.CodeGenerator
+namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
 {
     /// <summary>
     /// Contains the options to use when generating the list block files.
