@@ -72,12 +72,10 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         {
             var properties = entityType.GetProperties( BindingFlags.Public | BindingFlags.Instance )
                 .Where( p => p.GetCustomAttributeData( "System.Runtime.Serialization.DataMemberAttribute" ) != null
-                    || p.PropertyType.ImplementsInterface( "Rock.Data.IEntity" ) )
+                    || p.PropertyType.IsRockEntity() )
                 .Where( p => p.GetCustomAttributeData( "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute" ) == null )
                 .Where( p => !_systemProperties.Contains( p.Name ) )
-                .Where( p => includeAdvancedProperties || !_advancedProperties.Contains( p.Name ) )
-                .OrderBy( p => p.Name )
-                .ToList();
+                .Where( p => includeAdvancedProperties || !_advancedProperties.Contains( p.Name ) );
 
             // Filter out any EntityId properties if we have a navigation
             // property to the entity.
@@ -85,8 +83,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
             {
                 properties = properties
                     .Where( p => !p.Name.EndsWith( "Id" )
-                        || !properties.Any( p2 => p2.Name == p.Name.Substring( 0, p.Name.Length - 2 ) ) )
-                    .ToList();
+                        || !properties.Any( p2 => p2.Name == p.Name.Substring( 0, p.Name.Length - 2 ) ) );
             }
 
             return properties;
@@ -121,7 +118,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         /// <param name="entityType">Type of the entity whose properties should be enumerated.</param>
         /// <param name="includeAdvancedProperties">If <c>true</c> then advanced properties will be included.</param>
         /// <returns>An enumeration of all the entity's properties.</returns>
-        public IEnumerable<PropertyInfo> GetEntityProperties( Type entityType, bool includeAdvancedProperties )
+        public static IEnumerable<PropertyInfo> GetEntityProperties( Type entityType, bool includeAdvancedProperties )
         {
             if ( entityType == null )
             {
@@ -129,8 +126,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
             }
 
             return GetProperties( entityType, includeAdvancedProperties )
-                .OrderBy( p => p.Name )
-                .ToList();
+                .OrderBy( p => p.Name );
         }
 
         /// <summary>

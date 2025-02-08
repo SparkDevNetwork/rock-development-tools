@@ -51,12 +51,14 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         public string TypeScriptBlockRelativePath { get; set; }
 
         /// <summary>
-        /// The type of the entity that will be edited by the block.
+        /// The type of the entity that will be edited by the block, such as
+        /// "DefinedValue".
         /// </summary>
         public string EntityTypeName { get; set; }
 
         /// <summary>
-        /// The type of the service that will handle database access.
+        /// The type of the service that will handle database access, such as
+        /// "DefinedValueService".
         /// </summary>
         public string ServiceTypeName { get; set; }
 

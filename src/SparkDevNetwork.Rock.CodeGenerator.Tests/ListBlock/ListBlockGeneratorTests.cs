@@ -24,9 +24,7 @@ public class ListBlockGeneratorTests
     [Fact]
     public void GetEntityProperties_ThrowsWithNullType()
     {
-        var generator = new ListBlockGenerator( MockRenderer() );
-
-        Assert.Throws<ArgumentNullException>( () => generator.GetEntityProperties( null, true ) );
+        Assert.Throws<ArgumentNullException>( () => ListBlockGenerator.GetEntityProperties( null, true ) );
     }
 
     [Fact]
@@ -40,9 +38,7 @@ public class ListBlockGeneratorTests
         typeMock.Setup( m => m.GetProperties( It.IsAny<BindingFlags>() ) )
             .Returns( [propertyMock.Object] );
 
-        var generator = new ListBlockGenerator( MockRenderer() );
-
-        var foundProperties = generator.GetEntityProperties( typeMock.Object, true );
+        var foundProperties = ListBlockGenerator.GetEntityProperties( typeMock.Object, true );
 
         Assert.Empty( foundProperties );
     }
@@ -62,9 +58,7 @@ public class ListBlockGeneratorTests
         typeMock.Setup( m => m.GetProperties( It.IsAny<BindingFlags>() ) )
             .Returns( [propertyMock.Object] );
 
-        var generator = new ListBlockGenerator( MockRenderer() );
-
-        var foundProperties = generator.GetEntityProperties( typeMock.Object, true );
+        var foundProperties = ListBlockGenerator.GetEntityProperties( typeMock.Object, true );
 
         Assert.NotEmpty( foundProperties );
     }
@@ -89,9 +83,7 @@ public class ListBlockGeneratorTests
         entityTypeMock.Setup( m => m.GetProperties( It.IsAny<BindingFlags>() ) )
             .Returns( [propertyMock.Object] );
 
-        var generator = new ListBlockGenerator( MockRenderer() );
-
-        var foundProperties = generator.GetEntityProperties( entityTypeMock.Object, true );
+        var foundProperties = ListBlockGenerator.GetEntityProperties( entityTypeMock.Object, true );
 
         Assert.NotEmpty( foundProperties );
     }
@@ -114,9 +106,7 @@ public class ListBlockGeneratorTests
         typeMock.Setup( m => m.GetProperties( It.IsAny<BindingFlags>() ) )
             .Returns( [propertyMock.Object] );
 
-        var generator = new ListBlockGenerator( MockRenderer() );
-
-        var foundProperties = generator.GetEntityProperties( typeMock.Object, true );
+        var foundProperties = ListBlockGenerator.GetEntityProperties( typeMock.Object, true );
 
         Assert.Empty( foundProperties );
     }
@@ -136,9 +126,7 @@ public class ListBlockGeneratorTests
         typeMock.Setup( m => m.GetProperties( It.IsAny<BindingFlags>() ) )
             .Returns( [propertyMock.Object] );
 
-        var generator = new ListBlockGenerator( MockRenderer() );
-
-        var foundProperties = generator.GetEntityProperties( typeMock.Object, true );
+        var foundProperties = ListBlockGenerator.GetEntityProperties( typeMock.Object, true );
 
         Assert.Empty( foundProperties );
     }
@@ -158,9 +146,7 @@ public class ListBlockGeneratorTests
         typeMock.Setup( m => m.GetProperties( It.IsAny<BindingFlags>() ) )
             .Returns( [propertyMock.Object] );
 
-        var generator = new ListBlockGenerator( MockRenderer() );
-
-        var foundProperties = generator.GetEntityProperties( typeMock.Object, false );
+        var foundProperties = ListBlockGenerator.GetEntityProperties( typeMock.Object, false );
 
         Assert.Empty( foundProperties );
     }
@@ -180,9 +166,7 @@ public class ListBlockGeneratorTests
         typeMock.Setup( m => m.GetProperties( It.IsAny<BindingFlags>() ) )
             .Returns( [propertyMock.Object] );
 
-        var generator = new ListBlockGenerator( MockRenderer() );
-
-        var foundProperties = generator.GetEntityProperties( typeMock.Object, true );
+        var foundProperties = ListBlockGenerator.GetEntityProperties( typeMock.Object, true );
 
         Assert.NotEmpty( foundProperties );
     }
@@ -215,9 +199,7 @@ public class ListBlockGeneratorTests
         entityTypeMock.Setup( m => m.GetProperties( It.IsAny<BindingFlags>() ) )
             .Returns( [navigationPropertyMock.Object, entityIdPropertyMock.Object] );
 
-        var generator = new ListBlockGenerator( MockRenderer() );
-
-        var foundProperties = generator.GetEntityProperties( entityTypeMock.Object, false );
+        var foundProperties = ListBlockGenerator.GetEntityProperties( entityTypeMock.Object, false );
 
         Assert.Single( foundProperties );
     }
@@ -376,24 +358,6 @@ public class ListBlockGeneratorTests
             Verify( files[3].Content, Settings )
                 .UseMethodName( $"{nameof( GeneratedFilesProducesExpectedOutput )}_types.partial.ts" )
         );
-    }
-
-    #endregion
-
-    #region Support Methods
-
-    /// <summary>
-    /// Creates a mock template renderer that returns an empty string.
-    /// </summary>
-    /// <returns>A mocked template renderer.</returns>
-    private static ITemplateRenderer MockRenderer()
-    {
-        var rendererMock = new Mock<ITemplateRenderer>( MockBehavior.Strict );
-
-        rendererMock.Setup( m => m.Render( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
-            .Returns( string.Empty );
-
-        return rendererMock.Object;
     }
 
     #endregion
