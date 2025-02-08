@@ -1,4 +1,3 @@
-<!-- Copyright by the Spark Development Network; Licensed under the Rock Community License -->
 <template>
     <Grid :definition="config.gridDefinition ?? undefined"
           :data="gridDataSource"
