@@ -239,7 +239,7 @@ public class EntityPropertyTests
         var declaringTypeMock = new Mock<Type>( MockBehavior.Strict );
         declaringTypeMock.Protected()
             .Setup<PropertyInfo?>( "GetPropertyImpl", [
-                "DefinedValueId",
+                "MyPropId",
                 ItExpr.IsAny<BindingFlags>(),
                 ItExpr.IsAny<Binder>(),
                 ItExpr.IsAny<Type>(),
@@ -279,7 +279,7 @@ public class EntityPropertyTests
         var declaringTypeMock = new Mock<Type>( MockBehavior.Strict );
         declaringTypeMock.Protected()
             .Setup<PropertyInfo?>( "GetPropertyImpl", [
-                "DefinedValueId",
+                "MyPropId",
                 ItExpr.IsAny<BindingFlags>(),
                 ItExpr.IsAny<Binder>(),
                 ItExpr.IsAny<Type>(),
@@ -319,7 +319,7 @@ public class EntityPropertyTests
         var declaringTypeMock = new Mock<Type>( MockBehavior.Strict );
         declaringTypeMock.Protected()
             .Setup<PropertyInfo?>( "GetPropertyImpl", [
-                "DefinedValueId",
+                "MyPropId",
                 ItExpr.IsAny<BindingFlags>(),
                 ItExpr.IsAny<Binder>(),
                 ItExpr.IsAny<Type>(),

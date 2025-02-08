@@ -149,7 +149,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             // If the type is an IEntity, then use the standard conversion.
             if ( IsEntity )
             {
-                var idProperty = PropertyInfo.DeclaringType.GetProperty( $"{PropertyType.Name}Id" );
+                var idProperty = PropertyInfo.DeclaringType.GetProperty( $"{PropertyInfo.Name}Id" );
 
                 // If the id property is not nullable, get the required integer value.
                 if ( idProperty != null && idProperty.PropertyType.FullName == typeof( int ).FullName )
