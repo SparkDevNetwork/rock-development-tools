@@ -1,0 +1,9 @@
+﻿namespace Rock.ViewModels.Blocks.Core.MyObjectList
+{
+    /// <summary>
+    /// The additional configuration options for the My Object List block.
+    /// </summary>
+    public class MyObjectListOptionsBag
+    {
+    }
+}

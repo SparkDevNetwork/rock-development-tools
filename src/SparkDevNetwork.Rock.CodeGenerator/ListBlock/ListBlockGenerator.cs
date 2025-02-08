@@ -68,17 +68,16 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         /// <param name="entityType">Type of the entity whose properties are to be enumerated.</param>
         /// <param name="includeAdvancedProperties">If <c>true</c> then advanced properties will be included.</param>
         /// <returns>An enumeration of the valid properties that match the filtering options.</returns>
-        private IEnumerable<PropertyInfo> GetProperties( Type entityType, bool includeAdvancedProperties )
+        private static IEnumerable<PropertyInfo> GetProperties( Type entityType, bool includeAdvancedProperties )
         {
-            var properties = entityType?.GetProperties( BindingFlags.Public | BindingFlags.Instance )
+            var properties = entityType.GetProperties( BindingFlags.Public | BindingFlags.Instance )
                 .Where( p => p.GetCustomAttributeData( "System.Runtime.Serialization.DataMemberAttribute" ) != null
                     || p.PropertyType.ImplementsInterface( "Rock.Data.IEntity" ) )
                 .Where( p => p.GetCustomAttributeData( "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute" ) == null )
                 .Where( p => !_systemProperties.Contains( p.Name ) )
                 .Where( p => includeAdvancedProperties || !_advancedProperties.Contains( p.Name ) )
                 .OrderBy( p => p.Name )
-                .ToList()
-                ?? new List<PropertyInfo>();
+                .ToList();
 
             // Filter out any EntityId properties if we have a navigation
             // property to the entity.
@@ -98,7 +97,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         /// </summary>
         /// <param name="properties">The properties that exist on the entity.</param>
         /// <returns>A set of <see cref="PropertyItem"/> objects.</returns>
-        public bool IsPropertyValidForColumn( PropertyInfo property )
+        public static bool IsPropertyValidForColumn( PropertyInfo property )
         {
             return property.PropertyType.FullName == typeof( string ).FullName
                 || property.PropertyType.FullName == typeof( Guid ).FullName
@@ -113,7 +112,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
                 || property.PropertyType.FullName == typeof( float? ).FullName
                 || property.PropertyType.FullName == typeof( double ).FullName
                 || property.PropertyType.FullName == typeof( double? ).FullName
-                || property.PropertyType.ImplementsInterface( "Rock.Data.IEntity" );
+                || property.PropertyType.IsRockEntity();
         }
 
         /// <summary>
@@ -124,6 +123,11 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         /// <returns>An enumeration of all the entity's properties.</returns>
         public IEnumerable<PropertyInfo> GetEntityProperties( Type entityType, bool includeAdvancedProperties )
         {
+            if ( entityType == null )
+            {
+                throw new ArgumentNullException( nameof( entityType ) );
+            }
+
             return GetProperties( entityType, includeAdvancedProperties )
                 .OrderBy( p => p.Name )
                 .ToList();
