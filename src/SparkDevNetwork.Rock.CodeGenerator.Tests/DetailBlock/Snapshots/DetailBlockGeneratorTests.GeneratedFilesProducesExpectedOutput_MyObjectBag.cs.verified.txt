@@ -1,0 +1,20 @@
+﻿using System;
+
+using Rock.ViewModels.Utility;
+
+namespace Rock.ViewModels.Blocks.Core.MyObjectDetail
+{
+    /// <summary>
+    /// The item details for the My Object Detail block.
+    /// </summary>
+    public class MyObjectBag : EntityBagBase
+    {
+        public double Amount { get; set; }
+
+        public ListItemBag ButtonTypeValue { get; set; }
+
+        public int DefinedValueId { get; set; }
+
+        public DateTime? TransactionDateTime { get; set; }
+    }
+}

@@ -4,6 +4,20 @@ public class TemplateRendererTests
 {
     [Theory]
     [InlineData( typeof( FluidTemplateRenderer ) )]
+    public void SupportsAddToArrayFilter( Type rendererType )
+    {
+        var renderer = ( ITemplateRenderer? ) Activator.CreateInstance( rendererType );
+        var mergeFields = new Dictionary<string, object>();
+
+        Assert.NotNull( renderer );
+
+        var text = renderer.Render( "{% assign arr = '' | AddToArray:'one' %}{% assign arr = arr | AddToArray:'two' %}{{ arr | Join:',' }}", mergeFields );
+
+        Assert.Equal( "one,two", text );
+    }
+
+    [Theory]
+    [InlineData( typeof( FluidTemplateRenderer ) )]
     public void SupportsCamelCaseFilter( Type rendererType )
     {
         var renderer = ( ITemplateRenderer? ) Activator.CreateInstance( rendererType );

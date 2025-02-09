@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 using Fluid;
@@ -37,6 +39,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                 MemberAccessStrategy = new UnsafeMemberAccessStrategy()
             };
 
+            _options.Filters.AddFilter( "AddToArray", FilterAddToArray );
             _options.Filters.AddFilter( "CamelCase", FilterCamelCase );
             _options.Filters.AddFilter( "Downcase", Fluid.Filters.StringFilters.Downcase );
             _options.Filters.AddFilter( "Join", Fluid.Filters.ArrayFilters.Join );
@@ -60,6 +63,18 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         #endregion
 
         #region Filters
+
+        private static ValueTask<FluidValue> FilterAddToArray( FluidValue source, FilterArguments arguments, TemplateContext context )
+        {
+            var array = source.ToObjectValue() as IList ?? new List<object>();
+
+            array = new List<object>( array.Cast<object>() )
+            {
+                arguments.At( 0 ).ToObjectValue()
+            };
+
+            return new ArrayValue( array.Cast<object>().Select( a => new ObjectValue( a ) ) );
+        }
 
         private static ValueTask<FluidValue> FilterSplitCase( FluidValue source, FilterArguments arguments, TemplateContext context )
         {

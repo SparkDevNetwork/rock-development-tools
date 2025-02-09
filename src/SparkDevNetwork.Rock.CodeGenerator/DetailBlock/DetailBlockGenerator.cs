@@ -7,9 +7,9 @@ using System.Reflection;
 
 using SparkDevNetwork.Rock.CodeGenerator.Documentation;
 
-namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
+namespace SparkDevNetwork.Rock.CodeGenerator.DetailBlock
 {
-    public class ListBlockGenerator
+    public class DetailBlockGenerator
     {
         #region Fields
 
@@ -72,10 +72,10 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         #region Constructors
 
         /// <summary>
-        /// Creates a new instance of <see cref="ListBlockGenerator"/>. 
+        /// Creates a new instance of <see cref="DetailBlockGenerator"/>. 
         /// </summary>
         /// <param name="renderer">The renderer to use when generating the source code files from templates.</param>
-        public ListBlockGenerator( ITemplateRenderer renderer )
+        public DetailBlockGenerator( ITemplateRenderer renderer )
         {
             _templateRenderer = renderer;
         }
@@ -93,46 +93,12 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         /// <returns>An enumeration of the valid properties that match the filtering options.</returns>
         private static IEnumerable<PropertyInfo> GetProperties( Type entityType, bool includeAdvancedProperties )
         {
-            var properties = entityType.GetProperties( BindingFlags.Public | BindingFlags.Instance )
+            return entityType.GetProperties( BindingFlags.Public | BindingFlags.Instance )
                 .Where( p => p.GetCustomAttributeData( "System.Runtime.Serialization.DataMemberAttribute" ) != null
                     || p.PropertyType.IsRockEntity() )
                 .Where( p => p.GetCustomAttributeData( "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute" ) == null )
                 .Where( p => !_systemProperties.Contains( p.Name ) )
                 .Where( p => includeAdvancedProperties || !_advancedProperties.Contains( p.Name ) );
-
-            // Filter out any EntityId properties if we have a navigation
-            // property to the entity.
-            if ( !includeAdvancedProperties )
-            {
-                properties = properties
-                    .Where( p => !p.Name.EndsWith( "Id" )
-                        || !properties.Any( p2 => p2.Name == p.Name.Substring( 0, p.Name.Length - 2 ) ) );
-            }
-
-            return properties;
-        }
-
-        /// <summary>
-        /// Gets the properties that are valid to use when generating columns.
-        /// </summary>
-        /// <param name="properties">The properties that exist on the entity.</param>
-        /// <returns>A set of <see cref="PropertyItem"/> objects.</returns>
-        public static bool IsPropertyValidForColumn( PropertyInfo property )
-        {
-            return property.PropertyType.FullName == typeof( string ).FullName
-                || property.PropertyType.FullName == typeof( Guid ).FullName
-                || property.PropertyType.FullName == typeof( Guid? ).FullName
-                || property.PropertyType.FullName == typeof( bool ).FullName
-                || property.PropertyType.FullName == typeof( bool? ).FullName
-                || property.PropertyType.FullName == typeof( int ).FullName
-                || property.PropertyType.FullName == typeof( int? ).FullName
-                || property.PropertyType.FullName == typeof( decimal ).FullName
-                || property.PropertyType.FullName == typeof( decimal? ).FullName
-                || property.PropertyType.FullName == typeof( float ).FullName
-                || property.PropertyType.FullName == typeof( float? ).FullName
-                || property.PropertyType.FullName == typeof( double ).FullName
-                || property.PropertyType.FullName == typeof( double? ).FullName
-                || property.PropertyType.IsRockEntity();
         }
 
         /// <summary>
@@ -153,14 +119,31 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         }
 
         /// <summary>
-        /// Generates all the files required to make a skeleton list block
+        /// Determines if the property has a valid type that can be used during
+        /// automatic code generation.
+        /// </summary>
+        /// <param name="property">The property to be validated.</param>
+        /// <returns><c>true</c> if the property type is known and valid, <c>false</c> otherwise.</returns>
+        public static bool IsPropertyValid( PropertyInfo property )
+        {
+            return EntityProperty.IsSupportedPropertyType( property.PropertyType );
+        }
+
+        /// <summary>
+        /// Generates all the files required to make a skeleton detail block
         /// for the selected entity type.
         /// </summary>
         /// <param name="options">The options that describe all the options to use when generating code.</param>
         /// <returns>A collection of <see cref="GeneratedFile"/> objects that represent the files to be created or updated.</returns>
-        public IList<GeneratedFile> GenerateFiles( ListBlockOptions options )
+        public IList<GeneratedFile> GenerateFiles( DetailBlockOptions options )
         {
             var files = new List<GeneratedFile>();
+            // var domain = options.EntityType.GetCustomAttribute<Data.RockDomainAttribute>()?.Name ?? "Unknown";
+            // var domainNamespace = CoreSupport.GetDomainFolderName( domain );
+            // var bagPath = $"Rock.ViewModels\\Blocks\\{domainNamespace}\\{options.EntityType.Name}Detail";
+            // var blockPath = $"Rock.Blocks\\{domainNamespace}";
+            // var typeScriptBlockPath = $"Rock.JavaScript.Obsidian.Blocks\\src\\{domainNamespace}";
+            // var bagNamespace = $"Rock.ViewModels.Blocks.{domainNamespace}.{options.EntityType.Name}Detail";
             var generator = new CSharpViewModelGenerator
             {
                 StringsProvider = StringsProvider,
@@ -178,58 +161,81 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
             {
                 ["BlockTypeGuid"] = options.BlockTypeGuid,
                 ["BlockEntityGuid"] = options.BlockEntityGuid,
-                ["BlockNamespace"] = options.BlockNamespace,
-                ["ViewModelNamespace"] = options.ViewModelNamespace,
-                ["TypeScriptBagImportPath"] = options.TypeScriptBagImportPath,
+                ["BlockNamespace"] = options.BlockNamespace, // Rock.Blocks.{{ DomainNamespace }}
+                ["ViewModelNamespace"] = options.ViewModelNamespace, //Rock.ViewModels.Blocks.{{ DomainNamespace }}.{{ EntityName }}Detail
+                ["TypeScriptBagImportPath"] = options.TypeScriptBagImportPath, // @Obsidian/ViewModels/Blocks/{{ DomainNamespace }}/{{ EntityName }}Detail
                 ["EntityName"] = options.EntityTypeName,
                 ["ServiceName"] = options.ServiceTypeName,
-                ["EntityTypeGuid"] = options.EntityTypeGuid,
                 ["Category"] = options.Category,
-                ["Columns"] = options.Columns,
-                ["GridImports"] = options.Columns.SelectMany( c => c.GridImports ).Distinct().OrderBy( i => i ).ToList(),
+                ["Properties"] = options.Properties,
                 ["IsPlugin"] = options.IsPlugin,
-                ["UseIsSystem"] = options.UseIsSystem,
                 ["UseAttributeValues"] = options.UseAttributeValues,
+                ["UseDescription"] = options.Properties.Any( p => p.Name == "Description" ),
                 ["UseEntitySecurity"] = options.UseEntitySecurity,
-                ["ToolTipSource"] = options.ToolTipSource,
-                ["ShowReorder"] = options.ShowReorder,
-                ["ShowSecurity"] = options.ShowSecurity,
-                ["ShowDelete"] = options.ShowDelete,
-                ["ExpectedRowCount"] = options.ExpectedRowCount
+                ["UseIsActive"] = options.Properties.Any( p => p.Name == "IsActive" ),
+                ["UseIsSystem"] = options.Properties.Any( p => p.Name == "IsSystem" ),
+                ["UseOrder"] = options.Properties.Any( p => p.Name == "Order" ),
+                ["UseName"] = options.Properties.Any( p => p.Name == "Name" )
             };
 
-            // Generate the <Entity>ListOptionsBag.cs file.
-            var content = generator.GenerateOptionsBag( $"{options.EntityTypeName}ListOptionsBag", options.ViewModelNamespace, $"The additional configuration options for the {options.EntityTypeName.SplitCase()} List block." );
-            files.Add( new GeneratedFile( $"{options.EntityTypeName}ListOptionsBag.cs", options.ViewModelCSharpRelativePath, content ) );
+            // Generate the <Entity>Bag.cs file.
+            var content = generator.GenerateEntityBag( options.EntityTypeName, options.ViewModelNamespace, options.Properties, $"The item details for the {options.EntityTypeName.SplitCase()} Detail block." );
+            files.Add( new GeneratedFile( $"{options.EntityTypeName}Bag.cs", options.ViewModelCSharpRelativePath, content ) );
 
-            // Generate the main <Entity>List.cs file.
-            using ( var reader = new StreamReader( GetType().Assembly.GetManifestResourceStream( "SparkDevNetwork.Rock.CodeGenerator.Resources.EntityListBlock-cs.txt" ) ) )
+            // Generate the <Entity>DetailOptionsBag.cs file.
+            content = generator.GenerateOptionsBag( $"{options.EntityTypeName}DetailOptionsBag", options.ViewModelNamespace, $"The additional configuration options for the {options.EntityTypeName.SplitCase()} Detail block." );
+            files.Add( new GeneratedFile( $"{options.EntityTypeName}DetailOptionsBag.cs", options.ViewModelCSharpRelativePath, content ) );
+
+            // Generate the main <Entity>Detail.cs file.
+            using ( var reader = new StreamReader( GetType().Assembly.GetManifestResourceStream( "SparkDevNetwork.Rock.CodeGenerator.Resources.EntityDetailBlock-cs.txt" ) ) )
             {
                 var lavaTemplate = reader.ReadToEnd();
 
                 var result = GetCopyrightComment()
                     + _templateRenderer.Render( lavaTemplate, mergeFields );
 
-                files.Add( new GeneratedFile( $"{options.EntityTypeName}List.cs", options.CSharpBlockRelativePath, result ) );
+                files.Add( new GeneratedFile( $"{options.EntityTypeName}Detail.cs", options.CSharpBlockRelativePath, result ) );
             }
 
-            // Generate the Obsidian <entity>List.obs file.
-            using ( var reader = new StreamReader( GetType().Assembly.GetManifestResourceStream( "SparkDevNetwork.Rock.CodeGenerator.Resources.EntityListBlock-obs.txt" ) ) )
+            // Generate the Obsidian <entity>Detail.obs file.
+            using ( var reader = new StreamReader( GetType().Assembly.GetManifestResourceStream( "SparkDevNetwork.Rock.CodeGenerator.Resources.EntityDetailBlock-obs.txt" ) ) )
             {
                 var lavaTemplate = reader.ReadToEnd();
 
                 var result = GetObsidianCopyrightComment()
                     + _templateRenderer.Render( lavaTemplate, mergeFields );
 
-                files.Add( new GeneratedFile( $"{options.EntityTypeName.ToCamelCase()}List.obs", options.TypeScriptBlockRelativePath, result ) );
+                files.Add( new GeneratedFile( $"{options.EntityTypeName.ToCamelCase()}Detail.obs", options.TypeScriptBlockRelativePath, result ) );
             }
 
-            // Generate the Obsidian <Entity>List\types.partial.ts file.
-            content = tsGenerator.GenerateListBlockTypeDefinitionFile( new Dictionary<string, string>
+            // Generate the Obsidian <Entity>Detail\viewPanel.partial.obs file.
+            using ( var reader = new StreamReader( GetType().Assembly.GetManifestResourceStream( "SparkDevNetwork.Rock.CodeGenerator.Resources.ViewPanel-partial-obs.txt" ) ) )
             {
-                ["DetailPage"] = "DetailPage"
+                var lavaTemplate = reader.ReadToEnd();
+
+                var result = GetObsidianCopyrightComment()
+                    + _templateRenderer.Render( lavaTemplate, mergeFields );
+
+                files.Add( new GeneratedFile( $"viewPanel.partial.obs", $"{options.TypeScriptBlockRelativePath}\\{options.EntityTypeName}Detail", result ) );
+            }
+
+            // Generate the Obsidian <Entity>Detail\editPanel.partial.obs file.
+            using ( var reader = new StreamReader( GetType().Assembly.GetManifestResourceStream( "SparkDevNetwork.Rock.CodeGenerator.Resources.EditPanel-partial-obs.txt" ) ) )
+            {
+                var lavaTemplate = reader.ReadToEnd();
+
+                var result = GetObsidianCopyrightComment()
+                    + _templateRenderer.Render( lavaTemplate, mergeFields );
+
+                files.Add( new GeneratedFile( $"editPanel.partial.obs", $"{options.TypeScriptBlockRelativePath}\\{options.EntityTypeName}Detail", result ) );
+            }
+
+            // Generate the Obsidian <Entity>Detail\types.partial.ts file.
+            content = tsGenerator.GenerateDetailBlockTypeDefinitionFile( new Dictionary<string, string>
+            {
+                ["ParentPage"] = "ParentPage"
             } );
-            files.Add( new GeneratedFile( "types.partial.ts", Path.Combine( options.TypeScriptBlockRelativePath, $"{options.EntityTypeName}List" ), content ) );
+            files.Add( new GeneratedFile( "types.partial.ts", $"{options.TypeScriptBlockRelativePath}\\{options.EntityTypeName}Detail", content ) );
 
             return files;
         }

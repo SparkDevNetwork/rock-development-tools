@@ -1,0 +1,9 @@
+﻿namespace Rock.ViewModels.Blocks.Core.MyObjectDetail
+{
+    /// <summary>
+    /// The additional configuration options for the My Object Detail block.
+    /// </summary>
+    public class MyObjectDetailOptionsBag
+    {
+    }
+}
