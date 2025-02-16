@@ -93,6 +93,7 @@ class RootAppCommand : RootCommand, ICommandHandler
                 "Rock.Lava.Shared",
                 "Rock",
                 "Rock.Rest",
+                "Rock.Blocks",
                 "Rock.JavaScript.Obsidian" );
 
             if ( !result )
@@ -106,7 +107,8 @@ class RootAppCommand : RootCommand, ICommandHandler
                 "Rock.Common",
                 "Rock.Lava.Shared",
                 "Rock",
-                "Rock.Rest"
+                "Rock.Rest",
+                "Rock.Blocks"
             ] );
 
             if ( !result )
