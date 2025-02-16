@@ -218,6 +218,11 @@ partial class RockBuilder
             projectExt = "esproj";
         }
 
+        if ( File.Exists( Path.Combine( projectPath, $"{projectName}.njsproj" ) ) )
+        {
+            projectExt = "njsproj";
+        }
+
         var buildResult = await IndeterminateBar.RunAsync( $"Building {projectName}", async bar =>
         {
             var commandResult = await _visualStudio.BuildAsync( [
