@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Entity;
 using System.Linq;
-
-using Rock.Attribute;
+{% if IsPlugin == true %}
+using Rock;{% endif %}
+using Rock.Attribute;{% if IsPlugin == true %}
+using Rock.Blocks;{% endif %}
 using Rock.Data;
 using Rock.Model;
 using Rock.Obsidian.UI;
@@ -12,6 +14,7 @@ using Rock.ViewModels.Blocks;{% if IsPlugin == false %}
 using {{ ViewModelNamespace }};{% endif %}
 using Rock.Web.Cache;{% if IsPlugin == true %}
 
+using {{ ModelNamespace }};
 using {{ ViewModelNamespace }};{% endif %}
 
 namespace {{ BlockNamespace }}

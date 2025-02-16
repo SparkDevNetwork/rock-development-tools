@@ -98,7 +98,8 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
                     || p.PropertyType.IsRockEntity() )
                 .Where( p => p.GetCustomAttributeData( "System.ComponentModel.DataAnnotations.Schema.NotMappedAttribute" ) == null )
                 .Where( p => !_systemProperties.Contains( p.Name ) )
-                .Where( p => includeAdvancedProperties || !_advancedProperties.Contains( p.Name ) );
+                .Where( p => includeAdvancedProperties || !_advancedProperties.Contains( p.Name ) )
+                .ToList();
 
             // Filter out any EntityId properties if we have a navigation
             // property to the entity.
@@ -106,7 +107,8 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
             {
                 properties = properties
                     .Where( p => !p.Name.EndsWith( "Id" )
-                        || !properties.Any( p2 => p2.Name == p.Name.Substring( 0, p.Name.Length - 2 ) ) );
+                        || !properties.Any( p2 => p2.Name == p.Name.Substring( 0, p.Name.Length - 2 ) ) )
+                    .ToList();
             }
 
             return properties;
@@ -179,6 +181,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
                 ["BlockTypeGuid"] = options.BlockTypeGuid,
                 ["BlockEntityGuid"] = options.BlockEntityGuid,
                 ["BlockNamespace"] = options.BlockNamespace,
+                ["ModelNamespace"] = options.ModelNamespace,
                 ["ViewModelNamespace"] = options.ViewModelNamespace,
                 ["TypeScriptBagImportPath"] = options.TypeScriptBagImportPath,
                 ["EntityName"] = options.EntityTypeName,

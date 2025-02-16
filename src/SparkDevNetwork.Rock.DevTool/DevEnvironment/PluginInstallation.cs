@@ -120,22 +120,14 @@ class PluginInstallation
         _logger = logger;
     }
 
-    /// <summary>
-    /// Creates a new instance of a plugin installation in the environment.
-    /// </summary>
-    /// <param name="pluginPath">The absolute path to the plugin.</param>
-    /// <param name="data">The data that describes the plugin.</param>
-    /// <param name="fileSystem">The object that will provide access to the file system.</param>
-    /// <param name="logger">The object that will log diagnostic information.</param>
-    public static PluginInstallation Open( string pluginPath, PluginReferenceData data, IFileSystem fs, ILogger logger )
+    public static PluginData? ReadPlugin( string pluginPath, IFileSystem fs )
     {
         var pluginFile = fs.Path.Combine( pluginPath, PluginData.Filename );
         var friendlyPluginFile = fs.Path.GetFriendlyPath( pluginFile );
 
         if ( !fs.File.Exists( pluginFile ) )
         {
-            var error = $"is missing.";
-            return new PluginInstallation( pluginPath, data, error, fs, logger );
+            return null;
         }
 
         var json = fs.File.ReadAllText( pluginFile );
@@ -150,6 +142,26 @@ class PluginInstallation
         if ( pluginData.Name == null )
         {
             throw new InvalidPluginException( $"No name specified in plugin file {friendlyPluginFile}." );
+        }
+
+        return pluginData;
+    }
+
+    /// <summary>
+    /// Creates a new instance of a plugin installation in the environment.
+    /// </summary>
+    /// <param name="pluginPath">The absolute path to the plugin.</param>
+    /// <param name="data">The data that describes the plugin.</param>
+    /// <param name="fileSystem">The object that will provide access to the file system.</param>
+    /// <param name="logger">The object that will log diagnostic information.</param>
+    public static PluginInstallation Open( string pluginPath, PluginReferenceData data, IFileSystem fs, ILogger logger )
+    {
+        var pluginData = ReadPlugin( pluginPath, fs );
+
+        if ( pluginData == null )
+        {
+            var error = $"is missing.";
+            return new PluginInstallation( pluginPath, data, error, fs, logger );
         }
 
         return new PluginInstallation( pluginPath, data, pluginData, fs, logger );

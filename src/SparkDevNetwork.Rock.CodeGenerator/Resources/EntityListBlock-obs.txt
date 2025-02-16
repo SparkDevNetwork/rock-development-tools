@@ -2,8 +2,9 @@
     <Grid :definition="config.gridDefinition ?? undefined"
           :data="gridDataSource"
           keyField="idKey"
-          itemTerm="{{ EntityName | SplitCase }}"
-          :entityTypeGuid="EntityType.{{ EntityName }}"{% if ToolTipSource and ToolTipSource != empty %}
+          itemTerm="{{ EntityName | SplitCase }}"{% if IsPlugin == false %}
+          :entityTypeGuid="EntityType.{{ EntityName }}"{% else %}
+          entityTypeGuid="{{ EntityTypeGuid }}"{% endif %}{% if ToolTipSource and ToolTipSource != empty %}
           :expectedRowCount="config.expectedRowCount ?? undefined"
           tooltipField="{{ ToolTipSource | CamelCase }}"{% endif %}
           stickyHeader
@@ -25,12 +26,12 @@
 </template>
 
 <script setup lang="ts">
-    import { onConfigurationValuesChanged, useConfigurationValues, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
-    import { EntityType } from "@Obsidian/SystemGuids/entityType";
+    import { onConfigurationValuesChanged, useConfigurationValues, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";{% if IsPlugin == false %}
+    import { EntityType } from "@Obsidian/SystemGuids/entityType";{% endif %}
     import Grid, { {% if UseAttributeValues == true %}AttributeColumns, {% endif %}{% if GridImports != empty %}{{ GridImports | Join:", " }}, {%endif %}{% if ShowDelete == true %}DeleteColumn, {% endif %}{% if ShowReorder == true %}ReorderColumn, {% endif %}{% if ShowSecurity == true %}SecurityColumn, {% endif %}SelectColumn } from "@Obsidian/Controls/grid";
     import { alert } from "@Obsidian/Utility/dialogs";
     import { ListBlockBox } from "@Obsidian/ViewModels/Blocks/listBlockBox";
-    import { {{ EntityName }}ListOptionsBag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}ListOptionsBag";
+    import { {{ EntityName }}ListOptionsBag } from "{% if IsPlugin == false %}{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}ListOptionsBag{% else %}./viewModels{% endif %}";
     import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
     import { NavigationUrlKey } from "./{{ EntityName }}List/types.partial";
     import { reactive, ref } from "vue";

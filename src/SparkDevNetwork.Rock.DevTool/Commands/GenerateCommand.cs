@@ -18,5 +18,6 @@ class GenerateCommand : Command
         : base( "generate", "Run commands related to code generation." )
     {
         AddCommand( ActivatorUtilities.CreateInstance<ViewModelsCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<ListBlockCommand>( serviceProvider ) );
     }
 }
