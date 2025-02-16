@@ -85,6 +85,7 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand
     /// <summary>
     /// Creates a command that will handle creating a new Rock plugin.
     /// </summary>
+    /// <param name="serviceProvider">The provider of all the required services.</param>
     public ViewModelsCommand( IServiceProvider serviceProvider )
         : base( "viewmodels", "Generates TypeScript enum definitions.", serviceProvider )
     {
@@ -215,7 +216,7 @@ partial class ViewModelsCommand : Abstractions.BaseModifyCommand
     }
 
     /// <summary>
-    /// Get the types that might possibly fir the pattern to be exported. This
+    /// Get the types that might possibly fit the pattern to be exported. This
     /// will include lots of things that shouldn't be exported, but will exclude
     /// a set of common things we always want to ignore.
     /// </summary>

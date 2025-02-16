@@ -136,7 +136,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         }
 
         /// <summary>
-        /// Gets all the entity properties without applying any filtering.
+        /// Gets all the supported entity properties.
         /// </summary>
         /// <param name="entityType">Type of the entity whose properties should be enumerated.</param>
         /// <param name="includeAdvancedProperties">If <c>true</c> then advanced properties will be included.</param>
