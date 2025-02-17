@@ -12,6 +12,8 @@ public class Program
 {
     static async Task<int> Main( string[] args )
     {
+        await VersionChecker.CheckToolVersionAsync();
+
         var services = new ServiceCollection();
 
         services.AddSingleton<IFileSystem, FileSystem>();
