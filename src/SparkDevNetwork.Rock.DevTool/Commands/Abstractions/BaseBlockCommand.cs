@@ -238,7 +238,7 @@ abstract class BaseBlockCommand : BaseModifyCommand
 
         if ( attribute == null )
         {
-            return Guid.Empty;
+            return null;
         }
 
         return Guid.TryParse( attribute.ConstructorArguments[0].Value.ToStringSafe(), out var guid )
