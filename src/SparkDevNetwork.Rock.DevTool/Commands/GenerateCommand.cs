@@ -19,5 +19,6 @@ class GenerateCommand : Command
     {
         AddCommand( ActivatorUtilities.CreateInstance<ViewModelsCommand>( serviceProvider ) );
         AddCommand( ActivatorUtilities.CreateInstance<ListBlockCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<DetailBlockCommand>( serviceProvider ) );
     }
 }

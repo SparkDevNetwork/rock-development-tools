@@ -27,9 +27,10 @@
     import CheckBox from "@Obsidian/Controls/checkBox.obs";{% endif %}{% if UseDescription == true or UseName == true %}
     import TextBox from "@Obsidian/Controls/textBox.obs";{% endif %}
     import { setPropertiesBoxValue{% if UseAttributeValues == true %}, watchPropertyChanges{% endif %} } from "@Obsidian/Utility/block";
-    import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";
+    import { propertyRef, updateRefValue } from "@Obsidian/Utility/component";{% if IsPlugin == false %}
     import { {{ EntityName }}Bag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}Bag";
-    import { {{ EntityName }}DetailOptionsBag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}DetailOptionsBag";
+    import { {{ EntityName }}DetailOptionsBag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}DetailOptionsBag";{% else %}
+    import { {{ EntityName }}Bag, {{ EntityName }}DetailOptionsBag } from "../viewModels";{% endif %}
     import { ValidPropertiesBox } from "@Obsidian/ViewModels/Utility/validPropertiesBox";
 
     const props = defineProps({

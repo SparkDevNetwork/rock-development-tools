@@ -38,9 +38,10 @@
     import ViewPanel from "./{{ EntityName }}Detail/viewPanel.partial.obs";
     import { onConfigurationValuesChanged, useConfigurationValues, useEntityDetailBlock, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
     import { NavigationUrlKey } from "./{{ EntityName }}Detail/types.partial";
-    import { DetailBlockBox } from "@Obsidian/ViewModels/Blocks/detailBlockBox";
+    import { DetailBlockBox } from "@Obsidian/ViewModels/Blocks/detailBlockBox";{% if IsPlugin == false %}
     import { {{ EntityName }}Bag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}Bag";
-    import { {{ EntityName }}DetailOptionsBag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}DetailOptionsBag";
+    import { {{ EntityName }}DetailOptionsBag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}DetailOptionsBag";{% else %}
+    import { {{ EntityName }}Bag, {{ EntityName }}DetailOptionsBag } from "./viewModels";{% endif %}
     import { ValidPropertiesBox } from "@Obsidian/ViewModels/Utility/validPropertiesBox";
 
     const config = useConfigurationValues<DetailBlockBox<{{ EntityName }}Bag, {{ EntityName }}DetailOptionsBag>>();

@@ -161,9 +161,10 @@ namespace SparkDevNetwork.Rock.CodeGenerator.DetailBlock
             {
                 ["BlockTypeGuid"] = options.BlockTypeGuid,
                 ["BlockEntityGuid"] = options.BlockEntityGuid,
-                ["BlockNamespace"] = options.BlockNamespace, // Rock.Blocks.{{ DomainNamespace }}
-                ["ViewModelNamespace"] = options.ViewModelNamespace, //Rock.ViewModels.Blocks.{{ DomainNamespace }}.{{ EntityName }}Detail
-                ["TypeScriptBagImportPath"] = options.TypeScriptBagImportPath, // @Obsidian/ViewModels/Blocks/{{ DomainNamespace }}/{{ EntityName }}Detail
+                ["BlockNamespace"] = options.BlockNamespace,
+                ["ModelNamespace"] = options.ModelNamespace,
+                ["ViewModelNamespace"] = options.ViewModelNamespace,
+                ["TypeScriptBagImportPath"] = options.TypeScriptBagImportPath,
                 ["EntityName"] = options.EntityTypeName,
                 ["ServiceName"] = options.ServiceTypeName,
                 ["Category"] = options.Category,

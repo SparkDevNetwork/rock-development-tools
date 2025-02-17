@@ -2,7 +2,7 @@ using System.CommandLine;
 using System.Reflection;
 
 using SparkDevNetwork.Rock.CodeGenerator;
-using SparkDevNetwork.Rock.CodeGenerator.ListBlock;
+using SparkDevNetwork.Rock.CodeGenerator.DetailBlock;
 using SparkDevNetwork.Rock.DevTool.Data;
 using SparkDevNetwork.Rock.DevTool.DevEnvironment;
 
@@ -11,16 +11,16 @@ using Spectre.Console;
 namespace SparkDevNetwork.Rock.DevTool.Commands.GenerateCommands;
 
 /// <summary>
-/// Command to generate a list block from an entity model.
+/// Command to generate a detail block from an entity model.
 /// </summary>
-class ListBlockCommand : Abstractions.BaseBlockCommand
+class DetailBlockCommand : Abstractions.BaseBlockCommand
 {
     /// <summary>
-    /// Creates a command that will handle creating a new list block.
+    /// Creates a command that will handle creating a new detail block.
     /// </summary>
     /// <param name="serviceProvider">The provider of all the required services.</param>
-    public ListBlockCommand( IServiceProvider serviceProvider )
-        : base( "listblock", "Creates a list block from a C# data model.", serviceProvider )
+    public DetailBlockCommand( IServiceProvider serviceProvider )
+        : base( "detailblock", "Creates a detail block from a C# data model.", serviceProvider )
     {
     }
 
@@ -54,7 +54,7 @@ class ListBlockCommand : Abstractions.BaseBlockCommand
             return Task.FromResult( 1 );
         }
 
-        var generator = new ListBlockGenerator( new FluidTemplateRenderer() )
+        var generator = new DetailBlockGenerator( new FluidTemplateRenderer() )
         {
             DocumentationProvider = GetDocumentationProvider( assemblyPath )
         };
@@ -78,8 +78,8 @@ class ListBlockCommand : Abstractions.BaseBlockCommand
     /// </summary>
     /// <param name="assembly">The assembly that contains the entity models.</param>
     /// <param name="plugin">The data for the plugin being processed.</param>
-    /// <returns>An instance of <see cref="ListBlockOptions"/> or <c>null</c> if generation was cancelled.</returns>
-    private ListBlockOptions? GetBlockOptions( Assembly assembly, PluginData plugin )
+    /// <returns>An instance of <see cref="DetailBlockOptions"/> or <c>null</c> if generation was cancelled.</returns>
+    private DetailBlockOptions? GetBlockOptions( Assembly assembly, PluginData plugin )
     {
         var entityTypes = GetEntityTypes( assembly );
         var entityType = GetEntityType( entityTypes );
@@ -96,42 +96,30 @@ class ListBlockCommand : Abstractions.BaseBlockCommand
         }
 
         var properties = GetEntityProperties( entityType );
-        var tooltipSource = GetTooltipSource( entityType );
         var blockNamespace = GetBlockNamespace( plugin );
         var blockCategory = GetBlockCategory( plugin );
         var viewModelNamespace = GetViewModelNamespace( plugin );
         var csharpBlockPath = GetText( "C# block path", csharpBlockPathDefault );
         var csharpViewModelPath = GetText( "C# view model path", csharpViewModelPathDefault );
         var obsidianBlockPath = GetText( "Obsidian block path", obsidianBlockPathDefault );
-        var showDelete = GetBoolean( "Show delete button" );
-        var showReorder = entityType.ImplementsInterface( "Rock.Data.IOrdered" )
-            && GetBoolean( "Show re-order button" );
-        var showSecurity = GetBoolean( "Show security button" );
         var useEntitySecurity = GetBoolean( "Use entity security" );
 
-        return new ListBlockOptions
+        return new DetailBlockOptions
         {
             BlockEntityGuid = Guid.NewGuid(),
             BlockNamespace = blockNamespace,
             BlockTypeGuid = Guid.NewGuid(),
             Category = blockCategory,
-            Columns = [.. properties.Select( pi => new EntityColumn( pi ) )],
             CSharpBlockRelativePath = csharpBlockPath,
-            EntityTypeGuid = entityTypeGuid.Value,
             EntityTypeName = entityType.Name,
-            ExpectedRowCount = null,
             IsPlugin = true,
             ModelNamespace = entityType.Namespace,
+            Properties = [.. properties.Select( pi => new EntityProperty( pi ) )],
             ServiceTypeName = $"{entityType.Name}Service",
-            ShowDelete = showDelete,
-            ShowReorder = showReorder,
-            ShowSecurity = showSecurity,
-            ToolTipSource = tooltipSource,
             TypeScriptBagImportPath = "./viewModels",
             TypeScriptBlockRelativePath = obsidianBlockPath,
             UseAttributeValues = entityType.ImplementsInterface( "Rock.Attribute.IHasAttributes" ),
             UseEntitySecurity = useEntitySecurity,
-            UseIsSystem = entityType.GetProperty( "IsSystem" ) != null,
             ViewModelCSharpRelativePath = csharpViewModelPath,
             ViewModelNamespace = viewModelNamespace
         };
@@ -144,8 +132,8 @@ class ListBlockCommand : Abstractions.BaseBlockCommand
     /// <returns>A list of properties to be included.</returns>
     private List<PropertyInfo> GetEntityProperties( Type entityType )
     {
-        var promptText = "Select the properties to create columns for:";
-        var properties = ListBlockGenerator.GetEntityProperties( entityType, false )
+        var promptText = "Select the properties to include:";
+        var properties = DetailBlockGenerator.GetEntityProperties( entityType, false )
             .OrderBy( pi => pi.Name );
 
         var prompt = new MultiSelectionPrompt<PropertyInfo>()
@@ -168,7 +156,7 @@ class ListBlockCommand : Abstractions.BaseBlockCommand
     private string? GetTooltipSource( Type entityType )
     {
         var promptText = "Select the property that will be used for row tooltip:";
-        var stringProperties = ListBlockGenerator.GetEntityProperties( entityType, false )
+        var stringProperties = DetailBlockGenerator.GetEntityProperties( entityType, false )
             .Where( pi => pi.PropertyType.FullName == typeof( string ).FullName )
             .OrderBy( pi => pi.Name )
             .Select( pi => pi.Name );

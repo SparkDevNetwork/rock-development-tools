@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-
-using Rock.Attribute;
+{% if IsPlugin == true %}
+using Rock;{% endif %}
+using Rock.Attribute;{% if IsPlugin == true %}
+using Rock.Blocks;{% endif %}
 using Rock.Constants;
 using Rock.Data;
 using Rock.Model;
@@ -13,6 +15,7 @@ using {{ ViewModelNamespace }};{% endif %}
 using Rock.ViewModels.Utility;
 using Rock.Web.Cache;{% if IsPlugin == true %}
 
+using {{ ModelNamespace }};
 using {{ ViewModelNamespace }};{% endif %}
 
 namespace {{ BlockNamespace }}
@@ -24,8 +27,9 @@ namespace {{ BlockNamespace }}
     [DisplayName( "{{ EntityName | SplitCase }} Detail" )]
     [Category( "{{ Category }}" )]
     [Description( "Displays the details of a particular {{ EntityName | SplitCase | Downcase }}." )]
-    [IconCssClass( "fa fa-question" )]
-    // [SupportedSiteTypes( Model.SiteType.Web )]
+    [IconCssClass( "fa fa-question" )]{% if IsPlugin == false %}
+    // [SupportedSiteTypes( Model.SiteType.Web )]{% else %}
+    [SupportedSiteTypes( SiteType.Web )]{% endif %}
 
     #region Block Attributes
 

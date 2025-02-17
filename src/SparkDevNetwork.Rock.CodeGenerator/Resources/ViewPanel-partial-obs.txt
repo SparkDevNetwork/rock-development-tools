@@ -26,9 +26,10 @@
     import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer.obs";{% endif %}
     import ValueDetailList from "@Obsidian/Controls/valueDetailList.obs";
     import { ValueDetailListItemBuilder } from "@Obsidian/Core/Controls/valueDetailListItemBuilder";
-    import { ValueDetailListItem } from "@Obsidian/Types/Controls/valueDetailListItem";
+    import { ValueDetailListItem } from "@Obsidian/Types/Controls/valueDetailListItem";{% if IsPlugin == false %}
     import { {{ EntityName }}Bag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}Bag";
-    import { {{ EntityName }}DetailOptionsBag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}DetailOptionsBag";
+    import { {{ EntityName }}DetailOptionsBag } from "{{ TypeScriptBagImportPath }}/{{ EntityName | CamelCase }}DetailOptionsBag";{% else %}
+    import { {{ EntityName }}Bag, {{ EntityName }}DetailOptionsBag } from "../viewModels";{% endif %}
 
     const props = defineProps({
     modelValue: {

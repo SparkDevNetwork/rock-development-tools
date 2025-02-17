@@ -65,6 +65,7 @@ abstract class BaseModifyCommand : BaseActionCommand
     /// </summary>
     /// <param name="name">The primary name of the action.</param>
     /// <param name="description">The description of what the command will do.</param>
+    /// <param name="serviceProvider">The provider of all the required services.</param>
     public BaseModifyCommand( string name, string description, IServiceProvider serviceProvider )
         : base( name, description, serviceProvider )
     {

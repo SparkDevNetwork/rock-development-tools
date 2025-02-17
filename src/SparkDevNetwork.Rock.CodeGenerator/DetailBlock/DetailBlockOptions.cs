@@ -25,6 +25,11 @@ namespace SparkDevNetwork.Rock.CodeGenerator.DetailBlock
         public string BlockNamespace { get; set; }
 
         /// <summary>
+        /// The C# namespace that the model exists in.
+        /// </summary>
+        public string ModelNamespace { get; set; }
+
+        /// <summary>
         /// The C# namespace to use for the view model(s) required by the block.
         /// </summary>
         public string ViewModelNamespace { get; set; }
