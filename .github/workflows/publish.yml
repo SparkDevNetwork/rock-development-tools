@@ -20,6 +20,7 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 22
+        registry-url: 'https://registry.npmjs.org'
     - name: Restore C# dependencies
       run: dotnet restore
     - name: Restore eslint-config-rock-recommended dependencies
@@ -54,5 +55,15 @@ jobs:
         path: "*.tgz"
         if-no-files-found: error
         retention-days: 30
+    - name: Publish eslint-config-rock-recommended
+      run: npm publish --dry-run --access public
+      working-directory: ./src/eslint-config-rock-recommended
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_API_KEY }}
+    - name: Publish obsidian-build-tools
+      run: npm publish --dry-run --access public
+      working-directory: ./src/obsidian-build-tools
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_API_KEY }}
     # - name: Publish
     #   run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGET_API_KEY }}
