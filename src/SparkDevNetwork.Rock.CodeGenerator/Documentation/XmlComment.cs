@@ -75,7 +75,9 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
             // Determine the indentation size of the text.
             int indentSize = GetIndentSize( node );
 
-            var textLines = text.Split( new string[] { "\r\n" }, StringSplitOptions.None )
+            // XmlDocument will normalize \r\n to \n on platforms
+            // that only use \n so we need to split for both patterns.
+            var textLines = text.Split( new string[] { "\r\n", "\n" }, StringSplitOptions.None )
                 .Select( t => t.SubstringSafe( indentSize ) )
                 .ToList();
 
@@ -130,7 +132,9 @@ namespace SparkDevNetwork.Rock.CodeGenerator.Documentation
             // Determine the indentation size of the text.
             int indentSize = GetIndentSize( node );
 
-            var textLines = text.Split( new string[] { "\r\n" }, StringSplitOptions.None )
+            // XmlDocument will normalize \r\n to \n on platforms
+            // that only use \n so we need to split for both patterns.
+            var textLines = text.Split( new string[] { "\r\n", "\n" }, StringSplitOptions.None )
                 .Select( t => t.SubstringSafe( indentSize ) )
                 .ToList();
 

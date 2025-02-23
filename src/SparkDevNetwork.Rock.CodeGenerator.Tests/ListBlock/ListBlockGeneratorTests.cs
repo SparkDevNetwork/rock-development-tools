@@ -345,7 +345,7 @@ public class ListBlockGeneratorTests
         Assert.Equal( GeneratedFileSaveState.NotProcessed, files[2].SaveState );
 
         Assert.Equal( "types.partial.ts", files[3].FileName );
-        Assert.Equal( "Rock.JavaScript.Obsidian.Blocks\\src\\Core\\MyObjectList\\types.partial.ts", files[3].SolutionRelativePath );
+        Assert.Equal( "Rock.JavaScript.Obsidian.Blocks\\src\\Core\\MyObjectList\\types.partial.ts", files[3].SolutionRelativePath.Replace( '/', '\\' ) );
         Assert.Equal( GeneratedFileSaveState.NotProcessed, files[3].SaveState );
 
         return Task.WhenAll(
