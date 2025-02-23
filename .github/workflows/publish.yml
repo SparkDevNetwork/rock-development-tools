@@ -40,11 +40,18 @@ jobs:
     - name: Pack obsidian-build-tools
       run: npm pack --pack-destination ../..
       working-directory: ./src/obsidian-build-tools
-    - name: Archive packages
+    - name: Archive NuGet packages
       uses: actions/upload-artifact@v4
       with:
-        name: packages
-        path: "*.{nupkg,tgz}"
+        name: nuget-packages
+        path: "*.nupkg"
+        if-no-files-found: error
+        retention-days: 30
+    - name: Archive npm packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: npm-packages
+        path: "*.tgz"
         if-no-files-found: error
         retention-days: 30
     # - name: Publish
