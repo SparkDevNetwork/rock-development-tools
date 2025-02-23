@@ -2,10 +2,8 @@ name: Publish
 
 on:
   push:
-    branches:
-      - main
-    # tags:
-    #   - 'v[1-9].*'
+    tags:
+      - 'v[1-9].*'
 
 jobs:
   build:
@@ -21,6 +19,7 @@ jobs:
       with:
         node-version: 22
         registry-url: 'https://registry.npmjs.org'
+
     - name: Restore C# dependencies
       run: dotnet restore
     - name: Restore eslint-config-rock-recommended dependencies
@@ -29,18 +28,25 @@ jobs:
     - name: Restore obsidian-build-tools dependencies
       run: npm ci
       working-directory: ./src/obsidian-build-tools
+
     - name: Build C#
       run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
-    - name: Pack C#
-      run: dotnet pack --output .
     - name: Build obsidian-build-tools
       run: npm run build
       working-directory: ./src/obsidian-build-tools
+
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+
+    - name: Pack C#
+      run: dotnet pack --output .
     - name: Pack obsidian-build-tools
       run: npm pack --pack-destination ../..
       working-directory: ./src/obsidian-build-tools
+    - name: Pack eslint-config-rock-recommended
+      run: npm pack --pack-destination ../..
+      working-directory: ./src/eslint-config-rock-recommended
+
     - name: Archive NuGet packages
       uses: actions/upload-artifact@v4
       with:
@@ -55,15 +61,16 @@ jobs:
         path: "*.tgz"
         if-no-files-found: error
         retention-days: 30
+
     - name: Publish eslint-config-rock-recommended
-      run: npm publish --dry-run --access public
+      run: npm publish --access public
       working-directory: ./src/eslint-config-rock-recommended
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_API_KEY }}
     - name: Publish obsidian-build-tools
-      run: npm publish --dry-run --access public
+      run: npm publish --access public
       working-directory: ./src/obsidian-build-tools
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_API_KEY }}
-    # - name: Publish
-    #   run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGET_API_KEY }}
+    - name: Publish
+      run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGET_API_KEY }}

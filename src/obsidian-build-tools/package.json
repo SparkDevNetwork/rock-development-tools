@@ -8,7 +8,7 @@
         "version": "node ../../lib/update-version.cjs"
     },
     "bin": {
-        "obsidian-build": "./dist/obsidian-build.js"
+        "obsidian-build": "dist/obsidian-build.js"
     },
     "repository": {
         "type": "git",
