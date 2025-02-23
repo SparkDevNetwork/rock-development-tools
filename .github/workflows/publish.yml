@@ -73,4 +73,4 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_API_KEY }}
     - name: Publish
-      run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
