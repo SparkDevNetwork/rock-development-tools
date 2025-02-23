@@ -6,7 +6,7 @@
     src\eslint-config-rock-recommended
     src\obsidian-build-tools
     -->
-    <Version>1.0.0-rc.11</Version>
+    <Version>1.0.0-rc.12</Version>
   </PropertyGroup>
 
   <PropertyGroup>
