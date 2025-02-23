@@ -26,5 +26,12 @@ jobs:
       run: dotnet pack --output .
     - name: List
       run: ls -l *.nupkg
+    - name: Archive packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: packages
+        path: *.nupkg
+        if-no-files-found: error
+        retention-days: 30
     # - name: Publish
     #   run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGET_API_KEY }}
