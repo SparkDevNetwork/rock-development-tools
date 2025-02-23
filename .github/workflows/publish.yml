@@ -2,10 +2,8 @@ name: Publish
 
 on:
   push:
-    branches:
-      - main
-    # tags:
-    #   - 'v[1-9].*'
+    tags:
+      - 'v[1-9].*'
 
 jobs:
   build:
@@ -16,21 +14,39 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-    - name: Restore dependencies
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Restore C# dependencies
       run: dotnet restore
-    - name: Build
+    - name: Restore eslint-config-rock-recommended dependencies
+      run: npm ci
+      working-directory: ./src/eslint-config-rock-recommended
+    - name: Restore obsidian-build-tools dependencies
+      run: npm ci
+      working-directory: ./src/obsidian-build-tools
+    - name: Build C#
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
-    - name: Pack
+    - name: Pack C#
       run: dotnet pack --output .
+    - name: Build obsidian-build-tools
+      run: npm run build
+      working-directory: ./src/obsidian-build-tools
+    - name: Pack obsidian-build-tools
+      run: npm run pack --pack-destination ../..
+      working-directory: ./src/obsidian-build-tools
     - name: List
-      run: ls -l *.nupkg
+      run: ls -l *.nupkg *.
     - name: Archive packages
       uses: actions/upload-artifact@v4
       with:
         name: packages
-        path: "*.nupkg"
+        path: |
+          "*.nupkg"
+          "*.tgz"
         if-no-files-found: error
         retention-days: 30
     # - name: Publish
