@@ -13,8 +13,8 @@
         "@rockrms/obsidian-framework": "^{{ RockVersion }}"
     },
     "devDependencies": {
-        "@sparkdevnetwork/eslint-config-rock-recommended": "^1.0.0",
-        "@sparkdevnetwork/obsidian-build-tools": "^1.0.0",
+        "@sparkdevnetwork/eslint-config-rock-recommended": "^{{ ToolVersion }}",
+        "@sparkdevnetwork/obsidian-build-tools": "^{{ ToolVersion }}",
         "@types/jest": "^29.5.4",
         "@types/node": "^20.5.7",
         "@typescript-eslint/eslint-plugin": "^6.5.0",

@@ -1,7 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
+using System.Reflection;
 
 using Fluid;
 
@@ -362,7 +362,8 @@ partial class NewCommand : Abstractions.BaseModifyCommand
             RockVersion = RockVersion,
             RockWebPath = RockWebPath,
             Copy = Copy ?? false,
-            RestApiSupport = RestApiSupport ?? false
+            RestApiSupport = RestApiSupport ?? false,
+            ToolVersion = GetToolVersion()
         };
 
         if ( options.RockWebPath is not null )
@@ -606,6 +607,21 @@ partial class NewCommand : Abstractions.BaseModifyCommand
     }
 
     /// <summary>
+    /// Gets the tool version number. This is taken from the build version
+    /// but excludes any build metadata (git commit).
+    /// </summary>
+    /// <returns>A string that represents the build number.</returns>
+    private string GetToolVersion()
+    {
+        var currentVersionInfo = GetType()
+            .Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion ?? "0";
+
+        return currentVersionInfo.Split( '+' )[0];
+    }
+
+    /// <summary>
     /// The merge fields that will be available when merging template source
     /// files.
     /// </summary>
@@ -651,5 +667,10 @@ partial class NewCommand : Abstractions.BaseModifyCommand
         /// DLL project.
         /// </summary>
         public bool? RestApiSupport { get; set; }
+
+        /// <summary>
+        /// The version number of the tool when the merge happens.
+        /// </summary>
+        public string? ToolVersion { get; set; }
     }
 }
