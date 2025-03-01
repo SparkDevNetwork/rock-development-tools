@@ -60,10 +60,7 @@ class RootAppCommand : RootCommand, ICommandHandler
         var tag = context.ParseResult.GetValueForOption( _tagOption );
         var suffix = context.ParseResult.GetValueForOption( _prereleaseOption );
         var buildPath = Path.Combine( Path.GetTempPath(), "rock-framework-builder" );
-        var builder = new RockBuilder( buildPath )
-        {
-            RepositoryUrl = "file://D:\\source\\Rock\\.git"
-        };
+        var builder = new RockBuilder( buildPath );
 
         try
         {
