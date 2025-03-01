@@ -234,7 +234,7 @@ abstract class BaseBlockCommand : BaseModifyCommand
     /// <returns>The unique identifier or <c>null</c> if it wasn't defined.</returns>
     protected static Guid? GetEntityTypeGuid( Type entityType )
     {
-        var attribute = entityType.GetCustomAttributeData( "Rock.SystemGuid.EntityTypeGuid" );
+        var attribute = entityType.GetCustomAttributeData( "Rock.SystemGuid.EntityTypeGuidAttribute" );
 
         if ( attribute == null )
         {
