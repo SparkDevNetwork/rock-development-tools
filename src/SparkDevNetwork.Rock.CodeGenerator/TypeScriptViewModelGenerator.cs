@@ -169,6 +169,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             sb.AppendLine();
             sb.Append( GenerateEnumViewModelContent( type, true ) );
             sb.AppendLine();
+            sb.Append( GenerateOrderForEnumIfRequired( type ) );
 
             AppendCommentBlock( sb, typeComment, 0 );
 
@@ -220,11 +221,8 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                 sb.AppendLine( $"export const {typeName}Description: Record<number, string> = {{" );
             }
 
-            //var sortedFields = fields.OrderBy( f => f.GetRawConstantValue() ).ToList();
-            var sortedFields = fields.ToList();
-
             // Loop through each sorted field and emit the declaration.
-            for ( int i = 0; i < sortedFields.Count; i++ )
+            for ( int i = 0; i < fields.Count; i++ )
             {
                 var field = fields[i];
                 var obsoleteFieldAttribute = field.GetCustomAttributeData( "System.ObsoleteAttribute" );
@@ -234,7 +232,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                     // If this enum value is obsolete and there is another
                     // enum that is not obsolete with the same integer
                     // value then skip this one.
-                    var hasOtherField = sortedFields
+                    var hasOtherField = fields
                         .Any( f => ( int ) f.GetRawConstantValue() == ( int ) field.GetRawConstantValue()
                             && f.GetCustomAttributeData( "System.ObsoleteAttribute" ) == null );
 
@@ -297,7 +295,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator
                     }
                 }
 
-                if ( i + 1 < sortedFields.Count )
+                if ( i + 1 < fields.Count )
                 {
                     sb.AppendLine( "," );
                 }
@@ -315,6 +313,47 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             {
                 sb.AppendLine( "} as const;" );
             }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Generate the additional order field on the enum if any of the enum
+        /// values have an EnumOrder attribute defined on them.
+        /// </summary>
+        /// <param name="type">The type that represents the enumeration.</param>
+        /// <returns>A string of text to append to the enum file.</returns>
+        private string GenerateOrderForEnumIfRequired( Type type )
+        {
+            var typeName = GetClassNameForType( type );
+            var fields = type.GetFields( BindingFlags.Static | BindingFlags.Public )
+                 .Where( f => f.GetCustomAttributeData( "System.ObsoleteAttribute" ) == null )
+                 .Select( f => new
+                 {
+                     Order = ( int? ) f.GetCustomAttributeData( "Rock.Enums.EnumOrderAttribute" )
+                         ?.ConstructorArguments[0].Value,
+                     Value = f.GetRawConstantValue()
+                 } )
+                 .ToList();
+
+            // If no fields have an EnumOrderAttribute, then we don't need to
+            // generate anything.
+            if ( !fields.Any( f => f.Order.HasValue ) )
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder();
+            var orderedValues = fields.OrderBy( f => f.Order ?? 0 )
+                .ThenBy( f => f.Value )
+                .Select( f => f.Value )
+                .Distinct();
+
+            sb.AppendLine( "// Add the __order property hidden so it doesn't get enumerated." );
+            sb.AppendLine( $"Object.defineProperty({typeName}Description, \"__order\", {{" );
+            sb.AppendLine( $"    value: [{string.Join( ", ", orderedValues )}]," );
+            sb.AppendLine( "});" );
+            sb.AppendLine();
 
             return sb.ToString();
         }

@@ -269,6 +269,22 @@ public class TypeScriptViewModelGeneratorTests
         return Verify( code, Settings );
     }
 
+    [Fact]
+    public Task GenerateEnumViewModel_SupportsOrderAttribute()
+    {
+        var generator = new TypeScriptViewModelGenerator();
+        var typeMock = GetEnumMock( "Rock.Enums", "TestSet" );
+
+        typeMock.Setup( m => m.GetFields( It.IsAny<BindingFlags>() ) ).Returns( () => [
+            GetEnumFieldMock( typeMock, "No", 0, order: 1 ).Object,
+            GetEnumFieldMock( typeMock, "Yes", 1, order: 0 ).Object
+        ] );
+
+        var code = generator.GenerateEnumViewModel( typeMock.Object );
+
+        return Verify( code, Settings );
+    }
+
     #endregion
 
     #region GenerateEnumsViewModel
@@ -838,7 +854,7 @@ public class TypeScriptViewModelGeneratorTests
         return typeMock;
     }
 
-    internal static Mock<FieldInfo> GetEnumFieldMock( Mock<Type> mockType, string fieldName, int fieldValue, bool obsolete = false, string? obsoleteMessage = null, string? description = null )
+    internal static Mock<FieldInfo> GetEnumFieldMock( Mock<Type> mockType, string fieldName, int fieldValue, bool obsolete = false, string? obsoleteMessage = null, string? description = null, int? order = null )
     {
         var fieldMock = GetFieldMock( mockType, fieldName, typeof( int ) );
 
@@ -852,6 +868,11 @@ public class TypeScriptViewModelGeneratorTests
         if ( description != null )
         {
             attributes.Add( GetDescriptionAttributeData( description ).Object );
+        }
+
+        if ( order != null )
+        {
+            attributes.Add( GetOrderAttributeData( order.Value ).Object );
         }
 
         fieldMock.Setup( m => m.GetRawConstantValue() ).Returns( fieldValue );
@@ -911,6 +932,18 @@ public class TypeScriptViewModelGeneratorTests
         attributeDataMock.Setup( m => m.AttributeType ).Returns( typeof( DescriptionAttribute ) );
         attributeDataMock.Setup( m => m.ConstructorArguments )
             .Returns( [new CustomAttributeTypedArgument( text )] );
+
+        return attributeDataMock;
+    }
+
+    internal static Mock<CustomAttributeData> GetOrderAttributeData( int order )
+    {
+        var attributeDataMock = new Mock<CustomAttributeData>( MockBehavior.Strict );
+        var enumOrderTypeMock = XmlDocIdTests.GetTypeMock( "Rock.Enums", "EnumOrderAttribute" );
+
+        attributeDataMock.Setup( m => m.AttributeType ).Returns( enumOrderTypeMock.Object );
+        attributeDataMock.Setup( m => m.ConstructorArguments )
+            .Returns( [new CustomAttributeTypedArgument( order )] );
 
         return attributeDataMock;
     }
