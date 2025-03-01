@@ -26,8 +26,9 @@ namespace {{ BlockNamespace }}
     [DisplayName( "{{ EntityName | SplitCase }} List" )]
     [Category( "{{ Category }}" )]
     [Description( "Displays a list of {{ EntityName | SplitCase | Downcase | Pluralize }}." )]
-    [IconCssClass( "fa fa-list" )]
-    // [SupportedSiteTypes( Model.SiteType.Web )]
+    [IconCssClass( "fa fa-list" )]{% if IsPlugin == false %}
+    // [SupportedSiteTypes( Model.SiteType.Web )]{% else %}
+    [SupportedSiteTypes( SiteType.Web )]{% endif %}
 
     [LinkedPage( "Detail Page",
         Description = "The page that will show the {{ EntityName | SplitCase | Downcase }} details.",
