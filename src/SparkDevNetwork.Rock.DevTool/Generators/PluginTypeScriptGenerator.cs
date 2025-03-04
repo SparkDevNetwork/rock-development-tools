@@ -24,6 +24,11 @@ internal class PluginTypeScriptGenerator : TypeScriptViewModelGenerator
 
         var namespaceComponents = type.Namespace.Split( '.' ).ToList();
 
+        if ( namespaceComponents[0] == "Rock" )
+        {
+            return base.GetTypeScriptTypeDefinition( type, isRequired );
+        }
+
         if ( type.IsClass && !type.IsNested && namespaceComponents.Contains( "ViewModels" ) && ( type.Name.EndsWith( "Bag" ) || type.Name.EndsWith( "Box" ) ) )
         {
             var imports = new List<TypeScriptImport>();
