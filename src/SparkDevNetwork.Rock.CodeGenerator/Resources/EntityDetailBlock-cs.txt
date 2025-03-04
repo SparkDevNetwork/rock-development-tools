@@ -379,12 +379,12 @@ namespace {{ BlockNamespace }}
             if ( !TryGetEntityForEditAction( key, out var entity, out var actionError ) )
             {
                 return actionError;
-            }
+            }{% if IsPlugin == false %}
 
             if ( !entityService.CanDelete( entity, out var errorMessage ) )
             {
                 return ActionBadRequest( errorMessage );
-            }
+            }{% endif %}
 
             entityService.Delete( entity );
             RockContext.SaveChanges();

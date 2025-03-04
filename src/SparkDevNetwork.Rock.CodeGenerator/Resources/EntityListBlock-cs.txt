@@ -175,12 +175,12 @@ namespace {{ BlockNamespace }}
             if ( !{% if UseEntitySecurity == true %}entity{% else %}BlockCache{% endif %}.IsAuthorized( Authorization.EDIT, RequestContext.CurrentPerson ) )
             {
                 return ActionBadRequest( $"Not authorized to delete {{'{'}}{{ EntityName }}.FriendlyTypeName}." );
-            }
+            }{% if IsPlugin == false %}
 
             if ( !entityService.CanDelete( entity, out var errorMessage ) )
             {
                 return ActionBadRequest( errorMessage );
-            }
+            }{% endif %}
 
             entityService.Delete( entity );
             RockContext.SaveChanges();
