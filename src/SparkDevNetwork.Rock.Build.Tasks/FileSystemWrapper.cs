@@ -21,6 +21,10 @@ namespace SparkDevNetwork.Rock.Build.Tasks
             => System.IO.Path.GetFileName( path );
 
         /// <inheritdoc/>
+        public string GetDirectoryName( string path )
+            => System.IO.Path.GetDirectoryName( path );
+
+        /// <inheritdoc/>
         public string GetFullPath( string path )
             => System.IO.Path.GetFullPath( path );
 

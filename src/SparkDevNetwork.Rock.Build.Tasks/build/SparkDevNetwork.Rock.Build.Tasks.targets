@@ -4,9 +4,14 @@
         AfterTargets="CopyFilesToOutputDirectory"
         Condition="'$(CopyToRockWeb)' == 'True' and '$(RockWebPath)' != '' and '$(TargetFramework)' == 'net472'">
         <SparkDevNetwork.Rock.Build.Tasks.CopyAssemblyToRockWeb
+            Condition=" '$(PluginEnvironmentDirectory)' != '' "
             Source="$(TargetDir)"
             Files="$(TargetFileName);$(AdditionalAssembliesToCopy)"
             Destination="$(RockWebPath)\Bin" />
+        
+        <Message Importance="high"
+            Text="Plugin environment not detected, skipping CopyAssemblyToRockWeb task."
+            Condition=" '$(PluginEnvironmentDirectory)' == '' " />
     </Target>
 
     <Target
@@ -21,5 +26,15 @@
         <PropertyGroup Condition=" '$(UpdateVersionFromPlugin)' == 'true' ">
             <Version>$(Plugin_Version)</Version>
         </PropertyGroup>
+    </Target>
+
+    <Target
+        Name="GetPluginEnvironmentDirectory"
+        BeforeTargets="BeforeCompile;CoreCompile;GetAssemblyVersion;GenerateNuspec;_GenerateRestoreProjectSpec;_GetOutputItemsFromPack;EnsureWixToolsetInstalled"
+        Condition=" '$(PluginEnvironmentDirectory)' == '' and '$(PluginConfigurationFile)' != '' ">
+        <SparkDevNetwork.Rock.Build.Tasks.GetPluginEnvironmentDirectory
+            PluginConfigurationFile="$(PluginConfigurationFile)">
+            <Output TaskParameter="Path" PropertyName="PluginEnvironmentDirectory" />
+        </SparkDevNetwork.Rock.Build.Tasks.GetPluginEnvironmentDirectory>
     </Target>
 </Project>

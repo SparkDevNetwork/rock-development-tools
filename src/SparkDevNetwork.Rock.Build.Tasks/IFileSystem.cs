@@ -20,6 +20,9 @@ namespace SparkDevNetwork.Rock.Build.Tasks
         /// <inheritdoc cref="System.IO.Path.GetFileName(string)"/>
         string GetFileName( string path );
 
+        /// <inheritdoc cref="System.IO.Path.GetDirectoryName(string)"/>
+        string GetDirectoryName( string path );
+
         /// <inheritdoc cref="System.IO.File.Copy(string, string, bool)"/>
         void FileCopy( string sourceFileName, string destFileName, bool overwrite );
     }

@@ -27,4 +27,12 @@
         <UpdateVersionFromPlugin>True</UpdateVersionFromPlugin>
         <PluginConfigurationFile>$(MSBuildProjectDirectory)\..\plugin.json</PluginConfigurationFile>
     </PropertyGroup>
+
+   <!-- GetPluginEnvironmentDirectory task and defaults -->
+    <UsingTask
+        TaskName="SparkDevNetwork.Rock.Build.Tasks.GetPluginEnvironmentDirectory"
+        AssemblyFile="$(RockBuildTasksAssemblyFile)" />
+
+    <PropertyGroup>
+    </PropertyGroup>
 </Project>
