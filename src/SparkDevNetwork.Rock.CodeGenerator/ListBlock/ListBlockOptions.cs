@@ -129,5 +129,22 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         /// Determines if this block is for a plugin or core.
         /// </summary>
         public bool IsPlugin { get; set; }
+
+        /// <summary>
+        /// The organization code to use for the plugin, such as
+        /// 'com.rocksolidchurchdemo'.
+        /// </summary>
+        public string PluginOrganizationCode { get; set; }
+
+        /// <summary>
+        /// The organization name to use for the plugin, such as
+        /// 'Rock Solid Church Demo'.
+        /// </summary>
+        public string PluginOrganizationName { get; set; }
+
+        /// <summary>
+        /// The name of the plugin, such as 'Widget Tracker'.
+        /// </summary>
+        public string PluginName { get; set; }
     }
 }

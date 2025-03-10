@@ -51,7 +51,14 @@ namespace {{ BlockNamespace }}
             public const string ParentPage = "ParentPage";
         }
 
-        #endregion Keys
+        #endregion Keys{% if IsPlugin == true %}
+
+        #region Properties
+
+        /// <inheritdoc/>
+        public override string ObsidianFileUrl => "~/Plugins/{{ PluginOrganizationCode | replace:'.','_' }}/{{ PluginName | replace:' ', '' }}/{{ EntityName | CamelCase }}Detail.obs";
+
+        #endregion{% endif %}
 
         #region Methods
 
