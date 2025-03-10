@@ -3,7 +3,7 @@
 import { existsSync } from "fs";
 import path from "path";
 import process from "process";
-import { Bundle, BundleBuilder, BundleError, clearScreen, defineBuilders, green, red, Watcher, yellow } from "./lib";
+import { Bundle, BundleBuilder, BundleError, clearScreen, defineBuilders, green, red, StaticFileConfigOptions, Watcher, yellow } from "./lib";
 
 /**
  * The configuration options from the config file.
@@ -20,6 +20,11 @@ interface ObsidianOptions {
      * destination.
      * */
     copy: boolean;
+
+    /**
+     * The options to apply when processing static files.
+     */
+    staticFiles?: StaticFileConfigOptions;
 };
 
 /**
@@ -240,7 +245,8 @@ async function main(): Promise<void> {
     }
 
     const builders = defineBuilders(path.resolve(path.dirname(configFilePath), config.source), path.resolve(path.dirname(configFilePath), "dist"), {
-        copy: config.copy === true ? config.destination : undefined
+        copy: config.copy === true ? config.destination : undefined,
+        staticFiles: config.staticFiles,
     });
 
     if (useWatch) {

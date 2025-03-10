@@ -38,6 +38,11 @@ export interface ConfigOptions {
      * The options specific to compiler TypeScript files.
      */
     script?: ScriptConfigOptions;
+
+    /**
+     * The options to apply when processing static files.
+     */
+    staticFiles?: StaticFileConfigOptions;
 }
 
 /**
@@ -82,6 +87,23 @@ export interface ScriptConfigOptions {
      * libraries.
      */
     lib?: boolean;
+}
+
+/**
+ * The options to apply when processing static files.
+ */
+export interface StaticFileConfigOptions {
+    /**
+     * Additional extensions to be processed as static files, do not include
+     * the period.
+     */
+    includeExtensions?: string[];
+
+    /**
+     * Extensions to be excluded from static file processing, do not include
+     * the period.
+     */
+    excludeExtensions?: string[];
 }
 
 /**
@@ -666,7 +688,11 @@ export function defineStaticFileBuilders(sourcePath: string, outputPath: string,
         "svg",
         "webp",
         "lava",
-    ];
+    ].filter(ext => !options.staticFiles?.excludeExtensions?.includes(ext));
+
+    if (options.staticFiles?.includeExtensions) {
+        extensions.push(...options.staticFiles.includeExtensions);
+    }
 
     const files = globSync(sourcePath.replace(/\\/g, "/") + `/**/*.@(${extensions.join("|")})`)
         .map(f => path.normalize(f).substring(sourcePath.length + 1));
