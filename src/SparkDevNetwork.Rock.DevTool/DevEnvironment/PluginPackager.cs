@@ -423,7 +423,10 @@ class PluginPackager
             deletedFiles.AddRange( previousFilesToDelete );
         }
 
-        return deletedFiles.OrderBy( f => f ).ToList();
+        return deletedFiles
+            .Distinct()
+            .OrderBy( f => f )
+            .ToList();
     }
 
     /// <summary>
