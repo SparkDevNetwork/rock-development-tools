@@ -107,6 +107,18 @@ public class EntityColumnTests
     }
 
     [Fact]
+    public void IsSupportedPropertyType_WithEnumType_ReturnsTrue()
+    {
+        var typeMock = new Mock<Type>( MockBehavior.Strict );
+
+        typeMock.Setup( m => m.FullName ).Returns( "Plugin.Enums.State" );
+        typeMock.Setup( m => m.IsEnum ).Returns( true );
+        typeMock.Setup( m => m.GetInterfaces() ).Returns( [] );
+
+        Assert.True( EntityColumn.IsSupportedPropertyType( typeMock.Object ) );
+    }
+
+    [Fact]
     public void IsSupportedPropertyType_WithNumericType_ReturnsTrue()
     {
         Assert.True( EntityColumn.IsSupportedPropertyType( typeof( int ) ) );
@@ -216,6 +228,23 @@ public class EntityColumnTests
     }
 
     [Fact]
+    public void GetGridImports_EnumType_ReturnsLabelColumnValues()
+    {
+        var typeMock = new Mock<Type>( MockBehavior.Strict );
+
+        typeMock.Setup( m => m.FullName ).Returns( "Plugin.Enums.State" );
+        typeMock.Setup( m => m.IsEnum ).Returns( true );
+        typeMock.Setup( m => m.GetInterfaces() ).Returns( [] );
+
+        var entityColumn = CreateTestEntityColumn( typeMock.Object );
+        var imports = entityColumn.GridImports.ToArray();
+
+        Assert.Equal( 2, imports.Length );
+        Assert.Contains( "LabelColumn", imports );
+        Assert.Contains( "pickExistingValueFilter", imports );
+    }
+
+    [Fact]
     public void GetGridImports_UnknownType_ReturnsColumnValues()
     {
         var entityColumn = CreateTestEntityColumn( typeof( EntityColumn ) );
@@ -297,6 +326,21 @@ public class EntityColumnTests
         var code = entityColumn.TemplateCode;
 
         Assert.Contains( "<TextColumn ", code );
+    }
+
+    [Fact]
+    public void GetTemplateCode_EnumType_ReturnsLabelColumn()
+    {
+        var typeMock = new Mock<Type>( MockBehavior.Strict );
+
+        typeMock.Setup( m => m.FullName ).Returns( "Plugin.Enums.State" );
+        typeMock.Setup( m => m.IsEnum ).Returns( true );
+        typeMock.Setup( m => m.GetInterfaces() ).Returns( [] );
+
+        var entityColumn = CreateTestEntityColumn( typeMock.Object );
+        var code = entityColumn.TemplateCode;
+
+        Assert.Contains( "<LabelColumn ", code );
     }
 
     [Fact]

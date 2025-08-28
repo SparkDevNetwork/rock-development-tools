@@ -148,6 +148,10 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             {
                 return new PropertyDeclaration( type.Name, new[] { type.Namespace } );
             }
+            else if ( type.IsEnum && !type.Namespace.StartsWith( "Rock." ) && type.Namespace.Contains( ".Enums" ) )
+            {
+                return new PropertyDeclaration( type.Name, new[] { type.Namespace } );
+            }
             else
             {
                 throw new Exception( $"Unable to convert {type.GetFriendlyName()} to CSharp declaration." );

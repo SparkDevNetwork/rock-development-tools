@@ -152,6 +152,25 @@ public class ReflectionExtensionsTests
     }
 
     [Fact]
+    public void GetCSharpPropertyDeclaration_WithPluginEnum_ReturnsTypeNamespaceUsing()
+    {
+        var typeMock = new Mock<Type>( MockBehavior.Strict );
+        typeMock.Setup( m => m.IsGenericType ).Returns( false );
+        typeMock.Setup( m => m.IsEnum ).Returns( true );
+        typeMock.Setup( m => m.GetInterfaces() ).Returns( [] );
+        typeMock.Setup( m => m.Name ).Returns( "TestValue" );
+        typeMock.Setup( m => m.FullName ).Returns( "Plugin.Enums.TestValue" );
+        typeMock.Setup( m => m.Namespace ).Returns( "Plugin.Enums" );
+        typeMock.Setup( m => m.GetCustomAttributesData() ).Returns( [] );
+
+        var declaration = ReflectionExtensions.GetCSharpPropertyDeclaration( typeMock.Object );
+
+        Assert.Equal( "TestValue", declaration.TypeName );
+        Assert.Single( declaration.RequiredUsings );
+        Assert.Equal( "Plugin.Enums", declaration.RequiredUsings[0] );
+    }
+
+    [Fact]
     public void GetCSharpPropertyDeclaration_WithRockDomainEnum_ReturnsTypeNamespaceUsing()
     {
         var attributeTypeMock = new Mock<Type>( MockBehavior.Strict );

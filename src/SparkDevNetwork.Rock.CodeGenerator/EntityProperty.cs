@@ -128,8 +128,8 @@ namespace SparkDevNetwork.Rock.CodeGenerator
             }
 
             return throwOnError
-                ? throw new Exception( $"Unknown property type '{PropertyType.GetFriendlyName()}' for conversion to bag." )
-                : $"/* TODO: Unknown property type '{PropertyType.GetFriendlyName()}' for conversion to bag. */";
+                    ? throw new Exception( $"Unknown property type '{PropertyType.GetFriendlyName()}' for conversion to bag." )
+                    : $"/* TODO: Unknown property type '{PropertyType.GetFriendlyName()}' for conversion to bag. */";
         }
 
         /// <summary>
@@ -200,7 +200,8 @@ namespace SparkDevNetwork.Rock.CodeGenerator
         /// <returns><c>true</c> if the type is considered an assignment type; otherwise <c>false</c.>.</returns>
         internal static bool IsAssignmentType( Type type )
         {
-            return _assignmentTypes.Contains( type.FullName );
+            return _assignmentTypes.Contains( type.FullName )
+                || type.IsEnum;
         }
 
         #endregion

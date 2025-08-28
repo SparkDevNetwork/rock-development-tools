@@ -229,6 +229,7 @@ public class DetailBlockGeneratorTests
 
         entityInterfaceMock.Setup( m => m.IsGenericType ).Returns( false );
         entityInterfaceMock.Setup( m => m.FullName ).Returns( "Rock.Data.IEntity" );
+        entityTypeMock.Setup( m => m.IsEnum ).Returns( false );
         entityTypeMock.Setup( m => m.IsGenericType ).Returns( false );
         entityTypeMock.Setup( m => m.FullName ).Returns( "Rock.Model.DefinedValue" );
         entityTypeMock.Setup( m => m.Name ).Returns( "DefinedValue" );

@@ -203,7 +203,7 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
                 return $".AddField( \"{FriendlyName.ToCamelCase()}\", a => a.{Name} )";
             }
 
-            return $".AddField( \"{FriendlyName.ToCamelCase()}, a => throw new NotSupportedException() )";
+            return $".AddField( \"{FriendlyName.ToCamelCase()}\", a => throw new NotSupportedException() )";
         }
 
         /// <summary>
@@ -278,6 +278,17 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
                     visiblePriority=""xs"" />".Trim();
             }
 
+            // Check for enumeration types.
+            if ( PropertyType.IsEnum )
+            {
+                return $@"
+        <LabelColumn name=""{FriendlyName.ToCamelCase()}""
+                     title=""{FriendlyName.SplitCase()}""
+                     field=""{FriendlyName.ToCamelCase()}""
+                     :filter=""pickExistingValueFilter""
+                     visiblePriority=""xs"" />".Trim();
+            }
+
             return $@"
         <Column name=""{FriendlyName.ToCamelCase()}""
                 title=""{FriendlyName.SplitCase()}""
@@ -331,6 +342,12 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
                 return new[] { "TextColumn", "textValueFilter" };
             }
 
+            // Check for enumeration types.
+            if ( PropertyType.IsEnum )
+            {
+                return new[] { "LabelColumn", "pickExistingValueFilter" };
+            }
+
             return new[] { "Column" };
         }
 
@@ -357,7 +374,8 @@ namespace SparkDevNetwork.Rock.CodeGenerator.ListBlock
         /// <returns><c>true</c> if the type is primitive; otherwise <c>false</c>.</returns>
         internal static bool IsPrimitiveType( Type type )
         {
-            return _primitiveTypes.Contains( type.FullName );
+            return _primitiveTypes.Contains( type.FullName )
+                || type.IsEnum;
         }
 
         /// <summary>
