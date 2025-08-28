@@ -128,8 +128,6 @@ class RockInstallation
             if ( !url.Contains( "://" ) )
             {
                 await _fs.File.ReadFileAsync( url, memoryStream, p => downloadProgress.Value = p );
-
-                return;
             }
             else
             {
