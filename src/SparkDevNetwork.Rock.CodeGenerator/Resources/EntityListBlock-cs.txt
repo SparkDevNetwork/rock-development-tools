@@ -91,7 +91,7 @@ namespace {{ BlockNamespace }}
 
         /// <summary>
         /// Determines if the add button should be enabled in the grid.
-        /// <summary>
+        /// </summary>
         /// <returns>A boolean value that indicates if the add button should be enabled.</returns>
         private bool GetIsAddEnabled()
         {{ "{" }}{% if UseEntitySecurity == "true" %}

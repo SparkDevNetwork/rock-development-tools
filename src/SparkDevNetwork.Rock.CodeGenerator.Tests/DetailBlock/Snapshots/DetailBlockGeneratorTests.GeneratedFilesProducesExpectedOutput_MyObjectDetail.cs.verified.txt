@@ -177,7 +177,7 @@ namespace Rock.Blocks.Core
             return bag;
         }
 
-        //// <inheritdoc/>
+        /// <inheritdoc/>
         protected override MyObjectBag GetEntityBagForEdit( MyObject entity )
         {
             if ( entity == null )
