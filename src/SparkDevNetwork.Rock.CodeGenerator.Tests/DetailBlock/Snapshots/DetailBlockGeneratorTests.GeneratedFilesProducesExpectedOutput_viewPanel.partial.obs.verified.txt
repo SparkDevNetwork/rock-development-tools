@@ -18,75 +18,75 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, PropType, ref } from "vue";
-    import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer.obs";
-    import ValueDetailList from "@Obsidian/Controls/valueDetailList.obs";
-    import { ValueDetailListItemBuilder } from "@Obsidian/Core/Controls/valueDetailListItemBuilder";
-    import { ValueDetailListItem } from "@Obsidian/Types/Controls/valueDetailListItem";
-    import { MyObjectBag } from "@Obsidian/ViewModels/Blocks/Core/MyObjectDetail/myObjectBag";
-    import { MyObjectDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Core/MyObjectDetail/myObjectDetailOptionsBag";
+import { computed, PropType, ref } from "vue";
+import AttributeValuesContainer from "@Obsidian/Controls/attributeValuesContainer.obs";
+import ValueDetailList from "@Obsidian/Controls/valueDetailList.obs";
+import { ValueDetailListItemBuilder } from "@Obsidian/Core/Controls/valueDetailListItemBuilder";
+import { ValueDetailListItem } from "@Obsidian/Types/Controls/valueDetailListItem";
+import { MyObjectBag } from "@Obsidian/ViewModels/Blocks/Core/MyObjectDetail/myObjectBag";
+import { MyObjectDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Core/MyObjectDetail/myObjectDetailOptionsBag";
 
-    const props = defineProps({
+const props = defineProps({
     modelValue: {
-    type: Object as PropType<MyObjectBag | null>,
-            required: false
-        },
+        type: Object as PropType<MyObjectBag | null>,
+        required: false
+    },
 
-        options: {
-            type: Object as PropType<MyObjectDetailOptionsBag>,
-            required: true
-        }
-    });
+    options: {
+        type: Object as PropType<MyObjectDetailOptionsBag>,
+        required: true
+    }
+});
 
-    // #region Values
+// #region Values
 
-    const attributes = ref(props.modelValue?.attributes ?? {});
-    const attributeValues = ref(props.modelValue?.attributeValues ?? {});
+const attributes = ref(props.modelValue?.attributes ?? {});
+const attributeValues = ref(props.modelValue?.attributeValues ?? {});
 
-    // #endregion
+// #endregion
 
-    // #region Computed Values
+// #region Computed Values
 
-    /** The values to display full-width at the top of the block. */
-    const topValues = computed((): ValueDetailListItem[] => {
-        const valueBuilder = new ValueDetailListItemBuilder();
+/** The values to display full-width at the top of the block. */
+const topValues = computed((): ValueDetailListItem[] => {
+    const valueBuilder = new ValueDetailListItemBuilder();
 
-        if (!props.modelValue) {
-            return valueBuilder.build();
-        }
-
+    if (!props.modelValue) {
         return valueBuilder.build();
-    });
+    }
 
-    /** The values to display at half-width on the left side of the block. */
-    const leftSideValues = computed((): ValueDetailListItem[] => {
-        const valueBuilder = new ValueDetailListItemBuilder();
+    return valueBuilder.build();
+});
 
-        if (!props.modelValue) {
-            return valueBuilder.build();
-        }
+/** The values to display at half-width on the left side of the block. */
+const leftSideValues = computed((): ValueDetailListItem[] => {
+    const valueBuilder = new ValueDetailListItemBuilder();
 
+    if (!props.modelValue) {
         return valueBuilder.build();
-    });
+    }
 
-    /** The values to display at half-width on the right side of the block. */
-    const rightSideValues = computed((): ValueDetailListItem[] => {
-        const valueBuilder = new ValueDetailListItemBuilder();
+    return valueBuilder.build();
+});
 
-        if (!props.modelValue) {
-            return valueBuilder.build();
-        }
+/** The values to display at half-width on the right side of the block. */
+const rightSideValues = computed((): ValueDetailListItem[] => {
+    const valueBuilder = new ValueDetailListItemBuilder();
 
+    if (!props.modelValue) {
         return valueBuilder.build();
-    });
+    }
 
-    // #endregion
+    return valueBuilder.build();
+});
 
-    // #region Functions
+// #endregion
 
-    // #endregion
+// #region Functions
 
-    // #region Event Handlers
+// #endregion
 
-    // #endregion
+// #region Event Handlers
+
+// #endregion
 </script>

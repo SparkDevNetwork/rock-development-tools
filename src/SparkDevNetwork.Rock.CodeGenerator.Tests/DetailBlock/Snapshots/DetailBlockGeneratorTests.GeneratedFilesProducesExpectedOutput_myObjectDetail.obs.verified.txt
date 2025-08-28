@@ -29,197 +29,197 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from "vue";
-    import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
-    import DetailBlock from "@Obsidian/Templates/detailBlock";
-    import { DetailPanelMode } from "@Obsidian/Enums/Controls/detailPanelMode";
-    import { PanelAction } from "@Obsidian/Types/Controls/panelAction";
-    import EditPanel from "./MyObjectDetail/editPanel.partial.obs";
-    import ViewPanel from "./MyObjectDetail/viewPanel.partial.obs";
-    import { onConfigurationValuesChanged, useConfigurationValues, useEntityDetailBlock, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
-    import { NavigationUrlKey } from "./MyObjectDetail/types.partial";
-    import { DetailBlockBox } from "@Obsidian/ViewModels/Blocks/detailBlockBox";
-    import { MyObjectBag } from "@Obsidian/ViewModels/Blocks/Core/MyObjectDetail/myObjectBag";
-    import { MyObjectDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Core/MyObjectDetail/myObjectDetailOptionsBag";
-    import { ValidPropertiesBox } from "@Obsidian/ViewModels/Utility/validPropertiesBox";
+import { computed, ref } from "vue";
+import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
+import DetailBlock from "@Obsidian/Templates/detailBlock";
+import { DetailPanelMode } from "@Obsidian/Enums/Controls/detailPanelMode";
+import { PanelAction } from "@Obsidian/Types/Controls/panelAction";
+import EditPanel from "./MyObjectDetail/editPanel.partial.obs";
+import ViewPanel from "./MyObjectDetail/viewPanel.partial.obs";
+import { onConfigurationValuesChanged, useConfigurationValues, useEntityDetailBlock, useInvokeBlockAction, useReloadBlock } from "@Obsidian/Utility/block";
+import { NavigationUrlKey } from "./MyObjectDetail/types.partial";
+import { DetailBlockBox } from "@Obsidian/ViewModels/Blocks/detailBlockBox";
+import { MyObjectBag } from "@Obsidian/ViewModels/Blocks/Core/MyObjectDetail/myObjectBag";
+import { MyObjectDetailOptionsBag } from "@Obsidian/ViewModels/Blocks/Core/MyObjectDetail/myObjectDetailOptionsBag";
+import { ValidPropertiesBox } from "@Obsidian/ViewModels/Utility/validPropertiesBox";
 
-    const config = useConfigurationValues<DetailBlockBox<MyObjectBag, MyObjectDetailOptionsBag>>();
-    const invokeBlockAction = useInvokeBlockAction();
+const config = useConfigurationValues<DetailBlockBox<MyObjectBag, MyObjectDetailOptionsBag>>();
+const invokeBlockAction = useInvokeBlockAction();
 
-    // All blocks auto reload when changing block settings unless there is an
-    // explicit reason not to (like using a custom reload function instead),
-    // in which case you can remove this code.
-    onConfigurationValuesChanged(useReloadBlock());
-        
-    // #region Values
+// All blocks auto reload when changing block settings unless there is an
+// explicit reason not to (like using a custom reload function instead),
+// in which case you can remove this code.
+onConfigurationValuesChanged(useReloadBlock());
 
-    const blockError = ref("");
-    const errorMessage = ref("");
+// #region Values
 
-    const myObjectViewBag = ref(config.entity);
-    const myObjectEditBag = ref<ValidPropertiesBox<MyObjectBag>>({
-        bag: {} as MyObjectBag
-    });
+const blockError = ref("");
+const errorMessage = ref("");
 
-    const panelMode = ref<DetailPanelMode>(DetailPanelMode.View);
+const myObjectViewBag = ref(config.entity);
+const myObjectEditBag = ref<ValidPropertiesBox<MyObjectBag>>({
+    bag: {} as MyObjectBag
+});
 
-    const baseBlock = useEntityDetailBlock({
-        blockConfig: config,
-        entity: myObjectEditBag
-    });
+const panelMode = ref<DetailPanelMode>(DetailPanelMode.View);
 
-    // #endregion
+const baseBlock = useEntityDetailBlock({
+    blockConfig: config,
+    entity: myObjectEditBag
+});
 
-    // #region Computed Values
+// #endregion
 
-    /**
-     * The entity name to display in the block panel.
-     */
-    const panelName = computed((): string => {
-        return "TODO: Fill Me In";
-    });
+// #region Computed Values
 
-    /**
-     * The identifier key value for this entity.
-     */
-    const entityKey = computed((): string => {
-        return myObjectViewBag.value?.idKey ?? "";
-    });
+/**
+ * The entity name to display in the block panel.
+ */
+const panelName = computed((): string => {
+    return "TODO: Fill Me In";
+});
 
-    /**
-     * Additional labels to display in the block panel.
-     */
-    const blockLabels = computed((): PanelAction[] | undefined => {
-        const labels: PanelAction[] = [];
+/**
+ * The identifier key value for this entity.
+ */
+const entityKey = computed((): string => {
+    return myObjectViewBag.value?.idKey ?? "";
+});
 
-        if (panelMode.value !== DetailPanelMode.View) {
-            return undefined;
-        }
+/**
+ * Additional labels to display in the block panel.
+ */
+const blockLabels = computed((): PanelAction[] | undefined => {
+    const labels: PanelAction[] = [];
 
-        return labels;
-    });
-
-    const isEditable = computed((): boolean => {
-        return config.isEditable === true;
-    });
-
-    const options = computed((): MyObjectDetailOptionsBag => {
-        return config.options ?? {};
-    });
-
-    // #endregion
-
-    // #region Functions
-
-    // #endregion
-
-    // #region Event Handlers
-
-    /**
-     * Event handler for the Cancel button being clicked while in Edit mode.
-     * Handles redirect to parent page if creating a new entity.
-     *
-     * @returns true if the panel should leave edit mode; false if it should stay in edit mode; or a string containing a redirect URL.
-     */
-    async function onCancelEdit(): Promise<boolean | string> {
-        if (!myObjectEditBag.value.bag?.idKey) {
-            if (config.navigationUrls?.[NavigationUrlKey.ParentPage]) {
-                return config.navigationUrls[NavigationUrlKey.ParentPage];
-            }
-
-            return false;
-        }
-
-        return true;
+    if (panelMode.value !== DetailPanelMode.View) {
+        return undefined;
     }
 
-    /**
-     * Event handler for the Delete button being clicked. Sends the
-     * delete request to the server and then redirects to the target page.
-     *
-     * @returns false if it should stay on the page; or a string containing a redirect URL.
-     */
-    async function onDelete(): Promise<false | string> {
-        errorMessage.value = "";
+    return labels;
+});
 
-        const result = await invokeBlockAction<string>("Delete", {
-            key: myObjectViewBag.value?.idKey
-        });
+const isEditable = computed((): boolean => {
+    return config.isEditable === true;
+});
 
-        if (result.isSuccess && result.data) {
-            return result.data;
+const options = computed((): MyObjectDetailOptionsBag => {
+    return config.options ?? {};
+});
+
+// #endregion
+
+// #region Functions
+
+// #endregion
+
+// #region Event Handlers
+
+/**
+ * Event handler for the Cancel button being clicked while in Edit mode.
+ * Handles redirect to parent page if creating a new entity.
+ *
+ * @returns true if the panel should leave edit mode; false if it should stay in edit mode; or a string containing a redirect URL.
+ */
+async function onCancelEdit(): Promise<boolean | string> {
+    if (!myObjectEditBag.value.bag?.idKey) {
+        if (config.navigationUrls?.[NavigationUrlKey.ParentPage]) {
+            return config.navigationUrls[NavigationUrlKey.ParentPage];
         }
-        else {
-            errorMessage.value = result.errorMessage ?? "Unknown error while trying to delete my object.";
-
-            return false;
-        }
-    }
-
-    /**
-     * Event handler for the Edit button being clicked. Request the edit
-     * details from the server and then enter edit mode.
-     *
-     * @returns true if the panel should enter edit mode; otherwise false.
-     */
-    async function onEdit(): Promise<boolean> {
-        const result = await invokeBlockAction<ValidPropertiesBox<MyObjectBag>>("Edit", {
-            key: myObjectViewBag.value?.idKey
-        });
-
-        if (result.isSuccess && result.data && result.data.bag) {
-            myObjectEditBag.value = {
-                bag: result.data.bag,
-                validProperties: result.data.validProperties ?? Object.keys(result.data.bag)
-            };
-
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    /**
-     * Event handler for the panel's Save event. Send the data to the server
-     * to be saved and then leave edit mode or redirect to target page.
-     *
-     * @returns true if the panel should leave edit mode; false if it should stay in edit mode; or a string containing a redirect URL.
-     */
-    async function onSave(): Promise<boolean | string> {
-        errorMessage.value = "";
-
-        const result = await invokeBlockAction<ValidPropertiesBox<MyObjectBag> | string>("Save", {
-            box: myObjectEditBag.value
-        });
-
-        if (result.isSuccess && result.data) {
-            if (result.statusCode === 200 && typeof result.data === "object") {
-                myObjectViewBag.value = result.data.bag;
-
-                return true;
-            }
-            else if (result.statusCode === 201 && typeof result.data === "string") {
-                return result.data;
-            }
-        }
-
-        errorMessage.value = result.errorMessage ?? "Unknown error while trying to save my object.";
 
         return false;
     }
 
-    // #endregion
+    return true;
+}
 
-    // Handle any initial error conditions or the need to go into edit mode.
-    if (config.errorMessage) {
-        blockError.value = config.errorMessage;
+/**
+ * Event handler for the Delete button being clicked. Sends the
+ * delete request to the server and then redirects to the target page.
+ *
+ * @returns false if it should stay on the page; or a string containing a redirect URL.
+ */
+async function onDelete(): Promise<false | string> {
+    errorMessage.value = "";
+
+    const result = await invokeBlockAction<string>("Delete", {
+        key: myObjectViewBag.value?.idKey
+    });
+
+    if (result.isSuccess && result.data) {
+        return result.data;
     }
-    else if (!config.entity) {
-        blockError.value = "The specified my object could not be viewed.";
+    else {
+        errorMessage.value = result.errorMessage ?? "Unknown error while trying to delete my object.";
+
+        return false;
     }
-    else if (!config.entity.idKey) {
-        myObjectEditBag.value = { bag: config.entity };
-        panelMode.value = DetailPanelMode.Add;
+}
+
+/**
+ * Event handler for the Edit button being clicked. Request the edit
+ * details from the server and then enter edit mode.
+ *
+ * @returns true if the panel should enter edit mode; otherwise false.
+ */
+async function onEdit(): Promise<boolean> {
+    const result = await invokeBlockAction<ValidPropertiesBox<MyObjectBag>>("Edit", {
+        key: myObjectViewBag.value?.idKey
+    });
+
+    if (result.isSuccess && result.data && result.data.bag) {
+        myObjectEditBag.value = {
+            bag: result.data.bag,
+            validProperties: result.data.validProperties ?? Object.keys(result.data.bag)
+        };
+
+        return true;
     }
+    else {
+        return false;
+    }
+}
+
+/**
+ * Event handler for the panel's Save event. Send the data to the server
+ * to be saved and then leave edit mode or redirect to target page.
+ *
+ * @returns true if the panel should leave edit mode; false if it should stay in edit mode; or a string containing a redirect URL.
+ */
+async function onSave(): Promise<boolean | string> {
+    errorMessage.value = "";
+
+    const result = await invokeBlockAction<ValidPropertiesBox<MyObjectBag> | string>("Save", {
+        box: myObjectEditBag.value
+    });
+
+    if (result.isSuccess && result.data) {
+        if (result.statusCode === 200 && typeof result.data === "object") {
+            myObjectViewBag.value = result.data.bag;
+
+            return true;
+        }
+        else if (result.statusCode === 201 && typeof result.data === "string") {
+            return result.data;
+        }
+    }
+
+    errorMessage.value = result.errorMessage ?? "Unknown error while trying to save my object.";
+
+    return false;
+}
+
+// #endregion
+
+// Handle any initial error conditions or the need to go into edit mode.
+if (config.errorMessage) {
+    blockError.value = config.errorMessage;
+}
+else if (!config.entity) {
+    blockError.value = "The specified my object could not be viewed.";
+}
+else if (!config.entity.idKey) {
+    myObjectEditBag.value = { bag: config.entity };
+    panelMode.value = DetailPanelMode.Add;
+}
 </script>
