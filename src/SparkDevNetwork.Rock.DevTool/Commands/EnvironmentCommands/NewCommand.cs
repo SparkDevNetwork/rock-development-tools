@@ -162,6 +162,8 @@ class NewCommand : Abstractions.BaseModifyCommand
                 },
                 "vue.complete.casing.props": "camel",
                 "vue.complete.casing.tags": "pascal",
+                "vue.suggest.propNameCasing": "alwaysCamelCase",
+                "vue.suggest.componentNameCasing": "alwaysPascalCase",
                 "files.trimTrailingWhitespace": true,
                 "vue.format.wrapAttributes": "preserve-aligned",
                 "html.format.wrapAttributes": "preserve-aligned",
