@@ -24,7 +24,7 @@ static partial class GitCommand
     /// <returns>A collection of <see cref="GitReference"/> objects.</returns>
     public static async Task<List<GitReference>> ListRemoteReferencesAsync( string remoteRepo, params string[] refSpecs )
     {
-        var command = new CommandExecutor( "git", ["ls-remote", remoteRepo, .. refSpecs] );
+        var command = new CommandExecutor( "git", ["ls-remote", "--refs", remoteRepo, .. refSpecs] );
 
         var commandResult = await command.ExecuteAsync();
 
