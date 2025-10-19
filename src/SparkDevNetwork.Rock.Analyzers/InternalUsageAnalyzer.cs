@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -127,9 +128,7 @@ namespace SparkDevNetwork.Rock.Analyzers
             }
             catch ( Exception ex )
             {
-                System.Console.WriteLine( $"{ex.Message}: {ex.StackTrace}" );
                 System.Diagnostics.Debug.WriteLine( $"{ex.Message}: {ex.StackTrace}" );
-                throw new Exception( ex.StackTrace );
             }
         }
 
@@ -166,10 +165,9 @@ namespace SparkDevNetwork.Rock.Analyzers
         {
             foreach ( var declarator in variableDeclaration.Declarators )
             {
-                if ( IsInternal( context, declarator.Symbol.Type ) )
+                if ( IsInternal( context, declarator.Symbol.Type ) && context.Operation.Syntax is VariableDeclarationSyntax vds )
                 {
-                    var syntax = context.Operation.Syntax is VariableDeclarationSyntax s ? s.Type : context.Operation.Syntax;
-                    var diagnostic = Diagnostic.Create( Rule, syntax.GetLocation(), declarator.Symbol.Type );
+                    var diagnostic = Diagnostic.Create( Rule, vds.Type.GetLocation(), declarator.Symbol.Type );
 
                     context.ReportDiagnostic( diagnostic );
                     return;
@@ -185,7 +183,7 @@ namespace SparkDevNetwork.Rock.Analyzers
         private static void AnalyzeInvocation( OperationAnalysisContext context, IInvocationOperation invocation )
         {
             // Check if the method being called has any type arguments that
-            // that are internal.
+            // are internal.
             foreach ( var a in invocation.TargetMethod.TypeArguments )
             {
                 if ( IsInternal( context, a ) )
@@ -245,9 +243,7 @@ namespace SparkDevNetwork.Rock.Analyzers
             }
             catch ( Exception ex )
             {
-                System.Console.WriteLine( $"{ex.Message}: {ex.StackTrace}" );
                 System.Diagnostics.Debug.WriteLine( $"{ex.Message}: {ex.StackTrace}" );
-                throw new Exception( ex.StackTrace );
             }
         }
 
@@ -272,15 +268,11 @@ namespace SparkDevNetwork.Rock.Analyzers
                     if ( declaringSyntax.GetSyntax() is ClassDeclarationSyntax classDeclaration && classDeclaration.BaseList?.Types.Count > 0 )
                     {
                         location = classDeclaration.BaseList.Types[0].GetLocation();
-                    }
-                    else
-                    {
-                        location = declaringSyntax.GetSyntax().GetLocation();
-                    }
 
-                    var diagnostic = Diagnostic.Create( Rule, location, baseSymbol );
+                        var diagnostic = Diagnostic.Create( Rule, location, baseSymbol );
 
-                    context.ReportDiagnostic( diagnostic );
+                        context.ReportDiagnostic( diagnostic );
+                    }
                 }
             }
 
@@ -296,15 +288,11 @@ namespace SparkDevNetwork.Rock.Analyzers
                     if ( declaringSyntax.GetSyntax() is ClassDeclarationSyntax classDeclaration )
                     {
                         location = classDeclaration.Identifier.GetLocation();
-                    }
-                    else
-                    {
-                        location = declaringSyntax.GetSyntax().GetLocation();
-                    }
 
-                    var diagnostic = Diagnostic.Create( Rule, location, iface );
+                        var diagnostic = Diagnostic.Create( Rule, location, iface );
 
-                    context.ReportDiagnostic( diagnostic );
+                        context.ReportDiagnostic( diagnostic );
+                    }
                 }
             }
         }
@@ -334,15 +322,11 @@ namespace SparkDevNetwork.Rock.Analyzers
                     if ( declaringSyntax.GetSyntax() is MethodDeclarationSyntax methodDeclaration )
                     {
                         location = methodDeclaration.ReturnType.GetLocation();
-                    }
-                    else
-                    {
-                        location = declaringSyntax.GetSyntax().GetLocation();
-                    }
 
-                    var diagnostic = Diagnostic.Create( Rule, location, method.ReturnType );
+                        var diagnostic = Diagnostic.Create( Rule, location, method.ReturnType );
 
-                    context.ReportDiagnostic( diagnostic );
+                        context.ReportDiagnostic( diagnostic );
+                    }
                 }
             }
 
@@ -357,14 +341,11 @@ namespace SparkDevNetwork.Rock.Analyzers
                     if ( declaringSyntax.GetSyntax() is ParameterSyntax parameter && parameter.Type != null )
                     {
                         location = parameter.Type.GetLocation();
-                    }
-                    else
-                    {
-                        location = declaringSyntax.GetSyntax().GetLocation();
-                    }
 
-                    var diagnostic = Diagnostic.Create( Rule, location, paramSymbol.Type );
-                    context.ReportDiagnostic( diagnostic );
+                        var diagnostic = Diagnostic.Create( Rule, location, paramSymbol.Type );
+
+                        context.ReportDiagnostic( diagnostic );
+                    }
                 }
             }
         }
@@ -493,11 +474,6 @@ namespace SparkDevNetwork.Rock.Analyzers
         /// </returns>
         private static bool IsCoreAssembly( IAssemblySymbol assembly )
         {
-            if ( assembly?.Name == null )
-            {
-                return false;
-            }
-
             return assembly.Name == "Rock" || assembly.Name.StartsWith( "Rock." );
         }
 
@@ -524,12 +500,30 @@ namespace SparkDevNetwork.Rock.Analyzers
         /// </returns>
         private static bool IsInInternalNamespace( ISymbol symbol )
         {
-            if ( symbol?.ContainingNamespace?.ToDisplayString() is string ns )
+            var ns = symbol?.ContainingNamespace;
+
+            if ( ns == null || ns.IsGlobalNamespace )
             {
-                return ns.StartsWith( "Rock." ) && ns.EndsWith( ".Internal" );
+                return false;
             }
 
-            return false;
+            // Collect namespace parts from outermost to innermost.
+            var parts = new List<string>();
+            var current = ns;
+
+            while ( current != null && !current.IsGlobalNamespace )
+            {
+                parts.Insert( 0, current.Name );
+                current = current.ContainingNamespace;
+            }
+
+            // Must be at least 2 segments: "Rock[.*].Internal".
+            if ( parts.Count < 2 )
+            {
+                return false;
+            }
+
+            return parts[0] == "Rock" && parts[parts.Count - 1] == "Internal";
         }
 
         #endregion
