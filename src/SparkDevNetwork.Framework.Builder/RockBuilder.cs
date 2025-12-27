@@ -204,6 +204,66 @@ partial class RockBuilder
     }
 
     /// <summary>
+    /// Restores the RockWeb packages based on the .refresh files. This must
+    /// be a manual process on Rock v18 and later since we no longer use the
+    /// nuget.exe restore command.
+    /// </summary>
+    /// <returns><c>true</c> if the packages were restored successfully; otherwise, <c>false</c>.</returns>
+    private async Task<bool> RestoreRockWebPackagesAsync()
+    {
+        var binPath = Path.Combine( _rockPath, "RockWeb", "Bin" );
+        var regex = new Regex( "packages\\\\([A-Za-z\\-\\.]+)\\.([0-9\\.\\-a-zA-Z]+)\\\\(.*)$" );
+        var client = new HttpClient();
+
+        foreach ( var refreshFile in Directory.EnumerateFiles( binPath, "*.refresh" ) )
+        {
+            var refreshText = File.ReadAllText( refreshFile ).Trim();
+            var match = regex.Match( refreshText );
+
+            if ( !match.Success )
+            {
+                Console.Error.WriteLine( $"Could not parse refresh file '{refreshFile}'." );
+                return false;
+            }
+
+            var packageName = match.Groups[1].Value;
+            var packageVersion = match.Groups[2].Value;
+            var filePath = match.Groups[3].Value.Replace( '\\', '/' );
+            var url = $"https://www.nuget.org/api/v2/package/{packageName}/{packageVersion}";
+
+            byte[]? data;
+            try
+            {
+                data = await client.GetByteArrayAsync( url );
+            }
+            catch
+            {
+                Console.Error.WriteLine( $"Could not download package '{packageName} {packageVersion}' from NuGet." );
+                return false;
+            }
+
+            using var memoryStream = new MemoryStream( data );
+            using var archive = new System.IO.Compression.ZipArchive( memoryStream );
+            var entry = archive.GetEntry( filePath );
+
+            if ( entry == null )
+            {
+                Console.Error.WriteLine( $"Could not find file '{filePath}' in package '{packageName} {packageVersion}'." );
+                return false;
+            }
+
+            // Trim the ".refresh" from the filename.
+            var destinationPath = refreshFile[..^".refresh".Length];
+
+            using var entryStream = entry.Open();
+            using var destinationStream = File.Create( destinationPath );
+            await entryStream.CopyToAsync( destinationStream );
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Builds the specified project from the Rock solution.
     /// </summary>
     /// <param name="projectName">The name of the project to build.</param>
@@ -275,6 +335,15 @@ partial class RockBuilder
         {
             if ( packageVersion.Major >= 18 )
             {
+                if ( !await RestoreRockWebPackagesAsync() )
+                {
+                    bar.Fail();
+                    return false;
+                }
+            }
+
+            if ( packageVersion.Major >= 18 )
+            {
                 foreach ( var projectName in projectNames )
                 {
                     var projectPath = Path.Combine( _rockPath, projectName );
@@ -288,8 +357,6 @@ partial class RockBuilder
                         return false;
                     }
                 }
-
-                return true;
             }
             else
             {
@@ -299,10 +366,11 @@ partial class RockBuilder
                 {
                     bar.Fail();
                     Console.Error.WriteLine( string.Join( Environment.NewLine, commandResult.Output ) );
+                    return false;
                 }
-
-                return commandResult.ExitCode == 0;
             }
+
+            return true;
         } );
 
         if ( !restoreResult )
