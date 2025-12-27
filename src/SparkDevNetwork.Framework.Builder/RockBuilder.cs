@@ -208,7 +208,7 @@ partial class RockBuilder
     /// </summary>
     /// <param name="projectName">The name of the project to build.</param>
     /// <returns><c>true</c> if the project was built.</returns>
-    public async Task<bool> BuildProjectAsync( string projectName )
+    public async Task<bool> BuildProjectAsync( SemVersion rockVersion, string projectName )
     {
         var projectPath = Path.Combine( _rockPath, projectName );
         var projectExt = "csproj";
@@ -225,11 +225,26 @@ partial class RockBuilder
 
         var buildResult = await IndeterminateBar.RunAsync( $"Building {projectName}", async bar =>
         {
-            var commandResult = await _visualStudio.BuildAsync( [
-                $"{projectName}.{projectExt}",
-                "/p:Configuration=Release",
-                "/nr:false"
-            ], projectPath );
+            CommandResult commandResult;
+
+            if ( rockVersion.Major >= 18 )
+            {
+                commandResult = await _visualStudio.DotnetAsync( [
+                    "build",
+                    $"{projectName}.{projectExt}",
+                    "--configuration",
+                    "Release",
+                    "--disable-build-servers"
+                    ], projectPath );
+            }
+            else
+            {
+                commandResult = await _visualStudio.BuildAsync( [
+                    $"{projectName}.{projectExt}",
+                    "/p:Configuration=Release",
+                    "/nr:false"
+                ], projectPath );
+            }
 
             if ( commandResult.ExitCode != 0 )
             {
@@ -254,23 +269,50 @@ partial class RockBuilder
     /// </summary>
     /// <param name="projectNames">The names of the projects to build.</param>
     /// <returns><c>true</c> if the projects were built.</returns>
-    public async Task<bool> BuildProjectsAsync( params string[] projectNames )
+    public async Task<bool> BuildProjectsAsync( SemVersion packageVersion, params string[] projectNames )
     {
         var restoreResult = await IndeterminateBar.RunAsync( "Restoring NuGet packages", async bar =>
         {
-            var commandResult = await _visualStudio.NuGetAsync( ["restore", "Rock.sln"], _rockPath );
-
-            if ( commandResult.ExitCode != 0 )
+            if ( packageVersion.Major >= 18 )
             {
-                bar.Fail();
-            }
+                foreach ( var projectName in projectNames )
+                {
+                    var projectPath = Path.Combine( _rockPath, projectName );
 
-            return commandResult;
+                    var commandResult = await _visualStudio.DotnetAsync( ["restore"], projectPath );
+
+                    if ( commandResult.ExitCode != 0 )
+                    {
+                        bar.Fail();
+                        Console.Error.WriteLine( string.Join( Environment.NewLine, commandResult.Output ) );
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            else
+            {
+                var commandResult = await _visualStudio.NuGetAsync( ["restore", "Rock.sln"], _rockPath );
+
+                if ( commandResult.ExitCode != 0 )
+                {
+                    bar.Fail();
+                    Console.Error.WriteLine( string.Join( Environment.NewLine, commandResult.Output ) );
+                }
+
+                return commandResult.ExitCode == 0;
+            }
         } );
+
+        if ( !restoreResult )
+        {
+            return false;
+        }
 
         foreach ( var projectName in projectNames )
         {
-            if ( !await BuildProjectAsync( projectName ) )
+            if ( !await BuildProjectAsync( packageVersion, projectName ) )
             {
                 return false;
             }
@@ -653,6 +695,15 @@ partial class RockBuilder
         var text = ReadTextTemplate( filename );
 
         text = text.Replace( "{{ RockVersion }}", rockVersion.ToString() );
+
+        if ( rockVersion.Major >= 18 )
+        {
+            text = text.Replace( "{{ BinPath }}", "bin\\Release\\net472" );
+        }
+        else
+        {
+            text = text.Replace( "{{ BinPath }}", "bin\\Release" );
+        }
 
         File.WriteAllText( destinationPath, text );
     }

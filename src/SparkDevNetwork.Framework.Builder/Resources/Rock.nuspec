@@ -21,7 +21,7 @@
   <files>
     <file src="LICENSE.md" target="" />
     <file src="Icon.png" target="" />
-    <file src="Rock\Rock\bin\Release\Rock.dll" target="lib\net472" />
-    <file src="Rock\Rock\bin\Release\Rock.xml" target="lib\net472" />
+    <file src="Rock\Rock\{{ BinPath }}\Rock.dll" target="lib\net472" />
+    <file src="Rock\Rock\{{ BinPath }}\Rock.xml" target="lib\net472" />
   </files>
 </package>

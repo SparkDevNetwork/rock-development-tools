@@ -19,6 +19,6 @@
   <files>
     <file src="LICENSE.md" target="" />
     <file src="Icon.png" target="" />
-    <file src="Rock\Rock.Blocks\bin\Release\Rock.Blocks.dll" target="lib\net472" />
+    <file src="Rock\Rock.Blocks\{{ BinPath }}\Rock.Blocks.dll" target="lib\net472" />
   </files>
 </package>

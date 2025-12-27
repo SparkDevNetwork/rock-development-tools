@@ -99,6 +99,23 @@ class VisualStudio
     }
 
     /// <summary>
+    /// Executes the dotnet process with the given arguments.
+    /// </summary>
+    /// <param name="arguments">The arguments to pass to msbuild.</param>
+    /// <param name="workingDirectory">The working directory to start the command in.</param>
+    /// <returns><c>true</c> if the process was successful.</returns>
+    public async Task<CommandResult> DotnetAsync( string[] arguments, string workingDirectory )
+    {
+        var commandPath = await GetMSBuildPath();
+        var command = new CommandExecutor( "C:\\Program Files\\dotnet\\dotnet.exe", arguments )
+        {
+            WorkingDirectory = workingDirectory
+        };
+
+        return await command.ExecuteAsync();
+    }
+
+    /// <summary>
     /// Executes the nuget process with the given arguments.
     /// </summary>
     /// <param name="arguments">The arguments to pass to nuget.</param>

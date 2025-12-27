@@ -17,6 +17,6 @@
   <files>
     <file src="LICENSE.md" target="" />
     <file src="Icon.png" target="" />
-    <file src="Rock\Rock.Common\bin\Release\Rock.Common.dll" target="lib\net472" />
+    <file src="Rock\Rock.Common\{{ BinPath }}\Rock.Common.dll" target="lib\net472" />
   </files>
 </package>

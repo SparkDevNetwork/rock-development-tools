@@ -16,7 +16,7 @@
   <files>
     <file src="LICENSE.md" target="" />
     <file src="Icon.png" target="" />
-    <file src="Rock\Rock.ViewModels\bin\Release\Rock.ViewModels.dll" target="lib\net472" />
-    <file src="Rock\Rock.ViewModels\bin\Release\Rock.ViewModels.xml" target="lib\net472" />
+    <file src="Rock\Rock.ViewModels\{{ BinPath }}\Rock.ViewModels.dll" target="lib\net472" />
+    <file src="Rock\Rock.ViewModels\{{ BinPath }}\Rock.ViewModels.xml" target="lib\net472" />
   </files>
 </package>

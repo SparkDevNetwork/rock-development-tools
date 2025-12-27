@@ -81,9 +81,11 @@ class RootAppCommand : RootCommand, ICommandHandler
 
             Console.WriteLine( $"Building {packageVersion} in {buildPath}" );
 
+            builder.Cleanup();
+
             await builder.DownloadRockAsync( version );
 
-            result = await builder.BuildProjectsAsync(
+            result = await builder.BuildProjectsAsync( packageVersion,
                 "Rock.Enums",
                 "Rock.ViewModels",
                 "Rock.Common",

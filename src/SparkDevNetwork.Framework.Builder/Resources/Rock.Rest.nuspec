@@ -22,6 +22,6 @@
   <files>
     <file src="LICENSE.md" target="" />
     <file src="Icon.png" target="" />
-    <file src="Rock\Rock.Rest\bin\Release\Rock.Rest.dll" target="lib\net472" />
+    <file src="Rock\Rock.Rest\{{ BinPath }}\Rock.Rest.dll" target="lib\net472" />
   </files>
 </package>

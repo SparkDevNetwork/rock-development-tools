@@ -11,7 +11,7 @@ git clone --branch 17.5.2 --depth 1 https://github.com/SparkDevNetwork/Rock Rock
 
 # build Rock Solution in Visual Studio.
 
-zip -r Rock-17.5.2.zip RockWeb -x "RockWeb/Bin/*.refresh" -x "**/.gitignore" -x "RockWeb/App_Data/Avatar/*" -x "RockWeb/App_Data/Cache/*" -x "RockWeb/App_Data/ChromeEngine/*" -x "RockWeb/App_Data/Logs/*" -x "RockWeb/App_Data/Uploads/*" -x "RockWeb/Themes/**/*.css" -x "RockWeb/packages.config" -x "RockWeb/Settings.StyleCop" -x "RockWeb/tsconfig.json" -x "RockWeb/web.ConnectionStrings.config"
+zip -r Rock-17.5.2.zip RockWeb -x "RockWeb/Bin/*.refresh" -x "**/.gitignore" -x "RockWeb/App_Data/Avatar/Cache/*" -x "RockWeb/App_Data/Cache/*" -x "RockWeb/App_Data/ChromeEngine/*" -x "RockWeb/App_Data/Logs/*" -x "RockWeb/App_Data/Uploads/*" -x "RockWeb/Themes/**/*.css" -x "RockWeb/packages.config" -x "RockWeb/Settings.StyleCop" -x "RockWeb/tsconfig.json" -x "RockWeb/web.ConnectionStrings.config"
 ```
 
 4. The zip file can then be uploaded to the blob storage under developer/environments
