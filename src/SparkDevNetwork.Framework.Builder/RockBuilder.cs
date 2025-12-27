@@ -335,15 +335,6 @@ partial class RockBuilder
         {
             if ( packageVersion.Major >= 18 )
             {
-                if ( !await RestoreRockWebPackagesAsync() )
-                {
-                    bar.Fail();
-                    return false;
-                }
-            }
-
-            if ( packageVersion.Major >= 18 )
-            {
                 foreach ( var projectName in projectNames )
                 {
                     var projectPath = Path.Combine( _rockPath, projectName );
@@ -356,6 +347,12 @@ partial class RockBuilder
                         Console.Error.WriteLine( string.Join( Environment.NewLine, commandResult.Output ) );
                         return false;
                     }
+                }
+
+                if ( !await RestoreRockWebPackagesAsync() )
+                {
+                    bar.Fail();
+                    return false;
                 }
             }
             else
