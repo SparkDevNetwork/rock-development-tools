@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -204,6 +205,43 @@ partial class RockBuilder
     }
 
     /// <summary>
+    /// Gets the list of projects from the Rock solution that should be built.
+    /// </summary>
+    /// <returns>An array of project names to build.</returns>
+    public string[] GetProjectsFromSolution()
+    {
+        var solutionPath = Path.Combine( _rockPath, "Rock.sln" );
+        var projectNames = new List<string>();
+        var projectRegExp = new Regex( @"Project\(""\{[A-F0-9\-]+\}""\)\s*=\s*""([A-Za-z0-9\.\-]+)"",\s*""([A-Za-z0-9\/\\\.\-]+)""" );
+        var blacklistProjects = new string[]
+        {
+            "RockWeb",
+            "Rock.Common.NG",
+        };
+
+        foreach ( var line in File.ReadLines( solutionPath ) )
+        {
+            var match = projectRegExp.Match( line );
+
+            if ( match.Success )
+            {
+                var projectName = match.Groups[1].Value;
+                var projectPath = match.Groups[2].Value;
+
+                if ( !blacklistProjects.Contains( projectName ) && !projectName.Contains( ".Tests" ) )
+                {
+                    if ( projectPath.Contains( ".csproj" ) || projectPath.Contains( ".esproj" ) )
+                    {
+                        projectNames.Add( projectName );
+                    }
+                }
+            }
+        }
+
+        return [.. projectNames];
+    }
+
+    /// <summary>
     /// Restores the RockWeb packages based on the .refresh files. This must
     /// be a manual process on Rock v18 and later since we no longer use the
     /// nuget.exe restore command.
@@ -215,7 +253,7 @@ partial class RockBuilder
         var regex = new Regex( "packages\\\\([A-Za-z\\-\\.]+)\\.([0-9\\.\\-a-zA-Z]+)\\\\(.*)$" );
         var client = new HttpClient();
 
-        foreach ( var refreshFile in Directory.EnumerateFiles( binPath, "*.refresh" ) )
+        foreach ( var refreshFile in Directory.EnumerateFiles( binPath, "*.dll.refresh" ) )
         {
             var refreshText = File.ReadAllText( refreshFile ).Trim();
             var match = regex.Match( refreshText );
@@ -243,7 +281,7 @@ partial class RockBuilder
             }
 
             using var memoryStream = new MemoryStream( data );
-            using var archive = new System.IO.Compression.ZipArchive( memoryStream );
+            using var archive = new ZipArchive( memoryStream );
             var entry = archive.GetEntry( filePath );
 
             if ( entry == null )
@@ -339,20 +377,37 @@ partial class RockBuilder
                 {
                     var projectPath = Path.Combine( _rockPath, projectName );
 
-                    var commandResult = await _visualStudio.DotnetAsync( ["restore"], projectPath );
-
-                    if ( commandResult.ExitCode != 0 )
+                    if ( File.Exists( Path.Combine( projectPath, $"packages.config" ) ) )
                     {
-                        bar.Fail();
-                        Console.Error.WriteLine( string.Join( Environment.NewLine, commandResult.Output ) );
-                        return false;
-                    }
-                }
+                        // This project uses packages.config so we need to use nuget.exe
+                        // to restore the packages.
+                        var commandResult = await _visualStudio.NuGetAsync( [
+                            "restore",
+                            $"{projectName}.csproj",
+                            "-SolutionDirectory",
+                            _rockPath,
+                        ], projectPath );
 
-                if ( !await RestoreRockWebPackagesAsync() )
-                {
-                    bar.Fail();
-                    return false;
+                        if ( commandResult.ExitCode != 0 )
+                        {
+                            bar.Fail();
+                            Console.WriteLine( $"Restore failed for project {projectName}." );
+                            Console.Error.WriteLine( string.Join( Environment.NewLine, commandResult.Output ) );
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        var commandResult = await _visualStudio.DotnetAsync( ["restore"], projectPath );
+
+                        if ( commandResult.ExitCode != 0 )
+                        {
+                            bar.Fail();
+                            Console.WriteLine( $"Restore failed for project {projectName}." );
+                            Console.Error.WriteLine( string.Join( Environment.NewLine, commandResult.Output ) );
+                            return false;
+                        }
+                    }
                 }
             }
             else
@@ -384,6 +439,79 @@ partial class RockBuilder
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Creates the RockWeb package archive that will be used to initialize
+    /// development environments later.
+    /// </summary>
+    /// <param name="rockVersion">The version of Rock being built.</param>
+    /// <returns><c>true</c> if the archive was built.</returns>
+    public async Task<bool> CreateRockWebPackage( SemVersion rockVersion )
+    {
+        var rockWebPath = Path.Combine( _rockPath, "RockWeb" );
+        var outputDirectory = Directory.GetCurrentDirectory();
+
+        var buildResult = await IndeterminateBar.RunAsync( $"Packing RockWeb", async bar =>
+        {
+            if ( !await RestoreRockWebPackagesAsync() )
+            {
+                bar.Fail();
+                return false;
+            }
+
+            var excludePatterns = new[]
+            {
+                "RockWeb/Bin/*.refresh",
+                "RockWeb/Bin/roslyn/*.refresh",
+                "**/.gitignore",
+                "RockWeb/App_Data/Avatar/Cache/*",
+                "RockWeb/App_Data/Cache/*",
+                "RockWeb/App_Data/ChromeEngine/*",
+                "RockWeb/App_Data/Logs/*",
+                "RockWeb/App_Data/Uploads/*",
+                "RockWeb/Themes/**/*.css",
+                "RockWeb/packages.config",
+                "RockWeb/Settings.StyleCop",
+                "RockWeb/tsconfig.json",
+                "RockWeb/web.ConnectionStrings.config",
+            };
+
+            var files = Directory.EnumerateFiles( rockWebPath, "*", SearchOption.AllDirectories )
+                .Select( f => new
+                {
+                    Path = f,
+                    EntryName = f.Substring( rockWebPath.Length - "RockWeb".Length )
+                        .Replace( '\\', '/' )
+                } )
+                .Where( f =>
+                {
+                    if ( Path.GetFileName( f.Path ) == "theme.css" )
+                    {
+                        // We need to keep the new theme.css files if there is
+                        // a corresponding theme.scss file. This is a new
+                        // pre-compiled theme file.
+                        if ( Path.Exists( f.Path.Replace( "theme.css", "theme.scss" ) ) )
+                        {
+                            return true;
+                        }
+                    }
+
+                    return !excludePatterns.Any( pattern => Glob.IsMatch( f.EntryName, pattern ) );
+                } );
+
+            using var packageStream = File.Create( Path.Combine( outputDirectory, $"Rock-{rockVersion}.zip" ) );
+            using var archive = new ZipArchive( packageStream, ZipArchiveMode.Create );
+
+            foreach ( var file in files )
+            {
+                archive.CreateEntryFromFile( file.Path, file.EntryName );
+            }
+
+            return true;
+        } );
+
+        return buildResult;
     }
 
     /// <summary>

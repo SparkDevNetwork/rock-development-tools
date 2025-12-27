@@ -84,16 +84,9 @@ class RootAppCommand : RootCommand, ICommandHandler
             builder.Cleanup();
 
             await builder.DownloadRockAsync( version );
+            var projectsToBuild = builder.GetProjectsFromSolution();
 
-            result = await builder.BuildProjectsAsync( packageVersion,
-                "Rock.Enums",
-                "Rock.ViewModels",
-                "Rock.Common",
-                "Rock.Lava.Shared",
-                "Rock",
-                "Rock.Rest",
-                "Rock.Blocks",
-                "Rock.JavaScript.Obsidian" );
+            result = await builder.BuildProjectsAsync( packageVersion, projectsToBuild );
 
             if ( !result )
             {
@@ -117,7 +110,22 @@ class RootAppCommand : RootCommand, ICommandHandler
 
             result = await builder.CreateObsidianFrameworkPackageAsync( packageVersion );
 
-            return result ? 0 : 1;
+            if ( !result )
+            {
+                return 1;
+            }
+
+            if ( packageVersion.Major >= 18 )
+            {
+                result = await builder.CreateRockWebPackage( packageVersion );
+
+                if ( !result )
+                {
+                    return 1;
+                }
+            }
+
+            return 0;
         }
         finally
         {
