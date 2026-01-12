@@ -55,11 +55,7 @@ class VersionChecker
             // want that to happen once per day.
             UpdateLastVersionCheckDate();
 
-            var currentVersionInfo = typeof( VersionChecker )
-                .Assembly
-                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                ?.InformationalVersion ?? "0";
-            var currentVersion = new NuGetVersion( currentVersionInfo );
+            var currentVersion = new NuGetVersion( Support.CurrentToolVersion.ToString() );
 
             var latestVersion = await GetLatestVersionFromNuGet( currentVersion.IsPrerelease, cts.Token );
 

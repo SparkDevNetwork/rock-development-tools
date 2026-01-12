@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 
+using Semver;
+
 namespace SparkDevNetwork.Rock.DevTool.Data;
 
 /// <summary>
@@ -29,6 +31,14 @@ class EnvironmentData
     /// </summary>
     [JsonPropertyName( "plugins" )]
     public List<PluginReferenceData> Plugins { get; set; } = [];
+
+    /// <summary>
+    /// The current version number of the plugin.
+    /// </summary>
+    [JsonPropertyName( "toolVersion" )]
+    [JsonIgnore( Condition = JsonIgnoreCondition.WhenWritingNull )]
+    [JsonConverter( typeof( SemVersionConverter ) )]
+    public SemVersion ToolVersion { get; set; } = new( 0, 0, 0 );
 
     /// <summary>
     /// Additional data in the JSON stream that we don't know about.

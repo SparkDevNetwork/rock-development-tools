@@ -194,6 +194,7 @@ class NewCommand : Abstractions.BaseModifyCommand
         // Write the environment JSON file.
         var environmentData = new EnvironmentData
         {
+            ToolVersion = Support.CurrentToolVersion,
             Organization = new OrganizationData
             {
                 Name = orgName,
