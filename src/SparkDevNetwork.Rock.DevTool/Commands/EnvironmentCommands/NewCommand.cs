@@ -140,56 +140,54 @@ class NewCommand : Abstractions.BaseModifyCommand
 
             """ );
 
-        // Write the "/.vscode/extensions.json" file.
-        WriteFile( _fs.Path.Join( outputDirectory, ".vscode", "extensions.json" ),
-            """
+        // Write the workspace file.
+        var workspaceFile = _fs.Path.Join( outputDirectory, $"{orgName.Replace( " ", string.Empty )}.code-workspace" );
+        var workspaceTemplate = """
             {
-                "recommendations": [
-                    "dbaeumer.vscode-eslint",
-                    "vue.volar",
-                    "orta.vscode-jest"
-                ]
-            }
-
-            """ );
-
-        // Write the "/.vscode/setings.json" file.
-        WriteFile( _fs.Path.Join( outputDirectory, ".vscode", "settings.json" ),
-            """
-            {
-                "files.associations": {
-                    "*.obs": "vue"
-                },
-                "vue.complete.casing.props": "camel",
-                "vue.complete.casing.tags": "pascal",
-                "vue.suggest.propNameCasing": "alwaysCamelCase",
-                "vue.suggest.componentNameCasing": "alwaysPascalCase",
-                "files.trimTrailingWhitespace": true,
-                "vue.format.wrapAttributes": "preserve-aligned",
-                "html.format.wrapAttributes": "preserve-aligned",
-                "html.format.wrapLineLength": 0,
-                "javascript.preferences.importModuleSpecifier": "project-relative",
-                "editor.codeActionsOnSave": {
-                    "source.fixAll.eslint": "explicit"
-                },
-                "eslint.validate": [
-                    "javascript",
-                    "javascriptreact",
-                    "typescript",
-                    "typescriptreact",
-                    "vue"
+                "folders": [
                 ],
-                "[vue]": {
-                    "editor.defaultFormatter": "Vue.volar"
+                "extensions": {
+                    "recommendations": [
+                        "dbaeumer.vscode-eslint",
+                        "vue.volar",
+                        "orta.vscode-jest"
+                    ]
                 },
-                "css.format.spaceAroundSelectorSeparator": true,
-                "css.lint.duplicateProperties": "warning",
-                "css.lint.zeroUnits": "warning",
-                "css.lint.propertyIgnoredDueToDisplay": "warning",
-                "dotnet.preferCSharpExtension": true
+                "settings": {
+                    "files.associations": {
+                        "*.obs": "vue"
+                    },
+                    "vue.complete.casing.props": "camel",
+                    "vue.complete.casing.tags": "pascal",
+                    "vue.suggest.propNameCasing": "alwaysCamelCase",
+                    "vue.suggest.componentNameCasing": "alwaysPascalCase",
+                    "files.trimTrailingWhitespace": true,
+                    "vue.format.wrapAttributes": "preserve-aligned",
+                    "html.format.wrapAttributes": "preserve-aligned",
+                    "html.format.wrapLineLength": 0,
+                    "javascript.preferences.importModuleSpecifier": "project-relative",
+                    "editor.codeActionsOnSave": {
+                        "source.fixAll.eslint": "explicit"
+                    },
+                    "eslint.validate": [
+                        "javascript",
+                        "javascriptreact",
+                        "typescript",
+                        "typescriptreact",
+                        "vue"
+                    ],
+                    "[vue]": {
+                        "editor.defaultFormatter": "Vue.volar"
+                    },
+                    "css.format.spaceAroundSelectorSeparator": true,
+                    "css.lint.duplicateProperties": "warning",
+                    "css.lint.zeroUnits": "warning",
+                    "css.lint.propertyIgnoredDueToDisplay": "warning",
+                    "dotnet.preferCSharpExtension": true
+                }
             }
-
-            """ );
+            """;
+        WriteFile( workspaceFile, workspaceTemplate );
 
         // Write the environment JSON file.
         var environmentData = new EnvironmentData

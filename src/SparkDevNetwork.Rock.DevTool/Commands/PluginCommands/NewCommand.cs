@@ -2,6 +2,8 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO.Abstractions;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Fluid;
 
@@ -236,6 +238,7 @@ partial class NewCommand : Abstractions.BaseModifyCommand
 
         AddPluginToGitIgnore();
         AddPluginToSolutionFile();
+        AddPluginToWorkspaceFile();
 
         var environmentPlugin = _environment.GetPlugins().First( p => p.Path == pluginRelativePath );
         _environment.SetupPlugin( environmentPlugin );
@@ -414,14 +417,24 @@ partial class NewCommand : Abstractions.BaseModifyCommand
         {
             environment = DevEnvironment.Environment.Open( environmentDirectory, _serviceProvider );
             environment.IsDryRun = DryRun;
-
-            return environment;
         }
         catch ( InvalidEnvironmentException ex )
         {
             Console.WriteLine( ex.Message );
             return null;
         }
+
+        if ( environment.IsUpgradeNeeded() )
+        {
+            Console.WriteLine( "The environment format is out of date and must be upgraded before proceeding." );
+            Console.WriteLine();
+            Console.WriteLine( "Please run the 'env upgrade' command to upgrade the environment." );
+            Console.WriteLine();
+
+            return null;
+        }
+
+        return environment;
     }
 
     /// <summary>
@@ -492,6 +505,83 @@ partial class NewCommand : Abstractions.BaseModifyCommand
         }
 
         content = new SlnWriter().WriteToString( sln );
+
+        WriteFile( path, content );
+    }
+
+    /// <summary>
+    /// Adds the new plugin projects to the workspace file.
+    /// </summary>
+    private void AddPluginToWorkspaceFile()
+    {
+        var environmentDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
+        var path = _fs.Path.Combine( environmentDirectory, $"{_environment.GetOrganizationName()?.Replace( " ", "" )}.code-workspace" );
+
+        if ( !_fs.File.Exists( path ) )
+        {
+            Console.WriteLine( "Workspace file not found; skipping workspace update." );
+            return;
+        }
+
+        var content = _fs.File.ReadAllText( path );
+        var workspace = JsonSerializer.Deserialize<JsonObject>( content );
+
+        if ( workspace == null )
+        {
+            Console.WriteLine( "Workspace file is not valid JSON; skipping workspace update." );
+            return;
+        }
+
+        if ( !workspace.TryGetPropertyValue( "folders", out var foldersObj ) )
+        {
+            Console.WriteLine( "Workspace file does not contain 'folders' property; skipping workspace update." );
+            return;
+        }
+
+        if ( foldersObj is not JsonArray folders )
+        {
+            Console.WriteLine( "Workspace 'folders' property is not an array; skipping workspace update." );
+            return;
+        }
+
+        var folder = new JsonObject
+        {
+            ["path"] = PluginCode
+        };
+
+        // Get the sorted index position to insert the new folder at.
+        var insertIndex = 0;
+        for ( var i = 0; i < folders.Count; i++ )
+        {
+            if ( folders[i] is not JsonObject existingFolder )
+            {
+                continue;
+            }
+
+            if ( !existingFolder.TryGetPropertyValue( "path", out var existingPathObj ) )
+            {
+                continue;
+            }
+
+            if ( existingPathObj is not JsonValue existingPathValue )
+            {
+                continue;
+            }
+
+            if ( existingPathValue.GetValue<string>() is not string existingPathString )
+            {
+                continue;
+            }
+
+            if ( string.Compare( existingPathString, PluginCode!, StringComparison.OrdinalIgnoreCase ) < 0 )
+            {
+                insertIndex = i + 1;
+            }
+        }
+
+        folders.Insert( insertIndex, folder );
+
+        content = JsonSerializer.Serialize( workspace, Support.SerializerOptions );
 
         WriteFile( path, content );
     }
