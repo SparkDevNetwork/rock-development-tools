@@ -61,6 +61,16 @@ class Environment
     /// </summary>
     public bool IsForce { get; set; }
 
+    /// <summary>
+    /// Gets the data that represents the environment configuration.
+    /// </summary>
+    public EnvironmentData Data => _data;
+
+    /// <summary>
+    /// Gets the directory that contains the environment.
+    /// </summary>
+    public string Directory => _environmentDirectory;
+
     #endregion
 
     /// <summary>
@@ -80,10 +90,10 @@ class Environment
     /// Opens an existing environment from a directory.
     /// </summary>
     /// <param name="environmentDirectory">The directory that contains the environment.</param>
-    /// <param name="console">The console object to use when writing console messages.</param>
-    /// <param name="loggerFactory">The factory to create new logging facilities.</param>
+    /// <param name="serviceProvider">The service provider to use when resolving dependencies.</param>
+    /// <param name="warnIfUpgradeNeeded">Determines if a warning should be displayed if an upgrade is needed.</param>
     /// <returns>An instance of <see cref="Environment"/> or <c>null</c> if it could not be opened.</returns>
-    public static Environment Open( string environmentDirectory, IServiceProvider serviceProvider )
+    public static Environment Open( string environmentDirectory, IServiceProvider serviceProvider, bool warnIfUpgradeNeeded = true )
     {
         var fs = serviceProvider.GetRequiredService<IFileSystem>();
         var environmentFile = fs.Path.Combine( environmentDirectory, EnvironmentData.Filename );
@@ -108,7 +118,14 @@ class Environment
             }
         }
 
-        return new Environment( environmentDirectory, data, serviceProvider );
+        var environment = new Environment( environmentDirectory, data, serviceProvider );
+
+        if ( warnIfUpgradeNeeded )
+        {
+            environment.WarnIfUpgradeNeeded();
+        }
+
+        return environment;
     }
 
     /// <summary>
@@ -544,5 +561,29 @@ class Environment
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Determines if the environment needs to be upgraded.
+    /// </summary>
+    /// <returns><c>true</c> if the environment needs to be upgraded; otherwise, <c>false</c>.</returns>
+    public bool IsUpgradeNeeded()
+    {
+        return _data.ToolVersion.ComparePrecedenceTo( new SemVersion( 1, 0, 5 ) ) < 0;
+    }
+
+    /// <summary>
+    /// Warns the user if the environment needs to be upgraded.
+    /// </summary>
+    /// <returns><c>true</c> if the environment needs to be upgraded; otherwise, <c>false</c>.</returns>
+    private bool WarnIfUpgradeNeeded()
+    {
+        if ( IsUpgradeNeeded() )
+        {
+            _console.MarkupLine( "[yellow]Warning: This environment was created with an older version of the Dev Tool. It is recommended to upgrade the environment using the 'rock-dev-tool env upgrade' command.[/]" );
+            return true;
+        }
+
+        return false;
     }
 }

@@ -23,5 +23,6 @@ class EnvironmentCommand : Command
         AddCommand( ActivatorUtilities.CreateInstance<NewCommand>( serviceProvider ) );
         AddCommand( ActivatorUtilities.CreateInstance<UpdateCommand>( serviceProvider ) );
         AddCommand( ActivatorUtilities.CreateInstance<StatusCommand>( serviceProvider ) );
+        AddCommand( ActivatorUtilities.CreateInstance<UpgradeCommand>( serviceProvider ) );
     }
 }

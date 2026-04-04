@@ -430,9 +430,10 @@ partial class NewCommand : Abstractions.BaseModifyCommand
     private void AddPluginToGitIgnore()
     {
         var environmentDirectory = EnvironmentPath ?? _fs.Directory.GetCurrentDirectory();
-        var path = _fs.Path.Combine( environmentDirectory, ".gitignore" );
+        var gitIgnorePath = _fs.Path.Combine( environmentDirectory, ".gitignore" );
+        var ignorePath = _fs.Path.Combine( environmentDirectory, ".ignore" );
 
-        var content = _fs.File.ReadAllText( path );
+        var content = _fs.File.ReadAllText( gitIgnorePath );
         var lineEnding = content.Contains( "\r\n" ) ? "\r\n" : "\n";
 
         // If the gitignore file already contains this item then skip it. This
@@ -451,7 +452,32 @@ partial class NewCommand : Abstractions.BaseModifyCommand
             content = $"{content}/{PluginCode}{lineEnding}";
         }
 
-        WriteFile( path, content );
+        WriteFile( gitIgnorePath, content );
+
+        // Also add invert to .ignore so VS Code will still search the file.
+        if ( _fs.File.Exists( ignorePath ) )
+        {
+            content = _fs.File.ReadAllText( ignorePath );
+            lineEnding = content.Contains( "\r\n" ) ? "\r\n" : "\n";
+
+            // If the ignore file already contains this item then skip it. This
+            // most often happens when the force option is used.
+            if ( content.Split( ['\r', '\n'] ).Contains( $"!/{PluginCode}" ) )
+            {
+                return;
+            }
+
+            if ( !content.EndsWith( lineEnding ) )
+            {
+                content = $"{content}{lineEnding}!/{PluginCode}{lineEnding}";
+            }
+            else
+            {
+                content = $"{content}!/{PluginCode}{lineEnding}";
+            }
+
+            WriteFile( ignorePath, content );
+        }
     }
 
     /// <summary>

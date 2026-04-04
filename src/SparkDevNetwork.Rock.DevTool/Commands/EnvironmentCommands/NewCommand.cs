@@ -140,6 +140,12 @@ class NewCommand : Abstractions.BaseModifyCommand
 
             """ );
 
+        // Write the ".ignore" file.
+        WriteFile( _fs.Path.Join( outputDirectory, ".ignore" ),
+        """
+        # Unignore Plugins - DO NOT MODIFY
+        """ );
+
         // Write the "/.vscode/extensions.json" file.
         WriteFile( _fs.Path.Join( outputDirectory, ".vscode", "extensions.json" ),
             """
