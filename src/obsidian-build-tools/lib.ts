@@ -263,9 +263,9 @@ export function clearScreen(): void {
 
 /**
  * Wraps the text in ANSI sequence to make the foreground color red.
- * 
+ *
  * @param text The text that should be made red.
- * 
+ *
  * @returns A new string with the text wrapped in ANSI sequences.
  */
 export function red(text: string): string {
@@ -274,9 +274,9 @@ export function red(text: string): string {
 
 /**
  * Wraps the text in ANSI sequence to make the foreground color green.
- * 
+ *
  * @param text The text that should be made green.
- * 
+ *
  * @returns A new string with the text wrapped in ANSI sequences.
  */
 export function green(text: string): string {
@@ -285,9 +285,9 @@ export function green(text: string): string {
 
 /**
  * Wraps the text in ANSI sequence to make the foreground color yellow.
- * 
+ *
  * @param text The text that should be made yellow.
- * 
+ *
  * @returns A new string with the text wrapped in ANSI sequences.
  */
 export function yellow(text: string): string {
@@ -296,9 +296,9 @@ export function yellow(text: string): string {
 
 /**
  * Wraps the text in ANSI sequence to make the foreground color dim.
- * 
+ *
  * @param text The text that should be made dim.
- * 
+ *
  * @returns A new string with the text wrapped in ANSI sequences.
  */
 export function dim(text: string): string {
@@ -558,13 +558,13 @@ export function defineScriptFileBuilder(input: string, output: string, options: 
  * Defines the configuration for all the stylesheet files that need to be
  * compiled, including those in sub directories, for a given directory. Any
  * filename ending with .css, .less, .scss or .sass will be included.
- * 
+ *
  * @param sourcePath The base path to use when searching for files to compile.
  * @param outputPath The base output path to use when writing the compiled
  * files. The relative paths to the source files will be maintained when
  * compiled to this location.
  * @param options The options that define how the files are compiled.
- * 
+ *
  * @returns An array of {@link BundleBuilder} objects.
  */
 export function defineStylesheetBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
@@ -579,7 +579,10 @@ export function defineStylesheetBuilders(sourcePath: string, outputPath: string,
 
     const files = globSync(sourcePath.replace(/\\/g, "/") + "/**/*.@(css|less|sass|scss)")
         .map(f => path.normalize(f).substring(sourcePath.length + 1))
-        .filter(f => !ignoredExtensions.some(ext => f.endsWith(ext)));
+        // Ignore any files that are partials, or those whose name starts with
+        // an underscore, which is a common convention for partial CSS files.
+        .filter(f => !ignoredExtensions.some(ext => f.endsWith(ext))
+            && !path.basename(f).startsWith("_"));
 
     return files.map(file => {
         let outFile = file;
@@ -591,7 +594,7 @@ export function defineStylesheetBuilders(sourcePath: string, outputPath: string,
         const configuration: StylesheetConfiguration = {
             source: path.join(sourcePath, file),
             destination: path.join(outputPath, outFile),
-            minify: false
+            minify: options.minify === true,
         };
 
         // If the caller requested a copy operation, append the path to the
@@ -615,9 +618,9 @@ export function defineStylesheetBuilders(sourcePath: string, outputPath: string,
 
 /**
  * Builds a single stylesheet from the configuration.
- * 
+ *
  * @param configuration The configuration that defines the stylesheet to build.
- * 
+ *
  * @returns An instance of {@link Bundle} describing the output.
  */
 export async function buildStylesheet(configuration: StylesheetConfiguration): Promise<Bundle> {
@@ -646,7 +649,7 @@ export async function buildStylesheet(configuration: StylesheetConfiguration): P
 
     if (configuration.copy) {
         await mkdir(configuration.copy, { recursive: true });
-        await writeFile(path.join(configuration.copy, path.basename(configuration.source)), css);
+        await writeFile(path.join(configuration.copy, path.basename(configuration.destination)), css);
     }
 
     const duration = Math.floor((Date.now() - start) / 1000);
@@ -667,13 +670,13 @@ export async function buildStylesheet(configuration: StylesheetConfiguration): P
  * Defines the configuration for all the static files that need to be
  * "compiled", including those in sub directories, for a given directory. Any
  * filename ending with .css, .less, .scss or .sass will be included.
- * 
+ *
  * @param sourcePath The base path to use when searching for files to compile.
  * @param outputPath The base output path to use when writing the compiled
  * files. The relative paths to the source files will be maintained when
  * compiled to this location.
  * @param options The options that define how the files are compiled.
- * 
+ *
  * @returns An array of {@link BundleBuilder} objects.
  */
 export function defineStaticFileBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
@@ -726,9 +729,9 @@ export function defineStaticFileBuilders(sourcePath: string, outputPath: string,
 
 /**
  * Builds a single static from the configuration.
- * 
+ *
  * @param configuration The configuration that defines the static file to copy.
- * 
+ *
  * @returns An instance of {@link Bundle} describing the output.
  */
 export async function buildStaticFile(configuration: StaticFileConfiguration): Promise<Bundle> {
@@ -747,11 +750,11 @@ export async function buildStaticFile(configuration: StaticFileConfiguration): P
     }
 
     await mkdir(path.dirname(configuration.destination), { recursive: true });
-    await writeFile(configuration.destination, data);
+    await writeFile(configuration.destination, data as Uint8Array);
 
     if (configuration.copy) {
         await mkdir(configuration.copy, { recursive: true });
-        await writeFile(path.join(configuration.copy, path.basename(configuration.source)), data);
+        await writeFile(path.join(configuration.copy, path.basename(configuration.destination)), data as Uint8Array);
     }
 
     const duration = Math.floor((Date.now() - start) / 1000);
@@ -781,7 +784,7 @@ export class BundleError extends Error {
 
     /**
      * Creates a new instance of {@link BundleError}.
-     * 
+     *
      * @param message The message that describes the error.
      * @param filename The filename that caused the error.
      * @param line The line number that caused the error.
@@ -814,7 +817,7 @@ export class Watcher {
 
     /**
      * Creates a new instance of {@link Watcher}.
-     * 
+     *
      * @param callback The function to call when any file has changed.
      */
     public constructor(callback: () => void) {
@@ -829,7 +832,7 @@ export class Watcher {
     /**
      * Updates the list of watched files by adding new watchers and removing old
      * watchers based on the list of files.
-     * 
+     *
      * @param files The new list of files to be watched.
      */
     public updateWatchFiles(files: string[]): void {
