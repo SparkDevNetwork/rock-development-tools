@@ -5,6 +5,10 @@ on:
     tags:
       - 'v[1-9].*'
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -65,12 +69,14 @@ jobs:
     - name: Publish eslint-config-rock-recommended
       run: npm publish --access public
       working-directory: ./src/eslint-config-rock-recommended
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_API_KEY }}
     - name: Publish obsidian-build-tools
       run: npm publish --access public
       working-directory: ./src/obsidian-build-tools
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_API_KEY }}
+    # Get a short-lived NuGet API key
+    - name: NuGet login
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: SparkDevNetwork
     - name: Publish
-      run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push *.nupkg --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
