@@ -22,6 +22,12 @@ interface ObsidianOptions {
     copy: boolean;
 
     /**
+     * If set then any files matching the glob pattern specified, relative to
+     * the source folder, will be excluded from the build process.
+     */
+    exclude?: string | string[];
+
+    /**
      * The options to apply when processing static files.
      */
     staticFiles?: StaticFileConfigOptions;
@@ -261,6 +267,7 @@ async function main(): Promise<void> {
         return defineBuilders(path.resolve(path.dirname(configFilePath), config.source!), path.resolve(path.dirname(configFilePath), "dist"), {
             copy: config.copy === true ? config.destination : undefined,
             staticFiles: config.staticFiles,
+            exclude: typeof (config.exclude) === "string" ? [config.exclude] : config.exclude,
         });
     }).flat();
 

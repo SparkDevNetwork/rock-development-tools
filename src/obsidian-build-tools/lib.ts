@@ -35,6 +35,12 @@ export interface ConfigOptions {
     copy?: string;
 
     /**
+     * If set then any files matching the glob pattern specified, relative to
+     * the source folder, will be excluded from the build process.
+     */
+    exclude?: string | string[];
+
+    /**
      * The options specific to compiler TypeScript files.
      */
     script?: ScriptConfigOptions;
@@ -346,7 +352,7 @@ export function defineBuilders(sourcePath: string, outputPath: string, options: 
 export function defineScriptBuilders(sourcePath: string, outputPath: string, options: ConfigOptions): BundleBuilder[] {
     options = options || {};
 
-    const files = globSync(sourcePath.replace(/\\/g, "/") + "/**/*.@(ts|obs)")
+    const files = globSync("**/*.@(ts|obs)", { cwd: sourcePath, ignore: options.exclude, absolute: true })
         .map(f => path.normalize(f).substring(sourcePath.length + 1))
         .filter(f => !f.endsWith(".d.ts") && !f.endsWith(".partial.ts") && !f.endsWith(".partial.obs"));
 
@@ -577,7 +583,7 @@ export function defineStylesheetBuilders(sourcePath: string, outputPath: string,
         ".partial.scss"
     ];
 
-    const files = globSync(sourcePath.replace(/\\/g, "/") + "/**/*.@(css|less|sass|scss)")
+    const files = globSync("**/*.@(css|less|sass|scss)", { cwd: sourcePath, ignore: options.exclude, absolute: true })
         .map(f => path.normalize(f).substring(sourcePath.length + 1))
         // Ignore any files that are partials, or those whose name starts with
         // an underscore, which is a common convention for partial CSS files.
@@ -697,7 +703,7 @@ export function defineStaticFileBuilders(sourcePath: string, outputPath: string,
         extensions.push(...options.staticFiles.includeExtensions);
     }
 
-    const files = globSync(sourcePath.replace(/\\/g, "/") + `/**/*.@(${extensions.join("|")})`)
+    const files = globSync(`**/*.@(${extensions.join("|")})`, { cwd: sourcePath, ignore: options.exclude, absolute: true })
         .map(f => path.normalize(f).substring(sourcePath.length + 1));
 
     return files.map(file => {
@@ -750,11 +756,11 @@ export async function buildStaticFile(configuration: StaticFileConfiguration): P
     }
 
     await mkdir(path.dirname(configuration.destination), { recursive: true });
-    await writeFile(configuration.destination, data as Uint8Array);
+    await writeFile(configuration.destination, data as unknown as Uint8Array);
 
     if (configuration.copy) {
         await mkdir(configuration.copy, { recursive: true });
-        await writeFile(path.join(configuration.copy, path.basename(configuration.destination)), data as Uint8Array);
+        await writeFile(path.join(configuration.copy, path.basename(configuration.destination)), data as unknown as Uint8Array);
     }
 
     const duration = Math.floor((Date.now() - start) / 1000);
