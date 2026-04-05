@@ -162,6 +162,12 @@ class PluginPackager
             return false;
         }
 
+        _console.WriteLine( $"Building plugin {plugin.Name}." );
+        if ( !BuildPlugin( pluginPath ) )
+        {
+            return false;
+        }
+
         _console.WriteLine( $"Packaging {plugin.Name} version {pluginVersion}." );
 
         // Find the previous version that was created.
@@ -283,6 +289,40 @@ class PluginPackager
             return new PluginLockData();
         }
 
+    }
+
+    /// <summary>
+    /// Builds the plugin by finding all project files in the plugin directory and
+    /// building each of them in Release mode. If any build fails, the process is
+    /// stopped and <c>false</c> is returned.
+    /// </summary>
+    /// <param name="pluginPath">The path to the plugin directory.</param>
+    /// <returns><c>true</c> if the build succeeded; otherwise, <c>false</c>.</returns>
+    private bool BuildPlugin( string pluginPath )
+    {
+        var files = Glob.Files( pluginPath, "*/*.{csproj,esproj}" );
+
+        foreach ( var projectFile in files )
+        {
+            var relativeProjectFile = _fs.Path.NormalizePathSeperator( projectFile );
+            var absoluteProjectFile = _fs.Path.GetFullPath( relativeProjectFile, pluginPath );
+
+            var process = new System.Diagnostics.Process();
+            process.StartInfo.FileName = "dotnet";
+            process.StartInfo.Arguments = $"build \"{absoluteProjectFile}\" -c Release";
+            process.StartInfo.UseShellExecute = false;
+
+            process.Start();
+            process.WaitForExit();
+
+            if ( process.ExitCode != 0 )
+            {
+                _console.MarkupLineInterpolated( $"[red]Build failed for project {relativeProjectFile}.[/]" );
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
