@@ -544,7 +544,7 @@ export function defineScriptFileBuilder(input: string, output: string, options: 
 
             await bundle.close();
 
-            const duration = Math.floor((Date.now() - start) / 1000);
+            const duration = Math.floor(Date.now() - start);
 
             return {
                 source: config.input as string,
@@ -658,7 +658,7 @@ export async function buildStylesheet(configuration: StylesheetConfiguration): P
         await writeFile(path.join(configuration.copy, path.basename(configuration.destination)), css);
     }
 
-    const duration = Math.floor((Date.now() - start) / 1000);
+    const duration = Math.floor(Date.now() - start);
 
     return {
         source: configuration.source,
@@ -763,7 +763,7 @@ export async function buildStaticFile(configuration: StaticFileConfiguration): P
         await writeFile(path.join(configuration.copy, path.basename(configuration.destination)), data as unknown as Uint8Array);
     }
 
-    const duration = Math.floor((Date.now() - start) / 1000);
+    const duration = Math.floor(Date.now() - start);
 
     return {
         source: configuration.source,
