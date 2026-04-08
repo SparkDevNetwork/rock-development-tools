@@ -703,7 +703,10 @@ export function defineStaticFileBuilders(sourcePath: string, outputPath: string,
         extensions.push(...options.staticFiles.includeExtensions);
     }
 
-    const files = globSync(`**/*.@(${extensions.join("|")})`, { cwd: sourcePath, ignore: options.exclude, absolute: true })
+    // Include dot files when processing static files since they are commonly
+    // used for things like .ignore or .gitignore or .system that might need
+    // to be copied as well.
+    const files = globSync(`**/*.@(${extensions.join("|")})`, { cwd: sourcePath, ignore: options.exclude, absolute: true, dot: true })
         .map(f => path.normalize(f).substring(sourcePath.length + 1));
 
     return files.map(file => {
