@@ -319,7 +319,7 @@ class PluginInstallation
             return true;
         }
 
-        // If the directory exists but is empty iti s considered clean.
+        // If the directory exists but is empty it is considered clean.
         if ( _fs.Directory.GetFiles( _pluginPath ).Length == 0 && _fs.Directory.GetDirectories( _pluginPath ).Length == 0 )
         {
             return true;
@@ -343,7 +343,7 @@ class PluginInstallation
     /// <param name="destinationDirectory">The path to the directory to clone the repository into.</param>
     /// <param name="branch">If specified the name of the remote branch to clone; otherwise the default branch will be cloned.</param>
     /// <param name="progress">An optional progress reporter for the clone progress.</param>
-    private static void Clone( string remoteUrl, string destinationDirectory, string? branch, IProgress<double>? progress )
+    internal static void Clone( string remoteUrl, string destinationDirectory, string? branch, IProgress<double>? progress )
     {
         Repository.Clone( remoteUrl, destinationDirectory, new CloneOptions
         {
@@ -372,7 +372,7 @@ class PluginInstallation
     /// <param name="supportedTypes">The supported authentication types.</param>
     /// <returns>A set of credentials to authenticate with.</returns>
     /// <exception cref="NoCredentialsException">Thrown if no credentials are available.</exception>
-    private static UsernamePasswordCredentials GetCredentials( string repoUrl, string usernameFromUrl, SupportedCredentialTypes supportedTypes )
+    internal static UsernamePasswordCredentials GetCredentials( string repoUrl, string usernameFromUrl, SupportedCredentialTypes supportedTypes )
     {
         var uri = new Uri( repoUrl );
         string? username = null;
@@ -444,7 +444,7 @@ class PluginInstallation
     /// </summary>
     /// <param name="repository">The repository.</param>
     /// <returns>The name of the branch or <c>null</c> if not on any branch.</returns>
-    private static string? GetCurrentBranch( Repository repository )
+    internal static string? GetCurrentBranch( Repository repository )
     {
         var reference = repository.Head.Reference.TargetIdentifier;
 

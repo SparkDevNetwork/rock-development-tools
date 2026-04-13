@@ -3,6 +3,8 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
 
+using LibGit2Sharp;
+
 using Microsoft.Extensions.Logging;
 
 using Semver;
@@ -95,6 +97,11 @@ class RockInstallation
     /// <returns>A <see cref="Task"/> that indicates when the operation has completed.</returns>
     public Task InstallRockAsync()
     {
+        if ( !string.IsNullOrEmpty( _data.Url ) && !string.IsNullOrEmpty( _data.Branch ) )
+        {
+            return InstallOrUpdateRockFromGitAsync();
+        }
+
         if ( !SemVersion.TryParse( _data.Version, SemVersionStyles.Strict, out var version ) )
         {
             throw new Exception( "Invalid Rock version specified in configuration." );
@@ -157,6 +164,95 @@ class RockInstallation
 
         _console.MarkupLineInterpolated( $"Installed Rock [cyan]{rockVersion}[/] into [cyan]{_rockPath.Replace( '/', Path.DirectorySeparatorChar )}[/]" );
         _console.WriteLine();
+    }
+
+    /// <summary>
+    /// Installs or updates Rock from a git repository. If Rock is not yet installed then
+    /// it will be installed. Otherwise it will be updated.
+    /// </summary>
+    /// <param name="context">The context used to report progress.</param>
+    public async Task InstallOrUpdateRockFromGitAsync()
+    {
+        _console.MarkupLineInterpolated( $"Installing Rock from [cyan]{_data.Url}[/]" );
+
+        var progress = _console.Progress();
+
+        await progress.StartAsync( async ctx =>
+        {
+            if ( !_fs.Directory.Exists( _rockPath ) || !Repository.IsValid( _rockPath ) )
+            {
+                var progress = ctx.AddTask( $"Installing {_rockPath}", true, 1 );
+                InstallRockFromGit( progress );
+            }
+            else
+            {
+                var progress = ctx.AddTask( $"Updating {_rockPath}", true, 1 );
+                UpdateRockFromGit( progress );
+            }
+        });
+
+        _console.MarkupLineInterpolated( $"Installed Rock [cyan]{_data.Branch}[/] into [cyan]{_rockPath.Replace( '/', Path.DirectorySeparatorChar )}[/]" );
+    }
+
+    /// <summary>
+    /// Installs Rock from a git repository into the environment.
+    /// </summary>
+    /// <param name="progress">The progress reporter.</param>
+    private void InstallRockFromGit( IProgress<double>? progress )
+    {
+        if ( string.IsNullOrWhiteSpace( _data.Url ) || string.IsNullOrWhiteSpace( _data.Branch ) )
+        {
+            throw new InvalidOperationException( "Can't install Rock without repository url and branch name." );
+        }
+
+        PluginInstallation.Clone( _data.Url,
+            _rockPath,
+            _data.Branch,
+            progress );
+    }
+
+    /// <summary>
+    /// Update Rock by ensuring it is on the correct branch and also
+    /// pulls any changes from the remote.
+    /// </summary>
+    /// <param name="progress">An optional progress reporter.</param>
+    private void UpdateRockFromGit( IProgress<double>? progress )
+    {
+        if ( string.IsNullOrWhiteSpace( _data.Url ) || string.IsNullOrWhiteSpace( _data.Branch ) )
+        {
+            throw new InvalidOperationException( "Can't update Rock without repository url and branch name." );
+        }
+
+        var repo = new Repository( _rockPath );
+        var signature = repo.Config.BuildSignature( DateTimeOffset.Now );
+        var currentBranch = PluginInstallation.GetCurrentBranch( repo );
+
+        if ( currentBranch != _data.Branch )
+        {
+            LibGit2Sharp.Commands.Checkout( repo, _data.Branch );
+        }
+
+        var pullOptions = new PullOptions
+        {
+            FetchOptions = new FetchOptions
+            {
+                CredentialsProvider = PluginInstallation.GetCredentials,
+                OnTransferProgress = ( transferProgress ) =>
+                {
+                    progress?.Report( transferProgress.ReceivedObjects / ( double ) transferProgress.TotalObjects );
+                    return true;
+                }
+            },
+            MergeOptions = new MergeOptions
+            {
+                FailOnConflict = true,
+                FastForwardStrategy = FastForwardStrategy.FastForwardOnly
+            }
+        };
+
+        LibGit2Sharp.Commands.Pull( repo, signature, pullOptions );
+
+        progress?.Report( 1 );
     }
 
     /// <summary>
@@ -363,7 +459,12 @@ class RockInstallation
     /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
     public RockStatusItem GetRockStatus()
     {
-        if ( _data.Version == "custom" )
+        if ( !string.IsNullOrEmpty( _data.Url ) && !string.IsNullOrEmpty( _data.Branch ) )
+        {
+            return GetRockGitStatus();
+        }
+
+        if ( _data.Version == "custom" || string.IsNullOrEmpty( _data.Version ) )
         {
             return new RockStatusItem( [] );
         }
@@ -429,6 +530,63 @@ class RockInstallation
     }
 
     /// <summary>
+    /// Gets the status of the Rock installation based on git information. This
+    /// will be used when the Rock installation is being managed via git instead of
+    /// a binary installation.
+    /// </summary>
+    /// <returns>An instance of <see cref="EnvironmentStatusItem"/> that describes the status.</returns>
+    private RockStatusItem GetRockGitStatus()
+    {
+        if ( !Repository.IsValid( _rockPath ) )
+        {
+            _logger.LogError( "Rock {path} is not a git repository.", _rockPath );
+            return new RockStatusItem( "is not a git repository.", null );
+        }
+
+        var repository = new Repository( _rockPath );
+        var currentBranch = PluginInstallation.GetCurrentBranch( repository );
+
+        if ( currentBranch == null )
+        {
+            _logger.LogInformation( "Rock {path} is not on a branch.", _rockPath );
+            return new RockStatusItem( "is not on a branch.", null );
+        }
+
+        if ( _data.Branch != currentBranch )
+        {
+            _logger.LogInformation( "Rock {path} is on branch {repoBranch} instead of {expectedBranch}.", _rockPath, currentBranch, _data.Branch );
+            return new RockStatusItem( $"is on branch {currentBranch} but should be {_data.Branch}.", null );
+        }
+
+        var remote = repository.Network.Remotes[repository.Head.RemoteName];
+
+        if ( remote.Url != _data.Url )
+        {
+            _logger.LogInformation( "Rock {path} is using remote URL {repoUrl} instead of {expectedUrl}.", _rockPath, remote.Url, _data.Url );
+            return new RockStatusItem( $"is using remote URL {remote.Url} but should be {_data.Url}.", null );
+        }
+
+        var refSpecs = remote.FetchRefSpecs.Select( r => r.Specification );
+
+        if ( !repository.Head.TrackingDetails.BehindBy.HasValue )
+        {
+            return new RockStatusItem( "has no upstream remote configured.", null );
+        }
+
+        LibGit2Sharp.Commands.Fetch( repository, remote.Name, refSpecs, new FetchOptions
+        {
+            CredentialsProvider = PluginInstallation.GetCredentials,
+        }, "Fetching remote" );
+
+        if ( repository.Head.TrackingDetails.BehindBy.Value > 0 )
+        {
+            return new RockStatusItem( $"is behind by {repository.Head.TrackingDetails.BehindBy} commits.", null );
+        }
+
+        return new RockStatusItem( [] );
+    }
+
+    /// <summary>
     /// Gets a list of status items that reflect the Rock installation status
     /// for each individual file.
     /// </summary>
@@ -491,6 +649,32 @@ class RockInstallation
     /// <returns><c>true</c> if the Rock installation is in a clean state; otherwise <c>false</c>.</returns>
     public bool IsRockClean()
     {
+        if ( !string.IsNullOrEmpty( _data.Url ) && !string.IsNullOrEmpty( _data.Branch ) )
+        {
+            // If the directory does not exist, it is considered clean so that
+            // an update command can execute.
+            if ( !_fs.Directory.Exists( _rockPath ) )
+            {
+                return true;
+            }
+
+            // If the directory exists but is empty it is considered clean.
+            if ( _fs.Directory.GetFiles( _rockPath ).Length == 0 && _fs.Directory.GetDirectories( _rockPath ).Length == 0 )
+            {
+                return true;
+            }
+
+            if ( !Repository.IsValid( _rockPath ) )
+            {
+                _logger.LogError( "Rock {path} is not a git repository.", _rockPath );
+                return false;
+            }
+
+            using var repository = new Repository( _rockPath );
+
+            return !repository.RetrieveStatus().IsDirty;
+        }
+
         var items = GetRockFileStatuses();
 
         if ( items == null )
