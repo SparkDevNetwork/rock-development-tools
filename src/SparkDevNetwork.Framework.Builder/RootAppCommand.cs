@@ -67,11 +67,6 @@ class RootAppCommand : RootCommand, ICommandHandler
             bool result;
             var version = await builder.PromptForRockVersionAsync( tag );
 
-            if ( suffix == null && version.Version.IsPrerelease )
-            {
-                suffix = version.Version.Prerelease;
-            }
-
             suffix ??= builder.PromptForPrereleaseSuffix( version );
 
             var packageVersion = new Semver.SemVersion( version.Version.Major,

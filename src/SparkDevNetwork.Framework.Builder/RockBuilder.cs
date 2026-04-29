@@ -48,7 +48,7 @@ partial class RockBuilder
     public string RepositoryUrl { get; set; } = "https://github.com/SparkDevNetwork/Rock";
 
     /// <summary>
-    /// Creates a new instance of <see cref="RockBuilder"/>. 
+    /// Creates a new instance of <see cref="RockBuilder"/>.
     /// </summary>
     /// <param name="buildPath">The path to use when downloading and building.</param>
     public RockBuilder( string buildPath )
@@ -250,7 +250,7 @@ partial class RockBuilder
     private async Task<bool> RestoreRockWebPackagesAsync()
     {
         var binPath = Path.Combine( _rockPath, "RockWeb", "Bin" );
-        var regex = new Regex( "packages\\\\([A-Za-z\\-\\.]+)\\.([0-9\\.\\-a-zA-Z]+)\\\\(.*)$" );
+        var regex = new Regex( "packages\\\\((?:[A-Za-z][A-Za-z\\-0-9]*\\.)+)([0-9\\.\\-a-zA-Z]+)\\\\(.*)$" );
         var client = new HttpClient();
 
         foreach ( var refreshFile in Directory.EnumerateFiles( binPath, "*.dll.refresh" ) )
@@ -264,7 +264,7 @@ partial class RockBuilder
                 return false;
             }
 
-            var packageName = match.Groups[1].Value;
+            var packageName = match.Groups[1].Value.TrimEnd( '.' );
             var packageVersion = match.Groups[2].Value;
             var filePath = match.Groups[3].Value.Replace( '\\', '/' );
             var url = $"https://www.nuget.org/api/v2/package/{packageName}/{packageVersion}";
