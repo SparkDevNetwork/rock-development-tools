@@ -93,6 +93,11 @@ namespace SparkDevNetwork.Rock.Analyzers
         {
             try
             {
+                if ( IsCoreAssembly( context.ContainingSymbol.ContainingAssembly ) )
+                {
+                    return;
+                }
+
                 if ( context.Operation is IFieldReferenceOperation fieldReference )
                 {
                     AnalyzeMember( context, fieldReference.Field );
@@ -220,6 +225,11 @@ namespace SparkDevNetwork.Rock.Analyzers
         {
             try
             {
+                if ( IsCoreAssembly( context.Symbol.ContainingAssembly ) )
+                {
+                    return;
+                }
+
                 if ( context.Symbol is INamedTypeSymbol namedType )
                 {
                     AnalyzeNamedTypeSymbol( context, namedType );
@@ -474,6 +484,11 @@ namespace SparkDevNetwork.Rock.Analyzers
         /// </returns>
         private static bool IsCoreAssembly( IAssemblySymbol assembly )
         {
+            if ( assembly == null )
+            {
+                return false;
+            }
+
             return assembly.Name == "Rock" || assembly.Name.StartsWith( "Rock." );
         }
 

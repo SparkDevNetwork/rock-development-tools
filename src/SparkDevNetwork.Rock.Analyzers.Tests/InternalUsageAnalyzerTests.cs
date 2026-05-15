@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace SparkDevNetwork.Rock.Analyzers.Tests;
 
@@ -429,6 +430,34 @@ namespace ThirdParty
         };
 
         context.ExpectedDiagnostics.Add( new DiagnosticResult( "RK1000", DiagnosticSeverity.Warning ).WithLocation( 9, 30 ) );
+        context.TestState.AdditionalReferences.Add( await CreateRockAssemblyAsync() );
+
+        await context.RunAsync();
+    }
+
+    [Fact]
+    public async Task ReferencingRockInternalMethodFromRock_DoesNotReportError()
+    {
+        var code = @"
+namespace ThirdParty
+{
+    public class Consumer
+    {
+        public void Test()
+        {
+            var instance = new Rock.Foo.PublicClass();
+            var m = instance.InternalMethod;
+        }
+    }
+}
+";
+
+        var context = new RockAssemblyCSharpAnalyzerTest<InternalUsageAnalyzer, DefaultVerifier>
+        {
+            TestCode = code,
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net80
+        };
+
         context.TestState.AdditionalReferences.Add( await CreateRockAssemblyAsync() );
 
         await context.RunAsync();
@@ -1001,5 +1030,12 @@ namespace Rock.Foo
         assemblyBytes.Seek( 0, SeekOrigin.Begin );
 
         return MetadataReference.CreateFromStream( assemblyBytes );
+    }
+
+    private class RockAssemblyCSharpAnalyzerTest<TAnalyzer, TVerifier> : CSharpAnalyzerTest<TAnalyzer, TVerifier>
+        where TAnalyzer : DiagnosticAnalyzer, new()
+        where TVerifier : IVerifier, new()
+    {
+        protected override string DefaultTestProjectName => "Rock";
     }
 }
