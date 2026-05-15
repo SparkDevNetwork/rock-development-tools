@@ -35,7 +35,7 @@ public class StringValidationAnalyzerTests
             ReferenceAssemblies = ReferenceAssemblies.Net.Net80
         };
 
-        context.ExpectedDiagnostics.Add( new DiagnosticResult( "RK1001", DiagnosticSeverity.Warning ).WithLocation( 8, 16 ) );
+        context.ExpectedDiagnostics.Add( new DiagnosticResult( "RK1001", DiagnosticSeverity.Error ).WithLocation( 8, 23 ) );
 
         await context.RunAsync();
     }
