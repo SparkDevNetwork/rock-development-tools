@@ -1,6 +1,9 @@
-# Process to build binary RockWeb package
+# Process to build binary RockWeb package (old)
 
-We do not currently have this automated, but here is the current process to build a binary package. This package is uploaded to azure so that the dev tool can download pre-built Rock versions for the environment.
+On Rock version 18 and later, this process is now automated.
+Only the upload to Azure step is still required.
+
+Here is the current process to build a binary package. This package is uploaded to azure so that the dev tool can download pre-built Rock versions for the environment.
 
 1. Clone Rock repo and switch to the release/hotfix branch to be built.
 2. Build the solution.

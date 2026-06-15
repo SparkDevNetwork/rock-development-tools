@@ -28,6 +28,13 @@ partial class RockBuilder
     private static partial Regex VersionRegExp();
 
     /// <summary>
+    /// The regular expression that will be used to match the target frameworks
+    /// in the project files.
+    /// </summary>
+    [GeneratedRegex( @"<TargetFrameworks?>(.*?)</TargetFrameworks?>" )]
+    private static partial Regex TargetFrameworksRegExp();
+
+    /// <summary>
     /// The path to download and build Rock in.
     /// </summary>
     private readonly string _buildPath;
@@ -191,6 +198,8 @@ partial class RockBuilder
                 if ( commandResult.ExitCode != 0 )
                 {
                     bar.Fail();
+                    Console.WriteLine( string.Join( Environment.NewLine, commandResult.Output ) );
+                    throw new Exception( $"Git clone failed with exit code {commandResult.ExitCode}." );
                 }
             }
             catch
@@ -622,8 +631,18 @@ partial class RockBuilder
         foreach ( var projectName in projectNames )
         {
             var nuspec = $"{projectName}.nuspec";
+            var csprojPath = Path.Combine( _rockPath, projectName, $"{projectName}.csproj" );
+            var csproj = File.ReadAllText( csprojPath );
 
-            CopyTextTemplate( nuspec, Path.Combine( _buildPath, nuspec ), packageVersion );
+            // Get which frameworks to include in the package.
+            var frameworksMatch = TargetFrameworksRegExp().Match( csproj );
+            if ( !frameworksMatch.Success )
+            {
+                throw new Exception( $"Could not find target frameworks for project '{projectName}'." );
+            }
+            var frameworks = frameworksMatch.Groups[1].Value.Split( ';' ).Select( f => f.Trim() ).ToArray();
+
+            CopyTextTemplate( nuspec, Path.Combine( _buildPath, nuspec ), packageVersion, frameworks );
         }
     }
 
@@ -883,21 +902,41 @@ partial class RockBuilder
     /// <param name="filename">The filename of the source template.</param>
     /// <param name="destinationPath">The full destination path and filename.</param>
     /// <param name="rockVersion">The version of Rock being packaged.</param>
-    public static void CopyTextTemplate( string filename, string destinationPath, SemVersion rockVersion )
+    /// <param name="frameworks">The frameworks to include in the package.</param>
+    public static void CopyTextTemplate( string filename, string destinationPath, SemVersion rockVersion, string[] frameworks )
     {
         var text = ReadTextTemplate( filename );
 
-        text = text.Replace( "{{ RockVersion }}", rockVersion.ToString() );
+        var lines = text.Split( ["\r\n", "\r", "\n"], StringSplitOptions.None ).ToList();
 
-        if ( rockVersion.Major >= 18 )
+        for ( int i = 0; i < lines.Count; i++ )
         {
-            text = text.Replace( "{{ BinPath }}", "bin\\Release\\net472" );
-        }
-        else
-        {
-            text = text.Replace( "{{ BinPath }}", "bin\\Release" );
+            lines[i] = lines[i].Replace( "{{ RockVersion }}", rockVersion.ToString() );
+
+            if ( rockVersion.Major >= 18 )
+            {
+                if ( lines[i].Contains( "{{ BinPath }}" ) )
+                {
+                    var line = lines[i];
+                    lines.RemoveAt( i );
+
+                    foreach ( var framework in frameworks )
+                    {
+                        var frameworkLine = line.Replace( "{{ BinPath }}", $"bin\\Release\\{framework}" );
+                        frameworkLine = frameworkLine.Replace( "lib\\net472", $"lib\\{framework}" );
+                        lines.Insert( i, frameworkLine );
+                    }
+
+                    i += frameworks.Length - 1;
+                }
+            }
+            else
+            {
+                lines[i] = lines[i].Replace( "{{ BinPath }}", "bin\\Release" );
+            }
         }
 
+        text = string.Join( Environment.NewLine, lines );
         File.WriteAllText( destinationPath, text );
     }
 
